@@ -1,4 +1,6 @@
-# Arándano Café Bar - Landing Page
+# Arándano Café Bar
+
+Landing page y tienda virtual para Arándano Café Bar en Pasto, Colombia.
 
 Landing page profesional para Arándano Café Bar, un café y servicio de bebidas 24/7 ubicado en Pasto, Colombia, cerca de la zona universitaria.
 
