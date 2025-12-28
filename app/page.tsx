@@ -68,13 +68,13 @@ export default function Home() {
   // Productos de Cafetería
   const productosCafeteria: Product[] = [
     // Cafés Calientes
-    { id: 'cafe-negro', name: 'Café negro artisanal', price: 3800, description: 'Café artesanal preparado tradicionalmente, sin adiciones', category: 'cafe-caliente', type: 'cafeteria' },
+    { id: 'cafe-negro', name: 'Café negro artesanal', price: 3800, description: 'Café artesanal preparado tradicionalmente, sin adiciones', category: 'cafe-caliente', type: 'cafeteria' },
     { id: 'cafe-leche', name: 'Café artesanal con leche', price: 4200, description: 'Café artesanal suavizado con leche fresca', category: 'cafe-caliente', type: 'cafeteria' },
     { id: 'cafe-aromatizado', name: 'Café aromatizado artesanal (canela / vainilla)', price: 5000, description: 'Café artesanal con esencia natural de canela o vainilla', category: 'cafe-caliente', type: 'cafeteria' },
-    { id: 'cafe-irlandes', name: 'Café irlandes', price: 10000, description: 'Café con whisky irlandés y crema batida', category: 'cafe-caliente', type: 'cafeteria' },
+    { id: 'cafe-irlandes', name: 'Café irlandés', price: 10000, description: 'Café con whisky irlandés y crema batida', category: 'cafe-caliente', type: 'cafeteria' },
     { id: 'carajillo', name: 'Carajillo', price: 8000, description: 'Café con licor, tradicional preparación', category: 'cafe-caliente', type: 'cafeteria' },
     // Cafés Fríos
-    { id: 'cafe-frio', name: 'Café frío artisanal', price: 3800, description: 'Café artesanal servido frío, refrescante', category: 'cafe-frio', type: 'cafeteria' },
+    { id: 'cafe-frio', name: 'Café frío artesanal', price: 3800, description: 'Café artesanal servido frío, refrescante', category: 'cafe-frio', type: 'cafeteria' },
     { id: 'cafe-helado', name: 'Café helado artesanal (affogato)', price: 10000, description: 'Helado bañado con café artesanal caliente', category: 'cafe-frio', type: 'cafeteria' },
     { id: 'cafe-frio-leche', name: 'Café artesanal frío con leche', price: 4200, description: 'Café artesanal frío con leche, suave y refrescante', category: 'cafe-frio', type: 'cafeteria' },
     // Pastelería

@@ -49,15 +49,15 @@ export default function MenuCafes() {
   const whatsappNumber = '573207909835'
 
   const cafesCalientes = [
-    { id: 'cafe-negro', name: 'Café negro artisanal', price: 3800, description: 'Café artesanal preparado tradicionalmente, sin adiciones' },
+    { id: 'cafe-negro', name: 'Café negro artesanal', price: 3800, description: 'Café artesanal preparado tradicionalmente, sin adiciones' },
     { id: 'cafe-leche', name: 'Café artesanal con leche', price: 4200, description: 'Café artesanal suavizado con leche fresca' },
     { id: 'cafe-aromatizado', name: 'Café aromatizado artesanal (canela / vainilla)', price: 5000, description: 'Café artesanal con esencia natural de canela o vainilla' },
-    { id: 'cafe-irlandes', name: 'Café irlandes', price: 10000, description: 'Café con whisky irlandés y crema batida' },
+    { id: 'cafe-irlandes', name: 'Café irlandés', price: 10000, description: 'Café con whisky irlandés y crema batida' },
     { id: 'carajillo', name: 'Carajillo', price: 8000, description: 'Café con licor, tradicional preparación' },
   ]
 
   const cafesFrios = [
-    { id: 'cafe-frio', name: 'Café frío artisanal', price: 3800, description: 'Café artesanal servido frío, refrescante' },
+    { id: 'cafe-frio', name: 'Café frío artesanal', price: 3800, description: 'Café artesanal servido frío, refrescante' },
     { id: 'cafe-helado', name: 'Café helado artesanal (affogato)', price: 10000, description: 'Helado bañado con café artesanal caliente' },
     { id: 'cafe-frio-leche', name: 'Café artesanal frío con leche', price: 4200, description: 'Café artesanal frío con leche, suave y refrescante' },
   ]
