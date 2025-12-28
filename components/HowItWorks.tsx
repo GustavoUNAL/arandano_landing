@@ -1,6 +1,7 @@
 'use client'
 
 import WhatsAppIcon from './WhatsAppIcon'
+import Image from 'next/image'
 
 export default function HowItWorks() {
   const steps = [
@@ -150,6 +151,19 @@ export default function HowItWorks() {
                   Contáctanos ahora por WhatsApp y recibe tu pedido en tiempo récord
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* Logo Image at the end */}
+          <div className="mt-16 sm:mt-20 md:mt-24 lg:mt-28 flex justify-center">
+            <div className="relative w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 lg:w-72 lg:h-72">
+              <Image
+                src="/images/logo.png"
+                alt="Arándano Café Bar Logo"
+                fill
+                className="object-contain drop-shadow-xl"
+                sizes="(max-width: 640px) 192px, (max-width: 768px) 224px, (max-width: 1024px) 256px, 288px"
+              />
             </div>
           </div>
         </div>

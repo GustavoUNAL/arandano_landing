@@ -59,8 +59,17 @@ export default function Footer() {
           </div>
           
           <div className="text-center pt-6 sm:pt-8 border-t border-stone-300">
-            <p className="text-berry-600 text-xs sm:text-sm">
+            <p className="text-berry-600 text-xs sm:text-sm mb-2">
               © {new Date().getFullYear()} Arándano Café Bar. Todos los derechos reservados.
+            </p>
+            <p className="text-berry-500 text-xs">
+              Desarrollado por{' '}
+              <a
+                href="mailto:info@grap-ingenieria.tech"
+                className="font-semibold hover:text-berry-700 transition-colors"
+              >
+                GRAP SAS
+              </a>
             </p>
           </div>
         </div>
