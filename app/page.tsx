@@ -23,6 +23,10 @@ interface CartItem extends Product {
   quantity: number
 }
 
+// Orden de categorías (constantes fuera del componente para mejor rendimiento)
+const CAFETERIA_CATEGORY_ORDER: Product['category'][] = ['cafe-caliente', 'cafe-frio', 'pasteleria', 'combo']
+const BEBIDAS_CATEGORY_ORDER: Product['category'][] = ['coctel', 'vino', 'vodka', 'ginebra', 'tequila', 'whisky']
+
 const CartIcon = ({ count }: { count: number }) => (
   <div className="relative inline-flex items-center justify-center">
     <svg
@@ -115,12 +119,6 @@ export default function Home() {
 
   const allProducts = [...productosCafeteria, ...productosBebidas]
 
-  // Orden de categorías para cafetería
-  const cafeteriaCategoryOrder = ['cafe-caliente', 'cafe-frio', 'pasteleria', 'combo']
-  
-  // Orden de categorías para bebidas
-  const bebidasCategoryOrder = ['coctel', 'vino', 'vodka', 'ginebra', 'tequila', 'whisky']
-
   // Filtrar productos
   const filteredProducts = useMemo(() => {
     return allProducts.filter(product => {
@@ -134,23 +132,23 @@ export default function Home() {
 
       return matchesSearch && matchesType && matchesCategory
     })
-  }, [searchQuery, selectedType, selectedCategory])
+  }, [searchQuery, selectedType, selectedCategory, allProducts])
 
   // Obtener categorías únicas basadas en el tipo seleccionado, ordenadas
   const availableCategories = useMemo(() => {
     const products = selectedType === 'all' ? allProducts : 
                      selectedType === 'cafeteria' ? productosCafeteria : productosBebidas
-    const categories = new Set(products.map(p => p.category))
+    const categories = new Set<Product['category']>(products.map(p => p.category))
     
     if (selectedType === 'cafeteria') {
-      return cafeteriaCategoryOrder.filter(cat => categories.has(cat))
+      return CAFETERIA_CATEGORY_ORDER.filter(cat => categories.has(cat))
     } else if (selectedType === 'bebida') {
-      return bebidasCategoryOrder.filter(cat => categories.has(cat))
+      return BEBIDAS_CATEGORY_ORDER.filter(cat => categories.has(cat))
     } else {
       // Cuando es 'all', combinar ambos órdenes
-      return [...cafeteriaCategoryOrder, ...bebidasCategoryOrder].filter(cat => categories.has(cat))
+      return [...CAFETERIA_CATEGORY_ORDER, ...BEBIDAS_CATEGORY_ORDER].filter(cat => categories.has(cat))
     }
-  }, [selectedType])
+  }, [selectedType, allProducts, productosBebidas, productosCafeteria])
 
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
@@ -319,7 +317,7 @@ export default function Home() {
     const orderedGroups: Array<{ type: 'cafeteria' | 'bebida', category: string, products: Product[] }> = []
     
     // Agregar categorías de cafetería en orden
-    cafeteriaCategoryOrder.forEach(category => {
+    CAFETERIA_CATEGORY_ORDER.forEach(category => {
       if (byType.cafeteria[category] && byType.cafeteria[category].length > 0) {
         orderedGroups.push({
           type: 'cafeteria',
@@ -330,7 +328,7 @@ export default function Home() {
     })
 
     // Agregar categorías de bebidas en orden
-    bebidasCategoryOrder.forEach(category => {
+    BEBIDAS_CATEGORY_ORDER.forEach(category => {
       if (byType.bebida[category] && byType.bebida[category].length > 0) {
         orderedGroups.push({
           type: 'bebida',
