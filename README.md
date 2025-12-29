@@ -120,20 +120,28 @@ La página está optimizada para:
 
 ## 🚀 Deploy
 
-### Vercel (Recomendado)
+Para instrucciones detalladas de despliegue, consulta [DEPLOY.md](./DEPLOY.md).
 
-1. Haz push de tu código a GitHub
-2. Importa el proyecto en [Vercel](https://vercel.com)
-3. Vercel detectará automáticamente Next.js
-4. ¡Deploy automático!
+### Opciones de Despliegue
 
-### Otras plataformas
+- **EC2 (AWS)** - Servidor propio con Nginx y SSL
+- **Vercel** - Recomendado para Next.js (deploy automático)
+- **Netlify** - Alternativa fácil y rápida
+- **GitHub Actions** - CI/CD automático
 
-Next.js se puede deployar en cualquier plataforma que soporte Node.js:
-- Netlify
-- AWS
-- Railway
-- DigitalOcean
+### Despliegue Rápido en EC2
+
+```bash
+# En tu servidor EC2
+cd ~/ARANDANO
+npm install
+npm run build
+pm2 start npm --name "arandano-app" -- start
+pm2 startup
+pm2 save
+```
+
+Para configuración completa de dominio y SSL, consulta [DEPLOY.md](./DEPLOY.md).
 
 ## 📝 Licencia
 

@@ -1,13 +1,20 @@
 # Configuración de Nginx para Arándano Café Bar
-# Copiar a: /etc/nginx/sites-available/arandano
-# Esta configuración funciona sin dominio (solo con IP pública)
-# Cuando tengas un dominio, actualiza 'server_name' con tu dominio
+# 
+# Este es un archivo de ejemplo. Para usar:
+# 1. Copia este archivo a /etc/nginx/sites-available/arandano
+# 2. Reemplaza 'arandanocafe.com' con tu dominio
+# 3. Ejecuta: sudo ln -s /etc/nginx/sites-available/arandano /etc/nginx/sites-enabled/
+# 4. Ejecuta: sudo nginx -t && sudo systemctl reload nginx
+# 5. Para SSL: sudo certbot --nginx -d tu-dominio.com -d www.tu-dominio.com
+#
+# Esta configuración es para HTTP (puerto 80)
+# Certbot agregará automáticamente la configuración HTTPS (puerto 443) cuando ejecutes certbot
 
 # Configuración HTTP (80) - Reverse Proxy a puerto 3000
 server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-    server_name _;  # Acepta cualquier hostname/IP
+    listen 80;
+    listen [::]:80;
+    server_name arandanocafe.com www.arandanocafe.com;
 
     # Logs
     access_log /var/log/nginx/arandano-access.log;
@@ -58,8 +65,14 @@ server {
     add_header X-XSS-Protection "1; mode=block" always;
 }
 
-# NOTA: Cuando tengas un dominio y quieras usar HTTPS (443):
-# 1. Actualiza 'server_name _;' a 'server_name tu-dominio.com www.tu-dominio.com;'
-# 2. Ejecuta: sudo certbot --nginx -d tu-dominio.com -d www.tu-dominio.com
-# 3. Certbot agregará automáticamente la configuración SSL y redirección HTTP -> HTTPS
+# NOTA IMPORTANTE:
+# Después de guardar este archivo, ejecuta:
+# 1. sudo nginx -t (verificar configuración)
+# 2. sudo systemctl reload nginx (recargar nginx)
+# 3. sudo certbot --nginx -d arandanocafe.com -d www.arandanocafe.com
+# 
+# Certbot modificará automáticamente este archivo para agregar:
+# - Configuración HTTPS (puerto 443)
+# - Redirección automática de HTTP a HTTPS
+# - Certificados SSL de Let's Encrypt
 
