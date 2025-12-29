@@ -6,7 +6,7 @@ import HowItWorks from '@/components/HowItWorks'
 import LocationSchedule from '@/components/LocationSchedule'
 import Footer from '@/components/Footer'
 import FloatingWhatsApp from '@/components/FloatingWhatsApp'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import WhatsAppIcon from '@/components/WhatsAppIcon'
 
 interface Product {
@@ -17,6 +17,8 @@ interface Product {
   size?: string
   category: 'cafe-caliente' | 'cafe-frio' | 'pasteleria' | 'combo' | 'coctel' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky'
   type: 'cafeteria' | 'bebida'
+  stock?: number
+  imageUrl?: string
 }
 
 interface CartItem extends Product {
@@ -63,61 +65,37 @@ export default function Home() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
   const [isCartModalOpen, setIsCartModalOpen] = useState(false)
+  const [allProducts, setAllProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
   const whatsappNumber = '573207909835'
 
-  // Productos de Cafetería
-  const productosCafeteria: Product[] = [
-    // Cafés Calientes
-    { id: 'cafe-negro', name: 'Café negro artesanal', price: 3800, description: 'Café artesanal preparado tradicionalmente, sin adiciones', category: 'cafe-caliente', type: 'cafeteria' },
-    { id: 'cafe-leche', name: 'Café artesanal con leche', price: 4200, description: 'Café artesanal suavizado con leche fresca', category: 'cafe-caliente', type: 'cafeteria' },
-    { id: 'cafe-aromatizado', name: 'Café aromatizado artesanal (canela / vainilla)', price: 5000, description: 'Café artesanal con esencia natural de canela o vainilla', category: 'cafe-caliente', type: 'cafeteria' },
-    { id: 'cafe-irlandes', name: 'Café irlandés', price: 10000, description: 'Café con whisky irlandés y crema batida', category: 'cafe-caliente', type: 'cafeteria' },
-    { id: 'carajillo', name: 'Carajillo', price: 8000, description: 'Café con licor, tradicional preparación', category: 'cafe-caliente', type: 'cafeteria' },
-    // Cafés Fríos
-    { id: 'cafe-frio', name: 'Café frío artesanal', price: 3800, description: 'Café artesanal servido frío, refrescante', category: 'cafe-frio', type: 'cafeteria' },
-    { id: 'cafe-helado', name: 'Café helado artesanal (affogato)', price: 10000, description: 'Helado bañado con café artesanal caliente', category: 'cafe-frio', type: 'cafeteria' },
-    { id: 'cafe-frio-leche', name: 'Café artesanal frío con leche', price: 4200, description: 'Café artesanal frío con leche, suave y refrescante', category: 'cafe-frio', type: 'cafeteria' },
-    // Pastelería
-    { id: 'pastel-dia', name: 'Pastel del día', price: 5000, description: 'Pastel casero recién preparado, variedad del día', category: 'pasteleria', type: 'cafeteria' },
-    { id: 'acompanante', name: 'Acompañante del día (Empanada, Buñuelo)', price: 2000, description: 'Delicioso acompañante recién hecho, opción del día', category: 'pasteleria', type: 'cafeteria' },
-    // Combos
-    { id: 'combo-cafe-pastel', name: 'Café artesanal caliente + pastel del día', price: 7000, description: 'Combo perfecto: café caliente artesanal acompañado de nuestro pastel del día', category: 'combo', type: 'cafeteria' },
-  ]
+  // Cargar productos desde la API
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const response = await fetch('/api/products')
+        const products = await response.json()
+        // Filtrar productos con stock > 0
+        const availableProducts = products.filter((p: Product) => (p.stock ?? 999) > 0)
+        setAllProducts(availableProducts)
+      } catch (error) {
+        console.error('Error loading products:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadProducts()
+  }, [])
 
-  // Productos de Bebidas
-  const productosBebidas: Product[] = [
-    // Cócteles
-    { id: 'coctel-arandano', name: 'Cóctel Arándano', price: 12000, description: 'Jugo de arándano, Campari y jugo de naranja (copa estándar)', category: 'coctel', type: 'bebida' },
-    // Vinos
-    { id: 'vino-tinto-copa', name: 'Vino Tinto Chile (Gato Negro / Santa Carolina)', price: 9000, size: 'Copa 150ml', category: 'vino', type: 'bebida' },
-    { id: 'vino-tinto-botella', name: 'Vino Tinto Chile (Gato Negro / Santa Carolina)', price: 42000, size: 'Botella 750ml', category: 'vino', type: 'bebida' },
-    { id: 'vino-blanco-copa', name: 'Vino Blanco Chile (Sauvignon Blanc)', price: 9000, size: 'Copa 150ml', category: 'vino', type: 'bebida' },
-    { id: 'vino-blanco-botella', name: 'Vino Blanco Chile (Sauvignon Blanc)', price: 40000, size: 'Botella 750ml', category: 'vino', type: 'bebida' },
-    { id: 'vino-rosado-copa', name: 'Vino Rosado Chile', price: 9500, size: 'Copa 150ml', category: 'vino', type: 'bebida' },
-    { id: 'vino-rosado-botella', name: 'Vino Rosado Chile', price: 44000, size: 'Botella 750ml', category: 'vino', type: 'bebida' },
-    // Vodka
-    { id: 'vodka-smirnoff-shot', name: 'Vodka Smirnoff', price: 11000, size: 'Shot 30ml', category: 'vodka', type: 'bebida' },
-    { id: 'vodka-smirnoff-botella', name: 'Vodka Smirnoff', price: 80000, size: 'Botella 750ml', category: 'vodka', type: 'bebida' },
-    { id: 'vodka-absolut-shot', name: 'Vodka Absolut', price: 12000, size: 'Shot 30ml', category: 'vodka', type: 'bebida' },
-    { id: 'vodka-absolut-botella', name: 'Vodka Absolut', price: 105000, size: 'Botella 750ml', category: 'vodka', type: 'bebida' },
-    { id: 'vodka-skyy-shot', name: 'Vodka Skyy', price: 11000, size: 'Shot 30ml', category: 'vodka', type: 'bebida' },
-    { id: 'vodka-skyy-botella', name: 'Vodka Skyy', price: 80000, size: 'Botella 750ml', category: 'vodka', type: 'bebida' },
-    // Ginebra
-    { id: 'gin-gordons-shot', name: 'Ginebra Gordon\'s', price: 12000, size: 'Shot 30ml', category: 'ginebra', type: 'bebida' },
-    { id: 'gin-gordons-botella', name: 'Ginebra Gordon\'s', price: 165000, size: 'Botella 750ml', category: 'ginebra', type: 'bebida' },
-    { id: 'gin-beefeater-shot', name: 'Ginebra Beefeater', price: 12000, size: 'Shot 30ml', category: 'ginebra', type: 'bebida' },
-    { id: 'gin-beefeater-botella', name: 'Ginebra Beefeater', price: 165000, size: 'Botella 750ml', category: 'ginebra', type: 'bebida' },
-    // Tequila
-    { id: 'tequila-jose-cuervo-shot', name: 'Tequila José Cuervo Especial', price: 12000, size: 'Shot 30ml', category: 'tequila', type: 'bebida' },
-    { id: 'tequila-jose-cuervo-botella', name: 'Tequila José Cuervo Especial', price: 155000, size: 'Botella 750ml', category: 'tequila', type: 'bebida' },
-    { id: 'tequila-olmeca-shot', name: 'Tequila Olmeca', price: 12000, size: 'Shot 30ml', category: 'tequila', type: 'bebida' },
-    { id: 'tequila-olmeca-botella', name: 'Tequila Olmeca', price: 155000, size: 'Botella 750ml', category: 'tequila', type: 'bebida' },
-    // Whisky
-    { id: 'whisky-old-parr-shot', name: 'Whisky Old Parr / Passport Scotch / Jack Daniel\'s', price: 14000, size: 'Shot 30ml', category: 'whisky', type: 'bebida' },
-    { id: 'whisky-old-parr-botella', name: 'Whisky Old Parr / Passport Scotch / Jack Daniel\'s', price: 195000, size: 'Botella 750ml', category: 'whisky', type: 'bebida' },
-  ]
+  const productosCafeteria = useMemo(() => 
+    allProducts.filter(p => p.type === 'cafeteria'),
+    [allProducts]
+  )
 
-  const allProducts = [...productosCafeteria, ...productosBebidas]
+  const productosBebidas = useMemo(() => 
+    allProducts.filter(p => p.type === 'bebida'),
+    [allProducts]
+  )
 
   // Filtrar productos
   const filteredProducts = useMemo(() => {
@@ -237,10 +215,23 @@ export default function Home() {
   const ProductCard = ({ product }: { product: Product }) => {
     const cartItem = cart.find((c) => c.id === product.id)
     const quantity = cartItem?.quantity || 0
+    const isOutOfStock = (product.stock ?? 999) <= 0
 
     return (
       <div className="bg-white border-2 border-stone-200 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 lg:p-6 hover:bg-stone-50 hover:border-berry-300 transition-all duration-300 hover:shadow-lg">
         <div className="flex flex-col gap-2 sm:gap-3 md:gap-4">
+          {product.imageUrl && (
+            <div className="w-full h-32 sm:h-40 bg-stone-100 rounded-lg overflow-hidden mb-2">
+              <img 
+                src={product.imageUrl} 
+                alt={product.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none'
+                }}
+              />
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <h3 className="font-display text-sm sm:text-base md:text-lg lg:text-xl font-bold text-berry-950 mb-1.5 sm:mb-2 md:mb-3 leading-tight break-words">
               {product.name}
@@ -258,10 +249,22 @@ export default function Home() {
             <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-berry-700">
               ${product.price.toLocaleString('es-CO')}
             </p>
+            {isOutOfStock && (
+              <p className="text-red-600 text-xs sm:text-sm font-medium mt-1">
+                Sin stock
+              </p>
+            )}
           </div>
           
           <div className="flex items-center gap-2 sm:gap-3 mt-auto">
-            {quantity > 0 ? (
+            {isOutOfStock ? (
+              <button
+                disabled
+                className="w-full bg-stone-300 text-stone-600 font-semibold text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg cursor-not-allowed"
+              >
+                Sin stock
+              </button>
+            ) : quantity > 0 ? (
               <>
                 <button
                   onClick={() => removeFromCart(product.id)}
@@ -275,7 +278,8 @@ export default function Home() {
                 </span>
                 <button
                   onClick={() => addToCart(product)}
-                  className="flex-1 sm:flex-none w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-berry-600 hover:bg-berry-700 active:bg-berry-800 text-white rounded-lg flex items-center justify-center font-bold text-base sm:text-lg md:text-xl transition-all duration-200 hover:scale-105 active:scale-95 shadow-md"
+                  disabled={isOutOfStock}
+                  className="flex-1 sm:flex-none w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-berry-600 hover:bg-berry-700 active:bg-berry-800 text-white rounded-lg flex items-center justify-center font-bold text-base sm:text-lg md:text-xl transition-all duration-200 hover:scale-105 active:scale-95 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Agregar al carrito"
                 >
                   +
@@ -284,7 +288,8 @@ export default function Home() {
             ) : (
               <button
                 onClick={() => addToCart(product)}
-                className="w-full sm:w-auto sm:flex-1 bg-berry-600 hover:bg-berry-700 active:bg-berry-800 text-white font-semibold text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 shadow-md flex items-center justify-center gap-1.5 sm:gap-2"
+                disabled={isOutOfStock}
+                className="w-full sm:w-auto sm:flex-1 bg-berry-600 hover:bg-berry-700 active:bg-berry-800 text-white font-semibold text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 shadow-md flex items-center justify-center gap-1.5 sm:gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Agregar al carrito"
               >
                 <CartIcon count={0} />
@@ -563,7 +568,12 @@ export default function Home() {
                 )}
 
                 {/* Products List */}
-                {filteredProducts.length === 0 ? (
+                {loading ? (
+                  <div className="bg-white rounded-xl p-12 text-center border border-stone-200">
+                    <div className="text-5xl mb-4">⏳</div>
+                    <p className="text-berry-600 text-lg font-semibold">Cargando productos...</p>
+                  </div>
+                ) : filteredProducts.length === 0 ? (
                   <div className="bg-white rounded-xl p-12 text-center border border-stone-200">
                     <div className="text-5xl mb-4">🔍</div>
                     <p className="text-berry-600 text-lg font-semibold">No se encontraron productos</p>

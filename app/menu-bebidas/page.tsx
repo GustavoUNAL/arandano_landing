@@ -4,15 +4,23 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import FloatingWhatsApp from '@/components/FloatingWhatsApp'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import WhatsAppIcon from '@/components/WhatsAppIcon'
 
-interface CartItem {
+interface Product {
   id: string
   name: string
   price: number
-  quantity: number
+  description?: string
+  category: string
+  type: 'cafeteria' | 'bebida'
+  stock?: number
+  imageUrl?: string
   size?: string
+}
+
+interface CartItem extends Product {
+  quantity: number
 }
 
 const CartIcon = ({ count }: { count: number }) => (
@@ -46,50 +54,36 @@ const CartIcon = ({ count }: { count: number }) => (
 
 export default function MenuBebidas() {
   const [cart, setCart] = useState<CartItem[]>([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
   const whatsappNumber = '573207909835'
 
-  const cocteles = [
-    { id: 'coctel-arandano', name: 'Cóctel Arándano', price: 12000, description: 'Jugo de arándano, Campari y jugo de naranja (copa estándar)' },
-  ]
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const response = await fetch('/api/products')
+        const allProducts = await response.json()
+        const bebidaProducts = allProducts.filter((p: Product) => 
+          p.type === 'bebida' && (p.stock ?? 999) > 0
+        )
+        setProducts(bebidaProducts)
+      } catch (error) {
+        console.error('Error loading products:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadProducts()
+  }, [])
 
-  const vinos = [
-    { id: 'vino-tinto-copa', name: 'Vino Tinto Chile (Gato Negro / Santa Carolina)', price: 9000, size: 'Copa 150ml' },
-    { id: 'vino-tinto-botella', name: 'Vino Tinto Chile (Gato Negro / Santa Carolina)', price: 42000, size: 'Botella 750ml' },
-    { id: 'vino-blanco-copa', name: 'Vino Blanco Chile (Sauvignon Blanc)', price: 9000, size: 'Copa 150ml' },
-    { id: 'vino-blanco-botella', name: 'Vino Blanco Chile (Sauvignon Blanc)', price: 40000, size: 'Botella 750ml' },
-    { id: 'vino-rosado-copa', name: 'Vino Rosado Chile', price: 9500, size: 'Copa 150ml' },
-    { id: 'vino-rosado-botella', name: 'Vino Rosado Chile', price: 44000, size: 'Botella 750ml' },
-  ]
+  const cocteles = products.filter(p => p.category === 'coctel')
+  const vinos = products.filter(p => p.category === 'vino')
+  const vodka = products.filter(p => p.category === 'vodka')
+  const ginebra = products.filter(p => p.category === 'ginebra')
+  const tequila = products.filter(p => p.category === 'tequila')
+  const whisky = products.filter(p => p.category === 'whisky')
 
-  const vodka = [
-    { id: 'vodka-smirnoff-shot', name: 'Vodka Smirnoff', price: 11000, size: 'Shot 30ml' },
-    { id: 'vodka-smirnoff-botella', name: 'Vodka Smirnoff', price: 80000, size: 'Botella 750ml' },
-    { id: 'vodka-absolut-shot', name: 'Vodka Absolut', price: 12000, size: 'Shot 30ml' },
-    { id: 'vodka-absolut-botella', name: 'Vodka Absolut', price: 105000, size: 'Botella 750ml' },
-    { id: 'vodka-skyy-shot', name: 'Vodka Skyy', price: 11000, size: 'Shot 30ml' },
-    { id: 'vodka-skyy-botella', name: 'Vodka Skyy', price: 80000, size: 'Botella 750ml' },
-  ]
-
-  const ginebra = [
-    { id: 'gin-gordons-shot', name: 'Ginebra Gordon\'s', price: 12000, size: 'Shot 30ml' },
-    { id: 'gin-gordons-botella', name: 'Ginebra Gordon\'s', price: 165000, size: 'Botella 750ml' },
-    { id: 'gin-beefeater-shot', name: 'Ginebra Beefeater', price: 12000, size: 'Shot 30ml' },
-    { id: 'gin-beefeater-botella', name: 'Ginebra Beefeater', price: 165000, size: 'Botella 750ml' },
-  ]
-
-  const tequila = [
-    { id: 'tequila-jose-cuervo-shot', name: 'Tequila José Cuervo Especial', price: 12000, size: 'Shot 30ml' },
-    { id: 'tequila-jose-cuervo-botella', name: 'Tequila José Cuervo Especial', price: 155000, size: 'Botella 750ml' },
-    { id: 'tequila-olmeca-shot', name: 'Tequila Olmeca', price: 12000, size: 'Shot 30ml' },
-    { id: 'tequila-olmeca-botella', name: 'Tequila Olmeca', price: 155000, size: 'Botella 750ml' },
-  ]
-
-  const whisky = [
-    { id: 'whisky-old-parr-shot', name: 'Whisky Old Parr / Passport Scotch / Jack Daniel\'s', price: 14000, size: 'Shot 30ml' },
-    { id: 'whisky-old-parr-botella', name: 'Whisky Old Parr / Passport Scotch / Jack Daniel\'s', price: 195000, size: 'Botella 750ml' },
-  ]
-
-  const addToCart = (item: { id: string; name: string; price: number; size?: string }) => {
+  const addToCart = (item: Product) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((cartItem) => cartItem.id === item.id)
       if (existingItem) {
@@ -147,13 +141,26 @@ export default function MenuBebidas() {
     window.open(whatsappUrl, '_blank')
   }
 
-  const MenuCard = ({ item }: { item: { id: string; name: string; price: number; size?: string; description?: string } }) => {
+  const MenuCard = ({ item }: { item: Product }) => {
     const cartItem = cart.find((c) => c.id === item.id)
     const quantity = cartItem?.quantity || 0
+    const isOutOfStock = (item.stock ?? 999) <= 0
 
     return (
       <div className="bg-white border-2 border-stone-200 rounded-xl p-4 sm:p-5 md:p-6 hover:bg-stone-50 hover:border-berry-300 transition-all duration-300 hover:shadow-lg">
         <div className="flex flex-col gap-3 sm:gap-4">
+          {item.imageUrl && (
+            <div className="w-full h-32 sm:h-40 bg-stone-100 rounded-lg overflow-hidden mb-2">
+              <img 
+                src={item.imageUrl} 
+                alt={item.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none'
+                }}
+              />
+            </div>
+          )}
           <div className="flex-1">
             <h3 className="font-display text-base sm:text-lg md:text-xl font-bold text-berry-950 mb-2 sm:mb-3 leading-tight">
               {item.name}
@@ -171,10 +178,22 @@ export default function MenuBebidas() {
             <p className="text-xl sm:text-2xl md:text-3xl font-bold text-berry-700">
               ${item.price.toLocaleString('es-CO')}
             </p>
+            {isOutOfStock && (
+              <p className="text-red-600 text-xs sm:text-sm font-medium mt-1">
+                Sin stock
+              </p>
+            )}
           </div>
           
           <div className="flex items-center gap-2 sm:gap-3">
-            {quantity > 0 ? (
+            {isOutOfStock ? (
+              <button
+                disabled
+                className="w-full bg-stone-300 text-stone-600 font-semibold text-sm sm:text-base px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg cursor-not-allowed"
+              >
+                Sin stock
+              </button>
+            ) : quantity > 0 ? (
               <>
                 <button
                   onClick={() => removeFromCart(item.id)}
@@ -188,7 +207,8 @@ export default function MenuBebidas() {
                 </span>
                 <button
                   onClick={() => addToCart(item)}
-                  className="flex-1 sm:flex-none w-10 h-10 sm:w-12 sm:h-12 bg-berry-600 hover:bg-berry-700 text-white rounded-lg flex items-center justify-center font-bold text-lg sm:text-xl transition-all duration-200 hover:scale-105 active:scale-95 shadow-md"
+                  disabled={isOutOfStock}
+                  className="flex-1 sm:flex-none w-10 h-10 sm:w-12 sm:h-12 bg-berry-600 hover:bg-berry-700 text-white rounded-lg flex items-center justify-center font-bold text-lg sm:text-xl transition-all duration-200 hover:scale-105 active:scale-95 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Agregar al carrito"
                 >
                   +
@@ -197,7 +217,8 @@ export default function MenuBebidas() {
             ) : (
               <button
                 onClick={() => addToCart(item)}
-                className="w-full sm:w-auto sm:flex-1 bg-berry-600 hover:bg-berry-700 text-white font-semibold text-sm sm:text-base px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 shadow-md flex items-center justify-center gap-2"
+                disabled={isOutOfStock}
+                className="w-full sm:w-auto sm:flex-1 bg-berry-600 hover:bg-berry-700 text-white font-semibold text-sm sm:text-base px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Agregar al carrito"
               >
                 <CartIcon count={0} />
@@ -243,90 +264,112 @@ export default function MenuBebidas() {
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
               {/* Menú */}
               <div className="lg:col-span-3 space-y-8 sm:space-y-10 md:space-y-12">
-                {/* Cócteles */}
-                <section>
-                  <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-berry-950 mb-4 sm:mb-6 md:mb-8 flex items-center gap-2 sm:gap-3">
-                    <span className="text-2xl sm:text-3xl">🍸</span>
-                    <span>COCTELES</span>
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
-                    {cocteles.map((item) => (
-                      <MenuCard key={item.id} item={item} />
-                    ))}
+                {loading ? (
+                  <div className="text-center py-12">
+                    <p className="text-berry-600 text-lg">Cargando productos...</p>
                   </div>
-                </section>
+                ) : (
+                  <>
+                    {/* Cócteles */}
+                    {cocteles.length > 0 && (
+                      <section>
+                        <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-berry-950 mb-4 sm:mb-6 md:mb-8 flex items-center gap-2 sm:gap-3">
+                          <span className="text-2xl sm:text-3xl">🍸</span>
+                          <span>COCTELES</span>
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
+                          {cocteles.map((item) => (
+                            <MenuCard key={item.id} item={item} />
+                          ))}
+                        </div>
+                      </section>
+                    )}
 
-                {/* Vinos */}
-                <section>
-                  <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-berry-950 mb-4 sm:mb-6 md:mb-8 flex items-center gap-2 sm:gap-3">
-                    <span className="text-2xl sm:text-3xl">🍷</span>
-                    <span>VINOS</span>
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
-                    {vinos.map((item) => (
-                      <MenuCard key={item.id} item={item} />
-                    ))}
-                  </div>
-                </section>
+                    {/* Vinos */}
+                    {vinos.length > 0 && (
+                      <section>
+                        <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-berry-950 mb-4 sm:mb-6 md:mb-8 flex items-center gap-2 sm:gap-3">
+                          <span className="text-2xl sm:text-3xl">🍷</span>
+                          <span>VINOS</span>
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
+                          {vinos.map((item) => (
+                            <MenuCard key={item.id} item={item} />
+                          ))}
+                        </div>
+                      </section>
+                    )}
 
-                {/* Licores Secos */}
-                <section>
-                  <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-berry-950 mb-4 sm:mb-6 md:mb-8">
-                    🥃 LICORES SECOS
-                  </h2>
+                    {/* Licores Secos */}
+                    {(vodka.length > 0 || ginebra.length > 0 || tequila.length > 0 || whisky.length > 0) && (
+                      <section>
+                        <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-berry-950 mb-4 sm:mb-6 md:mb-8">
+                          🥃 LICORES SECOS
+                        </h2>
 
-                  {/* Vodka */}
-                  <div className="mb-6 sm:mb-8">
-                    <h3 className="font-display text-xl sm:text-2xl font-bold text-berry-800 mb-4 sm:mb-6 flex items-center gap-2">
-                      <span>🍸</span>
-                      <span>Vodka</span>
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
-                      {vodka.map((item) => (
-                        <MenuCard key={item.id} item={item} />
-                      ))}
-                    </div>
-                  </div>
+                        {/* Vodka */}
+                        {vodka.length > 0 && (
+                          <div className="mb-6 sm:mb-8">
+                            <h3 className="font-display text-xl sm:text-2xl font-bold text-berry-800 mb-4 sm:mb-6 flex items-center gap-2">
+                              <span>🍸</span>
+                              <span>Vodka</span>
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
+                              {vodka.map((item) => (
+                                <MenuCard key={item.id} item={item} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
-                  {/* Ginebra */}
-                  <div className="mb-6 sm:mb-8">
-                    <h3 className="font-display text-xl sm:text-2xl font-bold text-berry-800 mb-4 sm:mb-6 flex items-center gap-2">
-                      <span>🍸</span>
-                      <span>Ginebra</span>
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
-                      {ginebra.map((item) => (
-                        <MenuCard key={item.id} item={item} />
-                      ))}
-                    </div>
-                  </div>
+                        {/* Ginebra */}
+                        {ginebra.length > 0 && (
+                          <div className="mb-6 sm:mb-8">
+                            <h3 className="font-display text-xl sm:text-2xl font-bold text-berry-800 mb-4 sm:mb-6 flex items-center gap-2">
+                              <span>🍸</span>
+                              <span>Ginebra</span>
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
+                              {ginebra.map((item) => (
+                                <MenuCard key={item.id} item={item} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
-                  {/* Tequila */}
-                  <div className="mb-6 sm:mb-8">
-                    <h3 className="font-display text-xl sm:text-2xl font-bold text-berry-800 mb-4 sm:mb-6 flex items-center gap-2">
-                      <span>🥃</span>
-                      <span>Tequila</span>
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
-                      {tequila.map((item) => (
-                        <MenuCard key={item.id} item={item} />
-                      ))}
-                    </div>
-                  </div>
+                        {/* Tequila */}
+                        {tequila.length > 0 && (
+                          <div className="mb-6 sm:mb-8">
+                            <h3 className="font-display text-xl sm:text-2xl font-bold text-berry-800 mb-4 sm:mb-6 flex items-center gap-2">
+                              <span>🥃</span>
+                              <span>Tequila</span>
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
+                              {tequila.map((item) => (
+                                <MenuCard key={item.id} item={item} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
-                  {/* Whisky */}
-                  <div className="mb-6 sm:mb-8">
-                    <h3 className="font-display text-xl sm:text-2xl font-bold text-berry-800 mb-4 sm:mb-6 flex items-center gap-2">
-                      <span>🥃</span>
-                      <span>Whisky</span>
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
-                      {whisky.map((item) => (
-                        <MenuCard key={item.id} item={item} />
-                      ))}
-                    </div>
-                  </div>
-                </section>
+                        {/* Whisky */}
+                        {whisky.length > 0 && (
+                          <div className="mb-6 sm:mb-8">
+                            <h3 className="font-display text-xl sm:text-2xl font-bold text-berry-800 mb-4 sm:mb-6 flex items-center gap-2">
+                              <span>🥃</span>
+                              <span>Whisky</span>
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
+                              {whisky.map((item) => (
+                                <MenuCard key={item.id} item={item} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </section>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Carrito */}
@@ -402,7 +445,10 @@ export default function MenuBebidas() {
                                   {item.quantity}
                                 </span>
                                 <button
-                                  onClick={() => addToCart({ id: item.id, name: item.name, price: item.price, size: item.size })}
+                                  onClick={() => {
+                                    const product = products.find(p => p.id === item.id)
+                                    if (product) addToCart(product)
+                                  }}
                                   className="w-7 h-7 sm:w-8 sm:h-8 bg-berry-600 hover:bg-berry-700 text-white rounded-lg flex items-center justify-center text-sm sm:text-base font-bold transition-all duration-200 hover:scale-110 active:scale-95"
                                 >
                                   +
