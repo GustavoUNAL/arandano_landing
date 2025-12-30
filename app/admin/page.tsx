@@ -13,6 +13,13 @@ interface Product {
   stock: number
   imageUrl?: string
   size?: string
+  minStock?: number
+  cost?: number
+  purchaseDate?: string
+  lot?: string
+  supplier?: string
+  lastSaleDate?: string
+  totalSold?: number
 }
 
 const CATEGORIES = {
@@ -60,6 +67,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     checkAuth()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const checkAuth = async () => {
@@ -141,6 +149,7 @@ export default function AdminPage() {
       const interval = setInterval(loadPendingTasks, 60000) // Actualizar cada minuto
       return () => clearInterval(interval)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated])
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -62,6 +62,7 @@ export default function AnalyticsPage() {
     if (isAuthenticated) {
       loadAnalytics()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, dateRange])
 
   const checkAuth = async () => {

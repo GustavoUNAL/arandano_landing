@@ -53,7 +53,7 @@ export function saveTasks(tasks: Task[]): void {
   }
 }
 
-export function createTask(task: Omit<Task, 'id' | 'createdAt'>): Task {
+export function createTask(task: Omit<Task, 'id' | 'createdAt' | 'completed'>): Task {
   const tasks = getTasks()
   const newTask: Task = {
     ...task,

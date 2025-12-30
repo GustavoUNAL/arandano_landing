@@ -86,6 +86,7 @@ export default function TasksPage() {
     if (isAuthenticated) {
       loadTasks()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, filter])
 
   const checkAuth = async () => {
