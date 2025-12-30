@@ -11,6 +11,14 @@ export interface Product {
   stock: number
   imageUrl?: string
   size?: string
+  // Campos de inventario inteligente
+  minStock?: number // Stock mínimo para alertas
+  cost?: number // Costo unitario
+  purchaseDate?: string // Fecha de compra (ISO string)
+  lot?: string // Lote / número de lote
+  supplier?: string // Proveedor
+  lastSaleDate?: string // Última fecha de venta (ISO string)
+  totalSold?: number // Cantidad total vendida
 }
 
 const dataFilePath = path.join(process.cwd(), 'data', 'products.json')

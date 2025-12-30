@@ -48,12 +48,9 @@ const CartIcon = ({ count }: { count: number }) => (
       <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
     </svg>
     {count > 0 && (
-      <>
-        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center animate-bounce">
+      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center shadow-lg">
           {count > 9 ? '9+' : count}
         </span>
-        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center opacity-75 animate-ping"></span>
-      </>
     )}
   </div>
 )
@@ -166,7 +163,7 @@ export default function Home() {
     return cart.reduce((total, item) => total + item.quantity, 0)
   }
 
-  const sendWhatsAppOrder = () => {
+  const sendWhatsAppOrder = async () => {
     if (cart.length === 0) return
 
     const orderNumber = Math.floor(1000 + Math.random() * 9000)
@@ -179,11 +176,35 @@ export default function Home() {
       .join('\n')
 
     const total = getTotal()
+    
+    // Registrar la venta en el sistema
+    try {
+      await fetch('/api/sales', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart.map(item => ({
+            productId: item.id,
+            productName: item.name,
+            quantity: item.quantity,
+            unitPrice: item.price
+          })),
+          total,
+          channel: 'whatsapp'
+        })
+      })
+    } catch (error) {
+      console.error('Error registrando venta:', error)
+    }
+
     const message = encodeURIComponent(
       `Hola, quiero hacer un pedido en Arándano Café Bar:\n\n📦 Orden #${orderNumber}\n\n${orderItems}\n\n💰 Total: $${total.toLocaleString('es-CO')}`
     )
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`
     window.open(whatsappUrl, '_blank')
+    
+    // Limpiar el carrito después de enviar
+    clearCart()
   }
 
   const categoryLabels: Record<string, string> = {
@@ -646,8 +667,8 @@ export default function Home() {
 
               {/* Cart - Hidden on mobile, shown on desktop */}
               <div className="hidden lg:block lg:col-span-1 order-1 lg:order-2">
-                <div className={`lg:sticky lg:top-24 xl:top-28 bg-white border-2 ${getTotalItems() > 0 ? 'border-berry-400' : 'border-stone-200'} rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-lg lg:shadow-xl transition-all duration-300`}>
-                  <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <div className={`lg:sticky lg:top-24 xl:top-28 bg-white border-2 ${getTotalItems() > 0 ? 'border-berry-400' : 'border-stone-200'} rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-lg lg:shadow-xl transition-all duration-300 flex flex-col ${cart.length > 0 ? 'max-h-[calc(100vh-8rem)]' : ''}`}>
+                  <div className="flex items-center justify-between mb-4 sm:mb-6 flex-shrink-0">
                     <h3 className="font-display text-xl sm:text-2xl font-bold text-berry-950 flex items-center gap-2">
                       <CartIcon count={getTotalItems()} />
                       <span>Carrito</span>
@@ -663,7 +684,7 @@ export default function Home() {
                   </div>
 
                   {cart.length === 0 ? (
-                    <div className="text-center py-8 sm:py-12">
+                    <div className="text-center py-8 sm:py-12 flex-shrink-0">
                       <div className="text-4xl sm:text-5xl mb-3 sm:mb-4">🛒</div>
                       <p className="text-berry-600 text-sm sm:text-base">
                         Tu carrito está vacío
@@ -673,8 +694,8 @@ export default function Home() {
                       </p>
                     </div>
                   ) : (
-                    <>
-                      <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6 max-h-[400px] overflow-y-auto pr-1 sm:pr-2">
+                    <div className="flex flex-col flex-1 min-h-0">
+                      <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6 flex-1 overflow-y-auto pr-1 sm:pr-2 min-h-0">
                         {cart.map((item) => (
                           <div
                             key={item.id}
@@ -731,7 +752,7 @@ export default function Home() {
                         ))}
                       </div>
 
-                      <div className="border-t-2 border-stone-300 pt-4 sm:pt-5 mb-4 sm:mb-6">
+                      <div className="border-t-2 border-stone-300 pt-4 sm:pt-5 mb-4 sm:mb-6 flex-shrink-0">
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-lg sm:text-xl text-berry-950">Total:</span>
                           <span className="font-bold text-xl sm:text-2xl md:text-3xl text-berry-700">
@@ -743,12 +764,12 @@ export default function Home() {
                       <button
                         onClick={sendWhatsAppOrder}
                         disabled={cart.length === 0}
-                        className="w-full bg-[#25D366] hover:bg-[#20BA5A] disabled:bg-stone-300 disabled:cursor-not-allowed text-white font-semibold text-sm sm:text-base md:text-lg px-4 sm:px-6 py-3 sm:py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 sm:gap-3"
+                        className="w-full bg-[#25D366] hover:bg-[#20BA5A] disabled:bg-stone-300 disabled:cursor-not-allowed text-white font-semibold text-sm sm:text-base md:text-lg px-4 sm:px-6 py-3 sm:py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 sm:gap-3 flex-shrink-0"
                       >
                         <WhatsAppIcon size={20} className="text-white" />
                         <span>Enviar pedido</span>
                       </button>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
@@ -772,10 +793,10 @@ export default function Home() {
           onClick={() => setIsCartModalOpen(false)}
         >
           <div
-            className="bg-white rounded-t-2xl shadow-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-t-2xl shadow-2xl w-full max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b border-stone-200 px-4 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-white border-b border-stone-200 px-4 py-4 flex items-center justify-between flex-shrink-0 z-10">
               <h3 className="font-display text-xl font-bold text-berry-950 flex items-center gap-2">
                 <CartIcon count={getTotalItems()} />
                 <span>Carrito</span>
@@ -802,9 +823,9 @@ export default function Home() {
               </button>
             </div>
 
-            <div className="p-4">
+            <div className="p-4 flex flex-col flex-1 min-h-0 overflow-hidden">
               {cart.length === 0 ? (
-                <div className="text-center py-12">
+                <div className="text-center py-12 flex-shrink-0">
                   <div className="text-5xl mb-4">🛒</div>
                   <p className="text-berry-600 text-base">
                     Tu carrito está vacío
@@ -814,8 +835,8 @@ export default function Home() {
                   </p>
                 </div>
               ) : (
-                <>
-                  <div className="space-y-3 mb-4 max-h-[50vh] overflow-y-auto">
+                <div className="flex flex-col flex-1 min-h-0">
+                  <div className="space-y-3 mb-4 flex-1 overflow-y-auto min-h-0">
                     {cart.map((item) => (
                       <div
                         key={item.id}
@@ -872,7 +893,7 @@ export default function Home() {
                     ))}
                   </div>
 
-                  <div className="border-t-2 border-stone-300 pt-4 mb-4">
+                  <div className="border-t-2 border-stone-300 pt-4 mb-4 flex-shrink-0">
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-xl text-berry-950">Total:</span>
                       <span className="font-bold text-2xl text-berry-700">
@@ -881,7 +902,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 flex-shrink-0">
                     {getTotalItems() > 0 && (
                       <button
                         onClick={() => {
@@ -905,7 +926,7 @@ export default function Home() {
                       <span>Enviar pedido</span>
                     </button>
                   </div>
-                </>
+                </div>
               )}
             </div>
           </div>

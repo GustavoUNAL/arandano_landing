@@ -40,7 +40,7 @@
     "category": "cafe-caliente",
     "type": "cafeteria",
     "stock": 999,
-    "imageUrl": "",
+    "imageUrl": "https://gourmet.iprospect.cl/wp-content/uploads/2024/12/IRISH-CAFE.jpg",
     "size": ""
   },
   {
@@ -51,7 +51,7 @@
     "category": "cafe-caliente",
     "type": "cafeteria",
     "stock": 999,
-    "imageUrl": "",
+    "imageUrl": "https://imag.bonviveur.com/carajillo.jpg",
     "size": ""
   },
   {
