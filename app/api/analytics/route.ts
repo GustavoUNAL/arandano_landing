@@ -3,6 +3,8 @@ import { getProducts } from '@/lib/products'
 import { calculateKPIs, calculateProductAnalytics } from '@/lib/analytics'
 import { getSales } from '@/lib/sales'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
