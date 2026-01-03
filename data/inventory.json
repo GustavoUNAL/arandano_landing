@@ -1,0 +1,715 @@
+[
+  {
+    "id": "inv-1767483353901-kx2to8c6y",
+    "name": "Ponqué Ramo",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "Und",
+    "unitPrice": 0,
+    "totalValue": 0,
+    "code": "PAN-001",
+    "notes": "Producto de panadería empacado"
+  },
+  {
+    "id": "inv-1767483353905-q1dvhqyit",
+    "name": "Poker latas",
+    "category": "Bebidas",
+    "quantity": 82,
+    "unit": "330 ml",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353905-uqwddngmo",
+    "name": "Poker latones",
+    "category": "Bebidas",
+    "quantity": 24,
+    "unit": "473 ml",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353905-sje33kukt",
+    "name": "Águila lata",
+    "category": "Bebidas",
+    "quantity": 6,
+    "unit": "330 ml",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353905-uteot8kax",
+    "name": "Águila latón",
+    "category": "Bebidas",
+    "quantity": 3,
+    "unit": "473 ml",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353905-n6abubp0m",
+    "name": "Club Colombia Trigo",
+    "category": "Bebidas",
+    "quantity": 2,
+    "unit": "330 ml",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353905-rculqbs47",
+    "name": "Four Loko",
+    "category": "Bebidas",
+    "quantity": 2,
+    "unit": "473 ml",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353908-y9q9alloi",
+    "name": "Tequila Olmeca Blanco",
+    "category": "Bebidas",
+    "quantity": 1,
+    "unit": "Botella",
+    "unitPrice": 0,
+    "totalValue": 0,
+    "code": "—",
+    "notes": "Stock alto"
+  },
+  {
+    "id": "inv-1767483353908-u55v6zs0u",
+    "name": "Aperitivo Campari Milano",
+    "category": "Bebidas",
+    "quantity": 1,
+    "unit": "Botella",
+    "unitPrice": 0,
+    "totalValue": 0,
+    "code": "—",
+    "notes": "Importado"
+  },
+  {
+    "id": "inv-1767483353908-mr8nlyywm",
+    "name": "Ginebra Gordon’s",
+    "category": "Bebidas",
+    "quantity": 1,
+    "unit": "Botella",
+    "unitPrice": 0,
+    "totalValue": 0,
+    "code": "—",
+    "notes": "Clásico"
+  },
+  {
+    "id": "inv-1767483353908-y3b53io8x",
+    "name": "Whisky Duggan’s Dew",
+    "category": "Bebidas",
+    "quantity": 1,
+    "unit": "Botella",
+    "unitPrice": 0,
+    "totalValue": 0,
+    "code": "—",
+    "notes": "Oferta limitada"
+  },
+  {
+    "id": "inv-1767483353908-dlloi6yve",
+    "name": "Vodka Moskovskaya",
+    "category": "Bebidas",
+    "quantity": 1,
+    "unit": "Botella",
+    "unitPrice": 0,
+    "totalValue": 0,
+    "code": "—",
+    "notes": "Buena rotación"
+  },
+  {
+    "id": "inv-1767483353908-yecytqq00",
+    "name": "Vino tinto Cata Vieja",
+    "category": "Bebidas",
+    "quantity": 2,
+    "unit": "Botella",
+    "unitPrice": 0,
+    "totalValue": 0,
+    "code": "—",
+    "notes": "Promoción 2x1"
+  },
+  {
+    "id": "inv-1767483353908-c1ooa4r20",
+    "name": "Smirnoff Tamarindo",
+    "category": "Bebidas",
+    "quantity": 2,
+    "unit": "Botella",
+    "unitPrice": 0,
+    "totalValue": 0,
+    "code": "—",
+    "notes": "Nuevo sabor"
+  },
+  {
+    "id": "inv-1767483353908-gmu0i0sa7",
+    "name": "Vino Cruzares",
+    "category": "Bebidas",
+    "quantity": 1,
+    "unit": "Botella",
+    "unitPrice": 0,
+    "totalValue": 0,
+    "code": "—",
+    "notes": "Económico"
+  },
+  {
+    "id": "inv-1767483353908-gqfhutm09",
+    "name": "Vino Santa Elena",
+    "category": "Bebidas",
+    "quantity": 2,
+    "unit": "Botella",
+    "unitPrice": 0,
+    "totalValue": 0,
+    "code": "—",
+    "notes": "Cosecha 2024"
+  },
+  {
+    "id": "inv-1767483353913-4i345h1fq",
+    "name": "Sirope arándanos",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "1.000 ml",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353913-hjd3452mp",
+    "name": "Base cóctel Brissart granadina",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "1.000 ml",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353913-r7pklcu5h",
+    "name": "Base cóctel Brissart maracuyá",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "1.000 ml",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353913-qr9j8fm77",
+    "name": "Syrup Finest Call Blue Curacao",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "1.000 ml",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353913-jb8887h9r",
+    "name": "Base cóctel Finest Call Triple Sec",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "1.000 ml",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353913-kkkqg7bwc",
+    "name": "Bretaña personal x6",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353913-ttz27x8mn",
+    "name": "Bretaña",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "1.500 ml",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353913-8vb41ck7n",
+    "name": "Tajín",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353913-1889mnu82",
+    "name": "Hielo bolsa",
+    "category": "Insumos",
+    "quantity": 2,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353917-ser4dw1e8",
+    "name": "Leche Alquería semidescremada",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "1.000 ml",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-u5qggrpko",
+    "name": "Papelera / Basurero negra",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "20 L",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-cjvtdvidh",
+    "name": "Mug Bourbon Nashville Café",
+    "category": "Activos",
+    "quantity": 3,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-xiwz9ce3l",
+    "name": "Pocillo café semi liso",
+    "category": "Activos",
+    "quantity": 3,
+    "unit": "98.8 cc",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-a1032pils",
+    "name": "Cucharilla larga",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-dwks9mhx0",
+    "name": "Colador de café",
+    "category": "Activos",
+    "quantity": 2,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-5f90elhbh",
+    "name": "Bombillo Philips 5.5W",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-qi0havlkm",
+    "name": "Vasos plásticos para vino",
+    "category": "Activos",
+    "quantity": 6,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-mgo7govsz",
+    "name": "Vasos cerveza grande",
+    "category": "Activos",
+    "quantity": 6,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-wd3u0uxxd",
+    "name": "Vasos cerveza pequeño",
+    "category": "Activos",
+    "quantity": 6,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-24prmoz3t",
+    "name": "Copa coctel margarita",
+    "category": "Activos",
+    "quantity": 5,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-6vsarl10x",
+    "name": "Vaso Moscow Mule",
+    "category": "Activos",
+    "quantity": 6,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-vgarot6ts",
+    "name": "Vaso tinto",
+    "category": "Activos",
+    "quantity": 3,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-gq1yk5z5x",
+    "name": "Prensa francesa",
+    "category": "Activos",
+    "quantity": 2,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-ufr8l4s5s",
+    "name": "Termo café",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-0k33w9jh5",
+    "name": "Domos para tortas",
+    "category": "Activos",
+    "quantity": 2,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-jeaol1ls8",
+    "name": "Nevera usada",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-3dj8riyht",
+    "name": "Parlante HK Onyx 2",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353921-heejtdc7k",
+    "name": "Combo mesa y sillas",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353922-5h0n8o5j0",
+    "name": "Mesa Rimax",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353922-9gphugxoi",
+    "name": "Tabla para picar",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353922-nsw7b21rh",
+    "name": "Cafetera moka",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353922-18gprsfx1",
+    "name": "Cenicero",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353922-q3qmv2vcv",
+    "name": "Letrero luminoso",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353922-s7hrvd8qf",
+    "name": "Cuchillos x3",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353922-qqq2lpoo0",
+    "name": "Ganchos sujetadores",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353922-rw7y8iafe",
+    "name": "Copas shot x12",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353922-ikhc4vyhq",
+    "name": "Encendedor para velas",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353922-j063f9gib",
+    "name": "Exprimidor metálico",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353922-vtavwaccv",
+    "name": "Tijera",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353922-f1f60u9ca",
+    "name": "Velas x12",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353922-yn99umkho",
+    "name": "Caja de madera",
+    "category": "Activos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353924-3w6k0hshd",
+    "name": "Limpión microfibra carros",
+    "category": "Limpieza",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353924-6uvxurwqu",
+    "name": "Jabón de loza",
+    "category": "Limpieza",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353924-efb85j7pj",
+    "name": "Desodorante Speed Stick Ultra Gel",
+    "category": "Limpieza",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353924-vvzbksqce",
+    "name": "Trapeador",
+    "category": "Limpieza",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353924-uubm2bavd",
+    "name": "Escoba",
+    "category": "Limpieza",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353924-fiy9i5pzj",
+    "name": "Recogedor",
+    "category": "Limpieza",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353924-64dp267fv",
+    "name": "Papel toalla Scott",
+    "category": "Limpieza",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353924-qfyuq638h",
+    "name": "Servilletas",
+    "category": "Limpieza",
+    "quantity": 2,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353924-kzrwa9a7p",
+    "name": "Papel Higiénico",
+    "category": "Limpieza",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353925-pg25jxttu",
+    "name": "Café Sello Rojo",
+    "category": "Insumos",
+    "quantity": 2,
+    "unit": "450 g",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353926-6ynvm45dt",
+    "name": "Café Instantáneo",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "47 g",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353926-tgjwb0599",
+    "name": "Azúcar",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "1 L",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353926-wdcg82vjf",
+    "name": "Aromáticas",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353926-i7v18gj8j",
+    "name": "Bolsa para colar café",
+    "category": "Insumos",
+    "quantity": 2,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353927-pnyzk4zys",
+    "name": "Caja de Icopor",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353927-jqtkdgrno",
+    "name": "Vaso de Icopor",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353927-xxcwuqi28",
+    "name": "Vaso de Papel",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "9 oz",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353927-set8m797g",
+    "name": "Copa Desechable Pequeña",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353927-mfm31g7cv",
+    "name": "Palillos",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "N/A",
+    "unitPrice": 0,
+    "totalValue": 0
+  },
+  {
+    "id": "inv-1767483353927-9qciixvtf",
+    "name": "Tapa para Vaso",
+    "category": "Insumos",
+    "quantity": 1,
+    "unit": "6 oz",
+    "unitPrice": 0,
+    "totalValue": 0
+  }
+]

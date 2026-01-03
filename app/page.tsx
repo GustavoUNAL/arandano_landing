@@ -15,7 +15,7 @@ interface Product {
   price: number
   description?: string
   size?: string
-  category: 'cafe-caliente' | 'cafe-frio' | 'pasteleria' | 'combo' | 'coctel' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky'
+  category: 'cafe-caliente' | 'cafe-frio' | 'pasteleria' | 'combo' | 'cerveza' | 'coctel' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky'
   type: 'cafeteria' | 'bebida'
   stock?: number
   imageUrl?: string
@@ -27,7 +27,7 @@ interface CartItem extends Product {
 
 // Orden de categorías (constantes fuera del componente para mejor rendimiento)
 const CAFETERIA_CATEGORY_ORDER: Product['category'][] = ['cafe-caliente', 'cafe-frio', 'pasteleria', 'combo']
-const BEBIDAS_CATEGORY_ORDER: Product['category'][] = ['coctel', 'vino', 'vodka', 'ginebra', 'tequila', 'whisky']
+const BEBIDAS_CATEGORY_ORDER: Product['category'][] = ['cerveza', 'coctel', 'vino', 'vodka', 'ginebra', 'tequila', 'whisky']
 
 const CartIcon = ({ count }: { count: number }) => (
   <div className="relative inline-flex items-center justify-center">
@@ -212,6 +212,7 @@ export default function Home() {
     'cafe-frio': 'Cafés Artesanales Fríos',
     'pasteleria': 'Pastelería y Acompañante',
     'combo': 'Combos Arándano',
+    'cerveza': 'Cervezas',
     'coctel': 'Cócteles',
     'vino': 'Vinos',
     'vodka': 'Vodka',
@@ -225,6 +226,7 @@ export default function Home() {
     'cafe-frio': '🧊',
     'pasteleria': '🍰',
     'combo': '✨',
+    'cerveza': '🍺',
     'coctel': '🍸',
     'vino': '🍷',
     'vodka': '🍸',

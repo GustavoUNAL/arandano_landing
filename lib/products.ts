@@ -6,7 +6,7 @@ export interface Product {
   name: string
   price: number
   description?: string
-  category: 'cafe-caliente' | 'cafe-frio' | 'pasteleria' | 'combo' | 'coctel' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky'
+  category: 'cafe-caliente' | 'cafe-frio' | 'pasteleria' | 'combo' | 'coctel' | 'cerveza' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky'
   type: 'cafeteria' | 'bebida'
   stock: number
   imageUrl?: string

@@ -8,7 +8,7 @@ interface Product {
   name: string
   price: number
   description?: string
-  category: 'cafe-caliente' | 'cafe-frio' | 'pasteleria' | 'combo' | 'coctel' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky'
+  category: 'cafe-caliente' | 'cafe-frio' | 'pasteleria' | 'combo' | 'coctel' | 'cerveza' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky'
   type: 'cafeteria' | 'bebida'
   stock: number
   imageUrl?: string
@@ -30,6 +30,7 @@ const CATEGORIES = {
     { value: 'combo', label: 'Combos' }
   ],
   bebida: [
+    { value: 'cerveza', label: 'Cervezas' },
     { value: 'coctel', label: 'Cócteles' },
     { value: 'vino', label: 'Vinos' },
     { value: 'vodka', label: 'Vodka' },
@@ -49,6 +50,7 @@ export default function AdminPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [alert, setAlert] = useState<{ type: 'success' | 'error', message: string } | null>(null)
   const [pendingTasks, setPendingTasks] = useState<any[]>([])
+  const [activeTab, setActiveTab] = useState<'products' | 'inventory'>('products')
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -142,6 +144,7 @@ export default function AdminPage() {
       console.error('Error loading tasks:', error)
     }
   }
+
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -347,83 +350,115 @@ export default function AdminPage() {
           </div>
         )}
 
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-berry-950">
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-berry-950">
               Panel de Administración
             </h1>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
               <button
                 onClick={() => router.push('/analytics')}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
               >
                 📊 Analytics
               </button>
               <button
                 onClick={() => router.push('/expenses')}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors"
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
               >
                 💰 Gastos
               </button>
               <button
                 onClick={() => router.push('/tasks')}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
               >
                 ✅ Tareas
               </button>
               <button
+                onClick={() => router.push('/inventory')}
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
+              >
+                📦 Inventario
+              </button>
+              <button
                 onClick={() => router.push('/')}
-                className="px-4 py-2 text-berry-600 hover:text-berry-800 text-sm font-medium"
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-berry-600 hover:text-berry-800 text-xs sm:text-sm font-medium border border-berry-300 rounded-lg"
               >
                 Ver sitio
               </button>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
               >
-                Cerrar Sesión
+                Salir
               </button>
             </div>
           </div>
 
-          {/* Formulario */}
-          <form onSubmit={handleSubmit} className="space-y-4 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          {/* Tabs para móvil */}
+          <div className="flex sm:hidden gap-2 mb-4 border-b border-stone-200">
+            <button
+              onClick={() => setActiveTab('products')}
+              className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'products'
+                  ? 'border-berry-600 text-berry-600'
+                  : 'border-transparent text-stone-500'
+              }`}
+            >
+              Productos
+            </button>
+            <button
+              onClick={() => setActiveTab('inventory')}
+              className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'inventory'
+                  ? 'border-berry-600 text-berry-600'
+                  : 'border-transparent text-stone-500'
+              }`}
+            >
+              Inventario
+            </button>
+          </div>
+
+          {/* Formulario - Oculto en móvil cuando está en tab de inventario */}
+          <div className={`${activeTab === 'inventory' ? 'hidden sm:block' : ''}`}>
+            <form onSubmit={handleSubmit} className="space-y-4 mb-6 sm:mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-sm font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
                   Nombre del Producto *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
                   Precio (COP) *
                 </label>
                 <input
                   type="number"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
                   required
                   min="0"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
                   Tipo *
                 </label>
                 <select
                   value={formData.type}
                   onChange={(e) => handleTypeChange(e.target.value as Product['type'])}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
                   required
                 >
                   <option value="cafeteria">Cafetería</option>
@@ -432,13 +467,13 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
                   Categoría *
                 </label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value as Product['category'] })}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
                   required
                 >
                   {CATEGORIES[formData.type].map(cat => (
@@ -450,20 +485,20 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
                   Stock
                 </label>
                 <input
                   type="number"
                   value={formData.stock}
                   onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
                   min="0"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
                   Tamaño (opcional)
                 </label>
                 <input
@@ -471,12 +506,12 @@ export default function AdminPage() {
                   value={formData.size}
                   onChange={(e) => setFormData({ ...formData, size: e.target.value })}
                   placeholder="Ej: Copa 150ml, Botella 750ml"
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
                   URL de la Imagen
                 </label>
                 <input
@@ -484,29 +519,29 @@ export default function AdminPage() {
                   value={formData.imageUrl}
                   onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
                   placeholder="https://ejemplo.com/imagen.jpg"
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
                   Descripción
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
                 />
               </div>
 
               {/* Sección de Inventario Inteligente */}
               <div className="md:col-span-2 border-t border-stone-300 pt-4 mt-4">
-                <h3 className="text-lg font-semibold text-berry-950 mb-4">📦 Inventario Inteligente</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-berry-950 mb-4">📦 Inventario Inteligente</h3>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
                   Stock Mínimo (para alertas)
                 </label>
                 <input
@@ -514,13 +549,13 @@ export default function AdminPage() {
                   value={formData.minStock}
                   onChange={(e) => setFormData({ ...formData, minStock: e.target.value })}
                   placeholder="Ej: 10"
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
                   min="0"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
                   Costo Unitario (COP)
                 </label>
                 <input
@@ -528,25 +563,25 @@ export default function AdminPage() {
                   value={formData.cost}
                   onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
                   placeholder="Ej: 2000"
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
                   min="0"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
                   Fecha de Compra
                 </label>
                 <input
                   type="date"
                   value={formData.purchaseDate}
                   onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
                   Lote / Número de Lote
                 </label>
                 <input
@@ -554,12 +589,12 @@ export default function AdminPage() {
                   value={formData.lot}
                   onChange={(e) => setFormData({ ...formData, lot: e.target.value })}
                   placeholder="Ej: LOTE-2024-001"
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
                   Proveedor
                 </label>
                 <input
@@ -567,30 +602,31 @@ export default function AdminPage() {
                   value={formData.supplier}
                   onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
                   placeholder="Ej: Distribuidora XYZ"
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
                 />
               </div>
             </div>
 
-            <div className="flex gap-4">
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-2 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
-              >
-                {editingProduct ? 'Actualizar Producto' : 'Crear Producto'}
-              </button>
-              {editingProduct && (
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:col-span-2">
                 <button
-                  type="button"
-                  onClick={resetForm}
-                  className="px-6 py-2 bg-stone-300 hover:bg-stone-400 text-stone-800 font-semibold rounded-lg transition-colors"
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 px-6 py-3 sm:py-2 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 text-base sm:text-sm"
                 >
-                  Cancelar
+                  {editingProduct ? 'Actualizar Producto' : 'Crear Producto'}
                 </button>
-              )}
-            </div>
-          </form>
+                {editingProduct && (
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="flex-1 sm:flex-none px-6 py-3 sm:py-2 bg-stone-300 hover:bg-stone-400 text-stone-800 font-semibold rounded-lg transition-colors text-base sm:text-sm"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
 
           {/* Widget de Tareas Pendientes */}
           {pendingTasks.length > 0 && (
@@ -666,9 +702,86 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* Vista de Inventario (Móvil) */}
+          {activeTab === 'inventory' && (
+            <div className="sm:hidden space-y-4 mb-6">
+              <h2 className="text-xl font-bold text-berry-950 mb-4">📦 Inventario Rápido</h2>
+              <div className="space-y-3">
+                {products
+                  .filter(p => p.stock !== undefined)
+                  .sort((a, b) => {
+                    // Ordenar: stock bajo primero, luego por nombre
+                    const aLow = (a.minStock || 0) > 0 && a.stock <= (a.minStock || 0);
+                    const bLow = (b.minStock || 0) > 0 && b.stock <= (b.minStock || 0);
+                    if (aLow !== bLow) return aLow ? -1 : 1;
+                    return a.name.localeCompare(b.name);
+                  })
+                  .map((product) => {
+                    const isLowStock = (product.minStock || 0) > 0 && product.stock <= (product.minStock || 0);
+                    return (
+                      <div
+                        key={product.id}
+                        className={`bg-white border-2 rounded-lg p-4 ${
+                          isLowStock ? 'border-red-300 bg-red-50' : 'border-stone-200'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-base text-berry-950 mb-1">
+                              {product.name}
+                            </h3>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className={`px-2 py-1 rounded text-xs ${
+                                product.type === 'cafeteria' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {product.type}
+                              </span>
+                              <span className="text-xs text-stone-500">{product.category}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-sm text-stone-600">Stock: <span className={`font-bold ${isLowStock ? 'text-red-600' : 'text-berry-700'}`}>{product.stock}</span></div>
+                                {product.minStock && (
+                                  <div className="text-xs text-stone-500">Mín: {product.minStock}</div>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm font-semibold text-berry-700">
+                                  ${product.price.toLocaleString('es-CO')}
+                                </div>
+                                {product.cost && (
+                                  <div className="text-xs text-stone-500">
+                                    Costo: ${product.cost.toLocaleString('es-CO')}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={() => handleEdit(product)}
+                            className="flex-1 px-3 py-2 bg-berry-600 hover:bg-berry-700 text-white rounded text-sm font-medium transition-colors"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleDelete(product.id)}
+                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium transition-colors"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
           {/* Lista de Productos */}
-          <div>
-            <h2 className="text-2xl font-bold text-berry-950 mb-4">
+          <div className={activeTab === 'inventory' ? 'hidden sm:block' : ''}>
+            <h2 className="text-xl sm:text-2xl font-bold text-berry-950 mb-4">
               Productos ({products.length})
             </h2>
             {loading && !products.length ? (
@@ -676,55 +789,104 @@ export default function AdminPage() {
             ) : products.length === 0 ? (
               <div className="text-center py-8 text-berry-600">No hay productos</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse bg-white rounded-lg overflow-hidden">
-                  <thead className="bg-berry-600 text-white">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-semibold">Nombre</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold">Tipo</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold">Categoría</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold">Precio</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold">Stock</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {products.map((product) => (
-                      <tr key={product.id} className="border-b border-stone-200 hover:bg-stone-50">
-                        <td className="px-4 py-3 text-sm">{product.name}</td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            product.type === 'cafeteria' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {product.type}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm">{product.category}</td>
-                        <td className="px-4 py-3 text-sm font-semibold">
-                          ${product.price.toLocaleString('es-CO')}
-                        </td>
-                        <td className="px-4 py-3 text-sm">{product.stock}</td>
-                        <td className="px-4 py-3 text-sm">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleEdit(product)}
-                              className="px-3 py-1 bg-berry-600 hover:bg-berry-700 text-white rounded text-xs transition-colors"
-                            >
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => handleDelete(product.id)}
-                              className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs transition-colors"
-                            >
-                              Eliminar
-                            </button>
+              <>
+                {/* Vista Cards (Móvil) */}
+                <div className="sm:hidden space-y-3">
+                  {products.map((product) => (
+                    <div
+                      key={product.id}
+                      className="bg-white border-2 border-stone-200 rounded-lg p-4"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-base text-berry-950 mb-1">
+                            {product.name}
+                          </h3>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              product.type === 'cafeteria' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {product.type}
+                            </span>
+                            <span className="text-xs text-stone-500">{product.category}</span>
                           </div>
-                        </td>
+                          <div className="text-sm font-semibold text-berry-700 mb-1">
+                            ${product.price.toLocaleString('es-CO')}
+                          </div>
+                          <div className="text-sm text-stone-600">
+                            Stock: <span className="font-semibold">{product.stock}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={() => handleEdit(product)}
+                          className="flex-1 px-3 py-2 bg-berry-600 hover:bg-berry-700 text-white rounded text-sm font-medium transition-colors"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDelete(product.id)}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium transition-colors"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Vista Tabla (Desktop) */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full border-collapse bg-white rounded-lg overflow-hidden">
+                    <thead className="bg-berry-600 text-white">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Nombre</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Tipo</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Categoría</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Precio</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Stock</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Acciones</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {products.map((product) => (
+                        <tr key={product.id} className="border-b border-stone-200 hover:bg-stone-50">
+                          <td className="px-4 py-3 text-sm">{product.name}</td>
+                          <td className="px-4 py-3 text-sm">
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              product.type === 'cafeteria' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {product.type}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm">{product.category}</td>
+                          <td className="px-4 py-3 text-sm font-semibold">
+                            ${product.price.toLocaleString('es-CO')}
+                          </td>
+                          <td className="px-4 py-3 text-sm">{product.stock}</td>
+                          <td className="px-4 py-3 text-sm">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleEdit(product)}
+                                className="px-3 py-1 bg-berry-600 hover:bg-berry-700 text-white rounded text-xs transition-colors"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                onClick={() => handleDelete(product.id)}
+                                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs transition-colors"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>

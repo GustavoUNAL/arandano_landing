@@ -76,6 +76,7 @@ export default function MenuBebidas() {
     loadProducts()
   }, [])
 
+  const cervezas = products.filter(p => p.category === 'cerveza')
   const cocteles = products.filter(p => p.category === 'coctel')
   const vinos = products.filter(p => p.category === 'vino')
   const vodka = products.filter(p => p.category === 'vodka')
@@ -270,6 +271,21 @@ export default function MenuBebidas() {
                   </div>
                 ) : (
                   <>
+                    {/* Cervezas */}
+                    {cervezas.length > 0 && (
+                      <section>
+                        <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-berry-950 mb-4 sm:mb-6 md:mb-8 flex items-center gap-2 sm:gap-3">
+                          <span className="text-2xl sm:text-3xl">🍺</span>
+                          <span>CERVEZAS</span>
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
+                          {cervezas.map((item) => (
+                            <MenuCard key={item.id} item={item} />
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
                     {/* Cócteles */}
                     {cocteles.length > 0 && (
                       <section>

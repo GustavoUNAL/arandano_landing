@@ -2,7 +2,7 @@
   {
     "id": "cafe-negro",
     "name": "Café negro artesanal",
-    "price": 3800,
+    "price": 4000,
     "description": "Café artesanal preparado tradicionalmente, sin adiciones",
     "category": "cafe-caliente",
     "type": "cafeteria",
@@ -13,7 +13,7 @@
   {
     "id": "cafe-leche",
     "name": "Café artesanal con leche",
-    "price": 4200,
+    "price": 5000,
     "description": "Café artesanal suavizado con leche fresca",
     "category": "cafe-caliente",
     "type": "cafeteria",
@@ -123,7 +123,7 @@
   {
     "id": "coctel-arandano",
     "name": "Cóctel Arándano",
-    "price": 12000,
+    "price": 15000,
     "description": "Jugo de arándano, Campari y jugo de naranja (copa estándar)",
     "category": "coctel",
     "type": "bebida",
@@ -226,7 +226,7 @@
     "description": "",
     "category": "tequila",
     "type": "bebida",
-    "stock": 999,
+    "stock": 1,
     "imageUrl": "",
     "size": "Shot 30ml"
   },
@@ -276,7 +276,7 @@
   },
   {
     "name": "Cóctel de campari ",
-    "price": 9000,
+    "price": 15000,
     "description": "Delicioso coctel seco  y dulce con jugo de naranja ",
     "category": "coctel",
     "type": "bebida",
@@ -289,29 +289,29 @@
     "name": "Cerveza nacional lata 330 cm3",
     "price": 4500,
     "description": "Refrescante cerveza fría en lata ",
-    "category": "coctel",
+    "category": "cerveza",
     "type": "bebida",
     "stock": 82,
     "imageUrl": "",
-    "size": "Lata ",
+    "size": "330 cm3",
     "id": "bebida-1767479019479-3o7nh7r94"
   },
   {
-    "name": "Cerveza latón ",
+    "name": "Cerveza latón",
     "price": 7000,
-    "description": "Efes ante latón de cerveza fría poker ",
-    "category": "coctel",
+    "description": "Latón de cerveza fría",
+    "category": "cerveza",
     "type": "bebida",
     "stock": 24,
     "imageUrl": "",
-    "size": "473 cm 3",
+    "size": "475 cm3",
     "id": "bebida-1767479120963-4kz08cd59"
   },
   {
-    "name": "Cerveza importada ",
+    "name": "Cerveza importada",
     "price": 5000,
-    "description": "",
-    "category": "coctel",
+    "description": "Refrescante cerveza importada",
+    "category": "cerveza",
     "type": "bebida",
     "stock": 6,
     "imageUrl": "",
@@ -319,19 +319,8 @@
     "id": "bebida-1767479151158-qexx4bxbl"
   },
   {
-    "name": "Cerveza importada",
-    "price": 5000,
-    "description": "Refrescante lata de cerveza importada ",
-    "category": "cafe-caliente",
-    "type": "cafeteria",
-    "stock": 36,
-    "imageUrl": "",
-    "size": "Pequeña ",
-    "id": "cafeteria-1767479239133-fmoohfrsr"
-  },
-  {
     "name": "Coctel de soda sin licor ",
-    "price": 8000,
+    "price": 15000,
     "description": "Refrescante bebida con soda de sabores ",
     "category": "coctel",
     "type": "bebida",
@@ -342,7 +331,7 @@
   },
   {
     "name": "Hervido de fruta de temporada ",
-    "price": 5000,
+    "price": 15000,
     "description": "Bebida caliente con fruta y licor a elección artesanal o aguardiente de temporada a elección, ideal para abrigar y como aperitivo ",
     "category": "coctel",
     "type": "bebida",
@@ -353,7 +342,7 @@
   },
   {
     "name": "Margaritas",
-    "price": 10000,
+    "price": 15000,
     "description": "Bebida con tequila refrescante con limón triple sec y limón ",
     "category": "coctel",
     "type": "bebida",
