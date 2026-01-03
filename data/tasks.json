@@ -1,1 +1,63 @@
-[]
+[
+  {
+    "title": "chapa baño",
+    "description": "",
+    "category": "mantenimiento",
+    "priority": "media",
+    "dueDate": "2025-12-31",
+    "tags": [],
+    "id": "task-1767114831259-z7wufpdg0",
+    "createdAt": "2025-12-30T17:13:51.259Z",
+    "completed": false
+  },
+  {
+    "title": "cambiar letrero",
+    "description": "",
+    "category": "mantenimiento",
+    "priority": "media",
+    "tags": [],
+    "id": "task-1767114858953-htd8x2gzm",
+    "createdAt": "2025-12-30T17:14:18.953Z",
+    "completed": false
+  },
+  {
+    "title": "crear gmail",
+    "description": "",
+    "category": "marketing",
+    "priority": "media",
+    "tags": [],
+    "id": "task-1767114872739-gbyd0n9ug",
+    "createdAt": "2025-12-30T17:14:32.739Z",
+    "completed": false
+  },
+  {
+    "title": "crear redes y ws",
+    "description": "",
+    "category": "marketing",
+    "priority": "media",
+    "tags": [],
+    "id": "task-1767114883721-sajf6ihq1",
+    "createdAt": "2025-12-30T17:14:43.721Z",
+    "completed": false
+  },
+  {
+    "title": "comprar colador de café",
+    "description": "",
+    "category": "inventario",
+    "priority": "media",
+    "tags": [],
+    "id": "task-1767114917354-7z1rhppl0",
+    "createdAt": "2025-12-30T17:15:17.354Z",
+    "completed": false
+  },
+  {
+    "title": "comprar escurridor",
+    "description": "",
+    "category": "inventario",
+    "priority": "media",
+    "tags": [],
+    "id": "task-1767114967126-mpebodcgz",
+    "createdAt": "2025-12-30T17:16:07.126Z",
+    "completed": false
+  }
+]

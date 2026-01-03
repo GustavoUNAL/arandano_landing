@@ -101,7 +101,7 @@
   {
     "id": "acompanante",
     "name": "Acompañante del día (Empanada, Buñuelo)",
-    "price": 2000,
+    "price": 3000,
     "description": "Delicioso acompañante recién hecho, opción del día",
     "category": "pasteleria",
     "type": "cafeteria",
@@ -112,7 +112,7 @@
   {
     "id": "combo-cafe-pastel",
     "name": "Café artesanal caliente + pastel del día",
-    "price": 7000,
+    "price": 12000,
     "description": "Combo perfecto: café caliente artesanal acompañado de nuestro pastel del día",
     "category": "combo",
     "type": "cafeteria",
@@ -132,68 +132,13 @@
     "size": ""
   },
   {
-    "id": "vino-tinto-copa",
-    "name": "Vino Tinto Chile (Gato Negro / Santa Carolina)",
-    "price": 9000,
-    "description": "",
-    "category": "vino",
-    "type": "bebida",
-    "stock": 999,
-    "imageUrl": "",
-    "size": "Copa 150ml"
-  },
-  {
     "id": "vino-tinto-botella",
-    "name": "Vino Tinto Chile (Gato Negro / Santa Carolina)",
-    "price": 42000,
+    "name": "Botella vino Tinto Chile Santa Helena",
+    "price": 75000,
     "description": "",
     "category": "vino",
     "type": "bebida",
-    "stock": 999,
-    "imageUrl": "",
-    "size": "Botella 750ml"
-  },
-  {
-    "id": "vino-blanco-copa",
-    "name": "Vino Blanco Chile (Sauvignon Blanc)",
-    "price": 9000,
-    "description": "",
-    "category": "vino",
-    "type": "bebida",
-    "stock": 999,
-    "imageUrl": "",
-    "size": "Copa 150ml"
-  },
-  {
-    "id": "vino-blanco-botella",
-    "name": "Vino Blanco Chile (Sauvignon Blanc)",
-    "price": 40000,
-    "description": "",
-    "category": "vino",
-    "type": "bebida",
-    "stock": 999,
-    "imageUrl": "",
-    "size": "Botella 750ml"
-  },
-  {
-    "id": "vino-rosado-copa",
-    "name": "Vino Rosado Chile",
-    "price": 9500,
-    "description": "",
-    "category": "vino",
-    "type": "bebida",
-    "stock": 999,
-    "imageUrl": "",
-    "size": "Copa 150ml"
-  },
-  {
-    "id": "vino-rosado-botella",
-    "name": "Vino Rosado Chile",
-    "price": 44000,
-    "description": "",
-    "category": "vino",
-    "type": "bebida",
-    "stock": 999,
+    "stock": 2,
     "imageUrl": "",
     "size": "Botella 750ml"
   },
@@ -201,10 +146,10 @@
     "id": "vodka-smirnoff-shot",
     "name": "Vodka Smirnoff",
     "price": 11000,
-    "description": "",
+    "description": "Delicioso licor sabor a tamarindo idealmente servido frío ",
     "category": "vodka",
     "type": "bebida",
-    "stock": 999,
+    "stock": 2,
     "imageUrl": "",
     "size": "Shot 30ml"
   },
@@ -220,48 +165,15 @@
     "size": "Botella 750ml"
   },
   {
-    "id": "vodka-absolut-shot",
-    "name": "Vodka Absolut",
-    "price": 12000,
-    "description": "",
-    "category": "vodka",
-    "type": "bebida",
-    "stock": 999,
-    "imageUrl": "",
-    "size": "Shot 30ml"
-  },
-  {
-    "id": "vodka-absolut-botella",
-    "name": "Vodka Absolut",
-    "price": 105000,
-    "description": "",
-    "category": "vodka",
-    "type": "bebida",
-    "stock": 999,
-    "imageUrl": "",
-    "size": "Botella 750ml"
-  },
-  {
-    "id": "vodka-skyy-shot",
-    "name": "Vodka Skyy",
-    "price": 11000,
-    "description": "",
-    "category": "vodka",
-    "type": "bebida",
-    "stock": 999,
-    "imageUrl": "",
-    "size": "Shot 30ml"
-  },
-  {
     "id": "vodka-skyy-botella",
-    "name": "Vodka Skyy",
-    "price": 80000,
-    "description": "",
+    "name": "Vodka moskaya",
+    "price": 12000,
+    "description": "Delicioso Shot de vodka acompañado con hielo y rodaja de limón ideal para prender la noche  ",
     "category": "vodka",
     "type": "bebida",
-    "stock": 999,
+    "stock": 1,
     "imageUrl": "",
-    "size": "Botella 750ml"
+    "size": "Shot"
   },
   {
     "id": "gin-gordons-shot",
@@ -286,17 +198,6 @@
     "size": "Botella 750ml"
   },
   {
-    "id": "gin-beefeater-shot",
-    "name": "Ginebra Beefeater",
-    "price": 12000,
-    "description": "",
-    "category": "ginebra",
-    "type": "bebida",
-    "stock": 999,
-    "imageUrl": "",
-    "size": "Shot 30ml"
-  },
-  {
     "id": "gin-beefeater-botella",
     "name": "Ginebra Beefeater",
     "price": 165000,
@@ -306,17 +207,6 @@
     "stock": 999,
     "imageUrl": "",
     "size": "Botella 750ml"
-  },
-  {
-    "id": "tequila-jose-cuervo-shot",
-    "name": "Tequila José Cuervo Especial",
-    "price": 12000,
-    "description": "",
-    "category": "tequila",
-    "type": "bebida",
-    "stock": 999,
-    "imageUrl": "",
-    "size": "Shot 30ml"
   },
   {
     "id": "tequila-jose-cuervo-botella",
@@ -363,14 +253,113 @@
     "size": "Shot 30ml"
   },
   {
-    "id": "whisky-old-parr-botella",
-    "name": "Whisky Old Parr / Passport Scotch / Jack Daniel's",
-    "price": 195000,
-    "description": "",
-    "category": "whisky",
+    "name": "Copa de vino chileno ",
+    "price": 10000,
+    "description": "Cautivante Bebida refrescante para compartir en una amena charla con todo el sabor de la uva latinoamericana ",
+    "category": "vino",
     "type": "bebida",
-    "stock": 999,
+    "stock": 2,
     "imageUrl": "",
-    "size": "Botella 750ml"
+    "size": "Copa",
+    "id": "bebida-1767478125019-7gnyg8glz"
+  },
+  {
+    "name": "Cóctel moscowmule",
+    "price": 15000,
+    "description": "Con todo el sabor de Moscú bebida refrescante con hielo, cerveza, limón y vodka ",
+    "category": "coctel",
+    "type": "bebida",
+    "stock": 1,
+    "imageUrl": "",
+    "size": "Vaso ",
+    "id": "bebida-1767478306369-c8s8nr6nh"
+  },
+  {
+    "name": "Cóctel de campari ",
+    "price": 9000,
+    "description": "Delicioso coctel seco  y dulce con jugo de naranja ",
+    "category": "coctel",
+    "type": "bebida",
+    "stock": 1,
+    "imageUrl": "",
+    "size": "Copa",
+    "id": "bebida-1767478463497-c2aya0ta0"
+  },
+  {
+    "name": "Cerveza nacional lata 330 cm3",
+    "price": 4500,
+    "description": "Refrescante cerveza fría en lata ",
+    "category": "coctel",
+    "type": "bebida",
+    "stock": 82,
+    "imageUrl": "",
+    "size": "Lata ",
+    "id": "bebida-1767479019479-3o7nh7r94"
+  },
+  {
+    "name": "Cerveza latón ",
+    "price": 7000,
+    "description": "Efes ante latón de cerveza fría poker ",
+    "category": "coctel",
+    "type": "bebida",
+    "stock": 24,
+    "imageUrl": "",
+    "size": "473 cm 3",
+    "id": "bebida-1767479120963-4kz08cd59"
+  },
+  {
+    "name": "Cerveza importada ",
+    "price": 5000,
+    "description": "",
+    "category": "coctel",
+    "type": "bebida",
+    "stock": 6,
+    "imageUrl": "",
+    "size": "",
+    "id": "bebida-1767479151158-qexx4bxbl"
+  },
+  {
+    "name": "Cerveza importada",
+    "price": 5000,
+    "description": "Refrescante lata de cerveza importada ",
+    "category": "cafe-caliente",
+    "type": "cafeteria",
+    "stock": 36,
+    "imageUrl": "",
+    "size": "Pequeña ",
+    "id": "cafeteria-1767479239133-fmoohfrsr"
+  },
+  {
+    "name": "Coctel de soda sin licor ",
+    "price": 8000,
+    "description": "Refrescante bebida con soda de sabores ",
+    "category": "coctel",
+    "type": "bebida",
+    "stock": 20,
+    "imageUrl": "",
+    "size": "Vaso ",
+    "id": "bebida-1767479422734-8ofoa07j2"
+  },
+  {
+    "name": "Hervido de fruta de temporada ",
+    "price": 5000,
+    "description": "Bebida caliente con fruta y licor a elección artesanal o aguardiente de temporada a elección, ideal para abrigar y como aperitivo ",
+    "category": "coctel",
+    "type": "bebida",
+    "stock": 20,
+    "imageUrl": "",
+    "size": "Tasa",
+    "id": "bebida-1767479537737-5pcmv20sn"
+  },
+  {
+    "name": "Margaritas",
+    "price": 10000,
+    "description": "Bebida con tequila refrescante con limón triple sec y limón ",
+    "category": "coctel",
+    "type": "bebida",
+    "stock": 10,
+    "imageUrl": "",
+    "size": "Copa",
+    "id": "bebida-1767479680271-wp5qa9j7m"
   }
 ]
