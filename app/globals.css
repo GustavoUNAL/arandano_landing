@@ -102,6 +102,245 @@ html {
   animation: bounce-horizontal 2s ease-in-out infinite;
 }
 
+/* Minimalist Menu Styles */
+.menu-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: #000;
+  color: #fff;
+}
+
+.menu-header {
+  margin-bottom: 3rem;
+}
+
+.menu-title {
+  font-size: clamp(2rem, 8vw, 6rem);
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.menu-category-item {
+  width: 100%;
+  max-width: 600px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.menu-category-item a {
+  display: block;
+  padding: 1rem 2rem;
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: #fff;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border-bottom: 1px solid transparent;
+}
+
+.menu-category-item a:hover {
+  border-bottom-color: #fff;
+  opacity: 0.8;
+}
+
+/* Menu Item Pages */
+.menu-item-container {
+  min-height: 100vh;
+  background-color: #000;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-item-content {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+.menu-item-image-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.menu-item-image-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: #1a1a1a;
+  background-image: linear-gradient(135deg, #1a1a1a 0%, #000 100%);
+}
+
+.menu-item-text {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 2rem;
+  padding-top: 4rem;
+  padding-bottom: 8rem;
+  display: flex;
+  flex-direction: column;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.menu-category-title {
+  font-size: clamp(3rem, 20dvw, 8rem);
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  margin-bottom: 3rem;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+  padding: 1rem 0;
+}
+
+.menu-item-name {
+  flex: 1;
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  font-weight: 300;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.menu-item-name .menu-item-detail {
+  display: block;
+  font-size: clamp(0.75rem, 2vw, 1rem);
+  font-weight: 200;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 0.5rem;
+  line-height: 1.5;
+}
+
+.menu-item-price {
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  font-weight: 300;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.menu-divider {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 0;
+}
+
+.menu-loading {
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Navigation */
+.menu-navigation {
+  position: fixed;
+  bottom: 2rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.menu-back-button,
+.menu-whatsapp {
+  pointer-events: auto;
+}
+
+.menu-back-button a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  color: #fff;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.menu-back-button a:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.menu-back-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.menu-whatsapp-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: rgba(37, 211, 102, 0.9);
+  border-radius: 50%;
+  color: #fff;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.menu-whatsapp-link:hover {
+  background-color: rgba(37, 211, 102, 1);
+  transform: scale(1.1);
+}
+
+.menu-whatsapp-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .menu-item-text {
+    padding: 1.5rem;
+    padding-top: 3rem;
+    padding-bottom: 7rem;
+  }
+
+  .menu-category-title {
+    margin-bottom: 2rem;
+  }
+
+  .menu-item {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .menu-item-price {
+    align-self: flex-end;
+  }
+
+  .menu-navigation {
+    padding: 0 1rem;
+  }
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -184,3 +423,330 @@ html {
   animation: bounce-horizontal 2s ease-in-out infinite;
 }
 
+/* Minimalist Menu Styles */
+.menu-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: #000;
+  color: #fff;
+}
+
+.menu-header {
+  margin-bottom: 3rem;
+}
+
+.menu-title {
+  font-size: clamp(2rem, 8vw, 6rem);
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.menu-category-item {
+  width: 100%;
+  max-width: 600px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.menu-category-item a {
+  display: block;
+  padding: 1rem 2rem;
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: #fff;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border-bottom: 1px solid transparent;
+}
+
+.menu-category-item a:hover {
+  border-bottom-color: #fff;
+  opacity: 0.8;
+}
+
+/* Menu Item Pages */
+.menu-item-container {
+  min-height: 100vh;
+  background-color: #000;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-item-content {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+.menu-item-image-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.menu-item-image-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: #1a1a1a;
+  background-image: linear-gradient(135deg, #1a1a1a 0%, #000 100%);
+}
+
+.menu-item-text {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 2rem;
+  padding-top: 4rem;
+  padding-bottom: 8rem;
+  display: flex;
+  flex-direction: column;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.menu-category-title {
+  font-size: clamp(3rem, 20dvw, 8rem);
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  margin-bottom: 3rem;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+  padding: 1rem 0;
+}
+
+.menu-item-name {
+  flex: 1;
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  font-weight: 300;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.menu-item-name .menu-item-detail {
+  display: block;
+  font-size: clamp(0.75rem, 2vw, 1rem);
+  font-weight: 200;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 0.5rem;
+  line-height: 1.5;
+}
+
+.menu-item-price {
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  font-weight: 300;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.menu-divider {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 0;
+}
+
+.menu-loading {
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Navigation */
+.menu-navigation {
+  position: fixed;
+  bottom: 2rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.menu-back-button,
+.menu-whatsapp {
+  pointer-events: auto;
+}
+
+.menu-back-button a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  color: #fff;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.menu-back-button a:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.menu-back-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.menu-whatsapp-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: rgba(37, 211, 102, 0.9);
+  border-radius: 50%;
+  color: #fff;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.menu-whatsapp-link:hover {
+  background-color: rgba(37, 211, 102, 1);
+  transform: scale(1.1);
+}
+
+.menu-whatsapp-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .menu-item-text {
+    padding: 1.5rem;
+    padding-top: 3rem;
+    padding-bottom: 7rem;
+  }
+
+  .menu-category-title {
+    margin-bottom: 2rem;
+  }
+
+  .menu-item {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .menu-item-price {
+    align-self: flex-end;
+  }
+
+  .menu-navigation {
+    padding: 0 1rem;
+  }
+}
+
+
+/* Menu Container Left Aligned */
+.menu-container-left {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 2rem;
+  padding-top: 4rem;
+  background-color: #000;
+  color: #fff;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.menu-header-left {
+  margin-bottom: 3rem;
+  width: 100%;
+}
+
+.menu-title-left {
+  font-size: clamp(2rem, 8vw, 6rem);
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+  text-align: left;
+}
+
+.menu-category-item-left {
+  width: 100%;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.menu-category-item-left a {
+  display: block;
+  padding: 0.75rem 0;
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: #fff;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border-bottom: 1px solid transparent;
+}
+
+.menu-category-item-left a:hover {
+  border-bottom-color: #fff;
+  opacity: 0.8;
+}
+
+/* Carta Category Animation for Mobile */
+@keyframes carta-underline-pulse {
+  0%, 100% {
+    border-bottom-color: transparent;
+  }
+  50% {
+    border-bottom-color: rgba(125, 66, 137, 0.5);
+  }
+}
+
+.carta-category-link {
+  position: relative;
+}
+
+@media (max-width: 640px) {
+  .carta-category-link {
+    animation: carta-underline-pulse 3s ease-in-out infinite;
+  }
+  
+  .carta-category-link:nth-child(1) {
+    animation-delay: 0s;
+  }
+  
+  .carta-category-link:nth-child(2) {
+    animation-delay: 0.5s;
+  }
+  
+  .carta-category-link:nth-child(3) {
+    animation-delay: 1s;
+  }
+  
+  .carta-category-link:nth-child(4) {
+    animation-delay: 1.5s;
+  }
+}

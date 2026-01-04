@@ -57,7 +57,7 @@
   {
     "id": "cafe-frio",
     "name": "Café frío artesanal",
-    "price": 3800,
+    "price": 4000,
     "description": "Café artesanal servido frío, refrescante",
     "category": "cafe-frio",
     "type": "cafeteria",
@@ -79,7 +79,7 @@
   {
     "id": "cafe-frio-leche",
     "name": "Café artesanal frío con leche",
-    "price": 4200,
+    "price": 5000,
     "description": "Café artesanal frío con leche, suave y refrescante",
     "category": "cafe-frio",
     "type": "cafeteria",
@@ -90,7 +90,7 @@
   {
     "id": "pastel-dia",
     "name": "Pastel del día",
-    "price": 5000,
+    "price": 7000,
     "description": "Pastel casero recién preparado, variedad del día",
     "category": "pasteleria",
     "type": "cafeteria",
@@ -103,6 +103,17 @@
     "name": "Acompañante del día (Empanada, Buñuelo)",
     "price": 3000,
     "description": "Delicioso acompañante recién hecho, opción del día",
+    "category": "pasteleria",
+    "type": "cafeteria",
+    "stock": 999,
+    "imageUrl": "",
+    "size": ""
+  },
+  {
+    "id": "sandwich-dia",
+    "name": "Sándwich del día",
+    "price": 10000,
+    "description": "Delicioso sándwich preparado con ingredientes frescos y seleccionados",
     "category": "pasteleria",
     "type": "cafeteria",
     "stock": 999,
@@ -286,37 +297,81 @@
     "id": "bebida-1767478463497-c2aya0ta0"
   },
   {
-    "name": "Cerveza nacional lata 330 cm3",
+    "id": "cerveza-poker-330",
+    "name": "Cerveza Poker 330cm3",
     "price": 4500,
-    "description": "Refrescante cerveza fría en lata ",
+    "description": "Cerveza colombiana Poker, servida bien fría.",
     "category": "cerveza",
     "type": "bebida",
-    "stock": 82,
+    "stock": 999,
     "imageUrl": "",
-    "size": "330 cm3",
-    "id": "bebida-1767479019479-3o7nh7r94"
+    "size": "330 cm3"
   },
   {
-    "name": "Cerveza latón",
+    "id": "cerveza-aguila-330",
+    "name": "Cerveza Águila 330cm3",
+    "price": 4500,
+    "description": "Cerveza colombiana Águila, servida bien fría.",
+    "category": "cerveza",
+    "type": "bebida",
+    "stock": 999,
+    "imageUrl": "",
+    "size": "330 cm3"
+  },
+  {
+    "id": "cerveza-club-colombia-330",
+    "name": "Cerveza Club Colombia 330cm3",
+    "price": 4500,
+    "description": "Cerveza colombiana Club Colombia, servida bien fría.",
+    "category": "cerveza",
+    "type": "bebida",
+    "stock": 999,
+    "imageUrl": "",
+    "size": "330 cm3"
+  },
+  {
+    "id": "cerveza-poker-laton",
+    "name": "Cerveza Poker Latón 475cm3",
     "price": 7000,
-    "description": "Latón de cerveza fría",
+    "description": "Cerveza colombiana Poker, servida bien fría.",
     "category": "cerveza",
     "type": "bebida",
-    "stock": 24,
+    "stock": 999,
     "imageUrl": "",
-    "size": "475 cm3",
-    "id": "bebida-1767479120963-4kz08cd59"
+    "size": "475 cm3"
   },
   {
-    "name": "Cerveza importada",
+    "id": "cerveza-heineken",
+    "name": "Cerveza Heineken",
     "price": 5000,
-    "description": "Refrescante cerveza importada",
+    "description": "Cerveza importada Heineken, servida bien fría.",
     "category": "cerveza",
     "type": "bebida",
-    "stock": 6,
+    "stock": 999,
     "imageUrl": "",
-    "size": "",
-    "id": "bebida-1767479151158-qexx4bxbl"
+    "size": ""
+  },
+  {
+    "id": "cerveza-budweiser",
+    "name": "Cerveza Budweiser",
+    "price": 5000,
+    "description": "Cerveza importada Budweiser, servida bien fría.",
+    "category": "cerveza",
+    "type": "bebida",
+    "stock": 999,
+    "imageUrl": "",
+    "size": ""
+  },
+  {
+    "id": "cerveza-coronita",
+    "name": "Cerveza Coronita",
+    "price": 5000,
+    "description": "Cerveza importada Coronita, servida bien fría.",
+    "category": "cerveza",
+    "type": "bebida",
+    "stock": 999,
+    "imageUrl": "",
+    "size": ""
   },
   {
     "name": "Coctel de soda sin licor ",

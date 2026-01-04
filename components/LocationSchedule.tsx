@@ -11,17 +11,17 @@ export default function LocationSchedule() {
   const mapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`
 
   return (
-    <section className="py-10 sm:py-14 md:py-18 lg:py-20 bg-white px-4">
+    <section className="py-6 sm:py-8 md:py-10 bg-white px-4">
       <div className="container-custom">
-        <div className="max-w-6xl mx-auto text-center space-y-5 sm:space-y-6 md:space-y-8 lg:space-y-10">
-          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-berry-950 mb-5 sm:mb-6 md:mb-8">
+        <div className="max-w-6xl mx-auto space-y-4 sm:space-y-5">
+          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-berry-950 mb-4 sm:mb-5 text-center">
             Ubicación y Horarios
           </h2>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
             {/* Mapa */}
-            <div className="bg-stone-50 border border-stone-200 rounded-2xl overflow-hidden order-2 lg:order-1">
-              <div className="relative w-full h-[300px] sm:h-[400px] md:h-[450px] lg:h-[500px]">
+            <div className="overflow-hidden order-2 lg:order-1">
+              <div className="relative w-full h-[250px] sm:h-[300px] md:h-[350px]">
                 <iframe
                   src={mapsEmbedUrl}
                   width="100%"
@@ -34,56 +34,52 @@ export default function LocationSchedule() {
                   title="Ubicación de Arándano Café Bar"
                 />
               </div>
-              <div className="p-4 sm:p-6">
+              <div className="pt-2 sm:pt-3 text-center">
                 <a
                   href={mapsLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-berry-700 hover:text-berry-950 font-medium transition-colors text-sm sm:text-base"
+                  className="inline-flex items-center gap-2 text-berry-700 hover:text-berry-950 font-medium transition-colors text-xs sm:text-sm"
                 >
-                  <span>📍</span>
                   Abrir en Google Maps
                 </a>
               </div>
             </div>
             
             {/* Información */}
-            <div className="grid grid-cols-2 lg:flex lg:flex-col gap-3 sm:gap-4 lg:gap-6 order-1 lg:order-2">
-              <div className="bg-stone-50 border border-stone-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 lg:p-10">
-                <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-2 sm:mb-3 md:mb-4">📍</div>
-                <h3 className="font-display text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-berry-950 mb-2 sm:mb-3 md:mb-4">
+            <div className="grid grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-5 lg:gap-6 order-1 lg:order-2 text-center">
+              <div className="space-y-1">
+                <h3 className="font-display text-base sm:text-lg md:text-xl font-semibold text-berry-950 tracking-tight">
                   Ubicación
                 </h3>
-                <p className="text-berry-800 text-xs sm:text-sm md:text-base lg:text-lg font-medium mb-1 sm:mb-2">
+                <p className="text-stone-700 text-sm sm:text-base font-medium">
                   Cra 35 calle17 - 86 div
                 </p>
-                <p className="text-berry-600 text-xs sm:text-sm md:text-base lg:text-lg">
+                <p className="text-stone-600 text-xs sm:text-sm">
                   Pasto, Nariño, Colombia
                 </p>
               </div>
               
-              <div className="bg-stone-50 border border-stone-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 lg:p-10">
-                <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-2 sm:mb-3 md:mb-4">⏰</div>
-                <h3 className="font-display text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-berry-950 mb-2 sm:mb-3 md:mb-4">
+              <div className="space-y-1">
+                <h3 className="font-display text-base sm:text-lg md:text-xl font-semibold text-berry-950 tracking-tight">
                   Horarios
                 </h3>
-                <p className="text-berry-800 text-xs sm:text-sm md:text-base lg:text-lg font-medium">
+                <p className="text-stone-700 text-sm sm:text-base font-medium">
                   10am - 11pm
                 </p>
-                <p className="text-berry-600 text-xs sm:text-sm md:text-base mt-1 sm:mt-2">
+                <p className="text-stone-600 text-xs sm:text-sm">
                   Todos los días
                 </p>
               </div>
               
-              <div className="bg-stone-50 border border-stone-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 lg:p-10">
-                <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-2 sm:mb-3 md:mb-4">🚚</div>
-                <h3 className="font-display text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-berry-950 mb-2 sm:mb-3 md:mb-4">
+              <div className="space-y-1 col-span-2 lg:col-span-1">
+                <h3 className="font-display text-base sm:text-lg md:text-xl font-semibold text-berry-950 tracking-tight">
                   Delivery
                 </h3>
-                <p className="text-berry-800 text-xs sm:text-sm md:text-base lg:text-lg font-medium">
+                <p className="text-stone-700 text-sm sm:text-base font-medium">
                   24/7
                 </p>
-                <p className="text-berry-600 text-xs sm:text-sm md:text-base mt-1 sm:mt-2">
+                <p className="text-stone-600 text-xs sm:text-sm">
                   Disponible siempre
                 </p>
               </div>
