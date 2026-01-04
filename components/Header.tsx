@@ -102,31 +102,33 @@ export default function Header({ searchQuery = '', onSearchChange, cartItems = [
             </div>
           </Link>
 
-          {/* Search Bar */}
-          <div className="flex-1 min-w-0 lg:max-w-2xl lg:mx-6">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
-                <svg
-                  className="h-4 w-4 sm:h-5 sm:w-5 text-berry-400"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+          {/* Search Bar - Solo mostrar si onSearchChange está definido */}
+          {onSearchChange && (
+            <div className="flex-1 min-w-0 lg:max-w-2xl lg:mx-6">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
+                  <svg
+                    className="h-4 w-4 sm:h-5 sm:w-5 text-berry-400"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Buscar productos..."
+                  value={localSearchQuery}
+                  onChange={handleSearchChange}
+                  className="block w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2 sm:py-2.5 text-sm sm:text-base border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-berry-950 placeholder-berry-400 bg-white transition-all duration-200"
+                />
               </div>
-              <input
-                type="text"
-                placeholder="Buscar productos..."
-                value={localSearchQuery}
-                onChange={handleSearchChange}
-                className="block w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2 sm:py-2.5 text-sm sm:text-base border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-berry-950 placeholder-berry-400 bg-white transition-all duration-200"
-              />
             </div>
-          </div>
+          )}
 
           {/* Right side: Cart, WhatsApp */}
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">

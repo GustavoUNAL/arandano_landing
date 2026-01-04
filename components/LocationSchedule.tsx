@@ -68,10 +68,23 @@ export default function LocationSchedule() {
                   Horarios
                 </h3>
                 <p className="text-berry-800 text-xs sm:text-sm md:text-base lg:text-lg font-medium">
-                  Abierto 24/7
+                  10am - 11pm
                 </p>
                 <p className="text-berry-600 text-xs sm:text-sm md:text-base mt-1 sm:mt-2">
-                  Todos los días del año
+                  Todos los días
+                </p>
+              </div>
+              
+              <div className="bg-stone-50 border border-stone-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 lg:p-10">
+                <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-2 sm:mb-3 md:mb-4">🚚</div>
+                <h3 className="font-display text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-berry-950 mb-2 sm:mb-3 md:mb-4">
+                  Delivery
+                </h3>
+                <p className="text-berry-800 text-xs sm:text-sm md:text-base lg:text-lg font-medium">
+                  24/7
+                </p>
+                <p className="text-berry-600 text-xs sm:text-sm md:text-base mt-1 sm:mt-2">
+                  Disponible siempre
                 </p>
               </div>
             </div>

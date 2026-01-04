@@ -1,4 +1,3 @@
-import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import FloatingWhatsApp from '@/components/FloatingWhatsApp'
 import LocationSchedule from '@/components/LocationSchedule'
@@ -11,7 +10,6 @@ export default function Contacto() {
 
   return (
     <>
-      <Header />
       <main className="min-h-screen bg-white">
         <div className="container-custom py-12 sm:py-16 md:py-20">
           <div className="max-w-4xl mx-auto">

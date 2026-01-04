@@ -1,6 +1,5 @@
 'use client'
 
-import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import FloatingWhatsApp from '@/components/FloatingWhatsApp'
 import Link from 'next/link'
@@ -223,7 +222,6 @@ export default function MenuCafes() {
 
   return (
     <>
-      <Header />
       <main className="min-h-screen bg-stone-50">
         <div className="container-custom py-6 sm:py-8 md:py-12">
           <div className="max-w-7xl mx-auto">
