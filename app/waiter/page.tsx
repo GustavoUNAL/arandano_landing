@@ -30,7 +30,17 @@ export default function WaiterPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [amountPaid, setAmountPaid] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'efectivo' | 'nequi' | 'daviplata'>('efectivo')
-  const [paymentDate, setPaymentDate] = useState<string>('')
+  const [paymentDate, setPaymentDate] = useState<string>(() => {
+    // Inicializar con fecha y hora actual
+    const now = new Date()
+    // Ajustar al formato datetime-local (YYYY-MM-DDTHH:mm)
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const hours = String(now.getHours()).padStart(2, '0')
+    const minutes = String(now.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+  })
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
 
@@ -115,8 +125,8 @@ export default function WaiterPage() {
     setProcessing(true)
 
     try {
-      // Determinar fecha de pago (si está vacía, usar fecha actual)
-      const saleDate = paymentDate ? new Date(paymentDate) : new Date()
+      // Usar la fecha y hora seleccionada en el campo
+      const saleDate = new Date(paymentDate)
       const saleHour = saleDate.getHours()
       
       // Registrar la venta
@@ -139,11 +149,18 @@ export default function WaiterPage() {
       })
 
       if (response.ok) {
-        // Limpiar carrito y cerrar modal
+        // Limpiar carrito y resetear modal
         setCart([])
         setAmountPaid('')
         setPaymentMethod('efectivo')
-        setPaymentDate('')
+        // Resetear fecha a la actual
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = String(now.getMonth() + 1).padStart(2, '0')
+        const day = String(now.getDate()).padStart(2, '0')
+        const hours = String(now.getHours()).padStart(2, '0')
+        const minutes = String(now.getMinutes()).padStart(2, '0')
+        setPaymentDate(`${year}-${month}-${day}T${hours}:${minutes}`)
         setShowPaymentModal(false)
         alert('Venta registrada exitosamente')
       } else {
@@ -368,21 +385,39 @@ export default function WaiterPage() {
               </div>
             </div>
 
-            {/* Selector de fecha (opcional para pagos pasados) */}
-            <div className="mb-4">
-              <label className="block text-sm sm:text-base font-medium text-stone-700 mb-2">
-                Fecha de pago (opcional):
+            {/* Selector de fecha y hora de cobro - Siempre visible y editable */}
+            <div className="mb-4 p-3 bg-berry-50 border border-berry-200 rounded-lg">
+              <label className="block text-sm sm:text-base font-medium text-berry-950 mb-2">
+                📅 Fecha y hora de cobro:
               </label>
               <input
                 type="datetime-local"
                 value={paymentDate}
                 onChange={(e) => setPaymentDate(e.target.value)}
-                className="w-full px-3 py-2 sm:py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent text-sm sm:text-base"
+                className="w-full px-3 py-2 sm:py-3 border-2 border-berry-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-sm sm:text-base bg-white font-medium"
                 max={new Date().toISOString().slice(0, 16)}
               />
-              <p className="text-xs text-stone-500 mt-1">
-                Deja vacío para usar fecha y hora actual
-              </p>
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const now = new Date()
+                    const year = now.getFullYear()
+                    const month = String(now.getMonth() + 1).padStart(2, '0')
+                    const day = String(now.getDate()).padStart(2, '0')
+                    const hours = String(now.getHours()).padStart(2, '0')
+                    const minutes = String(now.getMinutes()).padStart(2, '0')
+                    setPaymentDate(`${year}-${month}-${day}T${hours}:${minutes}`)
+                  }}
+                  className="text-xs sm:text-sm text-berry-600 hover:text-berry-800 font-medium underline"
+                >
+                  Usar fecha/hora actual
+                </button>
+                <span className="text-xs text-stone-400">•</span>
+                <span className="text-xs text-stone-500">
+                  Edita para registrar pagos pasados
+                </span>
+              </div>
             </div>
 
             {/* Selector de medio de pago */}
@@ -502,7 +537,14 @@ export default function WaiterPage() {
                   setShowPaymentModal(false)
                   setAmountPaid('')
                   setPaymentMethod('efectivo')
-                  setPaymentDate('')
+                  // Resetear fecha a la actual al cancelar
+                  const now = new Date()
+                  const year = now.getFullYear()
+                  const month = String(now.getMonth() + 1).padStart(2, '0')
+                  const day = String(now.getDate()).padStart(2, '0')
+                  const hours = String(now.getHours()).padStart(2, '0')
+                  const minutes = String(now.getMinutes()).padStart(2, '0')
+                  setPaymentDate(`${year}-${month}-${day}T${hours}:${minutes}`)
                 }}
                 className="flex-1 px-4 py-3 border-2 border-stone-300 rounded-lg hover:bg-stone-50 transition-colors font-medium"
                 disabled={processing}

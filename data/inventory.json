@@ -1312,8 +1312,8 @@
     "category": "siropes y bases",
     "quantity": 1,
     "unit": "Botella",
-    "unitPrice": 15000,
-    "totalValue": 15000,
+    "unitPrice": 28900,
+    "totalValue": 28900,
     "code": "SYR-ARA-EXI",
     "purchaseDate": "2026-01-04",
     "supplier": "Éxito",
@@ -1343,5 +1343,17 @@
     "purchaseDate": "2026-01-05",
     "supplier": "Éxito",
     "id": "inv-1767636242812-577hmamt7"
+  },
+  {
+    "id": "inv-1767640832359-kawr591vu",
+    "name": "Bebida chocolate polvo",
+    "category": "siropes y bases",
+    "quantity": 1,
+    "unit": "Unidad",
+    "unitPrice": 16100,
+    "totalValue": 16100,
+    "code": "SYR-CHO-001",
+    "purchaseDate": "2026-01-04",
+    "supplier": "Éxito"
   }
 ]
