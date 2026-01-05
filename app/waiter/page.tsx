@@ -29,6 +29,8 @@ export default function WaiterPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('cafes')
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [amountPaid, setAmountPaid] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'efectivo' | 'nequi' | 'daviplata'>('efectivo')
+  const [paymentDate, setPaymentDate] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
 
@@ -105,7 +107,7 @@ export default function WaiterPage() {
     const total = getTotal()
     const paid = parseFloat(amountPaid) || 0
 
-    if (paid < total) {
+    if (paymentMethod === 'efectivo' && paid < total) {
       alert('El monto pagado es menor al total')
       return
     }
@@ -113,6 +115,10 @@ export default function WaiterPage() {
     setProcessing(true)
 
     try {
+      // Determinar fecha de pago (si está vacía, usar fecha actual)
+      const saleDate = paymentDate ? new Date(paymentDate) : new Date()
+      const saleHour = saleDate.getHours()
+      
       // Registrar la venta
       const response = await fetch('/api/sales', {
         method: 'POST',
@@ -125,7 +131,10 @@ export default function WaiterPage() {
             unitPrice: item.price
           })),
           total,
-          channel: 'presencial'
+          channel: 'presencial',
+          paymentMethod,
+          date: saleDate.toISOString(),
+          hour: saleHour
         })
       })
 
@@ -133,6 +142,8 @@ export default function WaiterPage() {
         // Limpiar carrito y cerrar modal
         setCart([])
         setAmountPaid('')
+        setPaymentMethod('efectivo')
+        setPaymentDate('')
         setShowPaymentModal(false)
         alert('Venta registrada exitosamente')
       } else {
@@ -195,28 +206,70 @@ export default function WaiterPage() {
                 {CATEGORIES.find(c => c.id === selectedCategory)?.name}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {filteredProducts.map((product) => (
-                  <button
-                    key={product.id}
-                    onClick={() => addToCart(product)}
-                    className="text-left p-4 border-2 border-stone-200 rounded-lg hover:border-berry-400 hover:bg-berry-50 active:bg-berry-100 transition-all transform active:scale-95"
-                  >
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="font-medium text-berry-950 text-base">{product.name}</span>
-                      <span className="text-berry-600 font-semibold ml-2 text-lg">
-                        ${formatPrice(product.price)}
-                      </span>
-                    </div>
-                    {product.description && (
-                      <p className="text-xs text-stone-600 mt-1">{product.description}</p>
-                    )}
-                    {product.totalSold && product.totalSold > 0 && (
-                      <div className="mt-2 text-xs text-berry-500">
-                        ⭐ Más vendido
+                {filteredProducts.map((product) => {
+                  const cartItem = cart.find((item) => item.id === product.id)
+                  const quantity = cartItem?.quantity || 0
+
+                  return (
+                    <div
+                      key={product.id}
+                      className="p-4 border-2 border-stone-200 rounded-lg hover:border-berry-400 hover:bg-berry-50 transition-all"
+                    >
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="font-medium text-berry-950 text-base">{product.name}</span>
+                        <span className="text-berry-600 font-semibold ml-2 text-lg">
+                          ${formatPrice(product.price)}
+                        </span>
                       </div>
-                    )}
-                  </button>
-                ))}
+                      {product.description && (
+                        <p className="text-xs text-stone-600 mt-1">{product.description}</p>
+                      )}
+                      {product.totalSold && product.totalSold > 0 && (
+                        <div className="mt-2 text-xs text-berry-500">
+                          ⭐ Más vendido
+                        </div>
+                      )}
+                      
+                      {/* Controles de cantidad */}
+                      <div className="flex items-center gap-2 mt-3">
+                        {quantity > 0 ? (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                removeFromCart(product.id)
+                              }}
+                              className="w-8 h-8 flex items-center justify-center bg-berry-600 hover:bg-berry-700 active:bg-berry-800 text-white rounded-lg font-bold text-lg transition-all duration-200 hover:scale-105 active:scale-95 shadow-md"
+                              aria-label="Quitar uno"
+                            >
+                              −
+                            </button>
+                            <span className="w-12 text-center font-bold text-lg text-berry-950 bg-stone-100 rounded-lg py-1">
+                              {quantity}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                addToCart(product)
+                              }}
+                              className="w-8 h-8 flex items-center justify-center bg-berry-600 hover:bg-berry-700 active:bg-berry-800 text-white rounded-lg font-bold text-lg transition-all duration-200 hover:scale-105 active:scale-95 shadow-md"
+                              aria-label="Agregar uno"
+                            >
+                              +
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => addToCart(product)}
+                            className="w-full py-2 bg-berry-600 hover:bg-berry-700 active:bg-berry-800 text-white font-semibold rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 shadow-md"
+                          >
+                            Agregar
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -302,9 +355,9 @@ export default function WaiterPage() {
 
       {/* Modal de pago */}
       {showPaymentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-2xl font-bold text-berry-950 mb-4 text-center">Procesar Pago</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full my-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl sm:text-2xl font-bold text-berry-950 mb-4 text-center">Procesar Pago</h3>
             
             <div className="mb-6">
               <div className="flex justify-between items-center mb-2">
@@ -315,47 +368,116 @@ export default function WaiterPage() {
               </div>
             </div>
 
-            <div className="mb-6">
-              <label className="block text-base font-medium text-stone-700 mb-3 text-center">
-                Monto recibido:
+            {/* Selector de fecha (opcional para pagos pasados) */}
+            <div className="mb-4">
+              <label className="block text-sm sm:text-base font-medium text-stone-700 mb-2">
+                Fecha de pago (opcional):
               </label>
               <input
-                type="tel"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={amountPaid}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '')
-                  setAmountPaid(value)
-                }}
-                placeholder="0"
-                className="w-full px-4 py-4 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-2xl font-semibold text-center mb-3"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handlePayment()
-                  }
-                }}
+                type="datetime-local"
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
+                className="w-full px-3 py-2 sm:py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent text-sm sm:text-base"
+                max={new Date().toISOString().slice(0, 16)}
               />
-              
-              {/* Botones de billetes sugeridos */}
+              <p className="text-xs text-stone-500 mt-1">
+                Deja vacío para usar fecha y hora actual
+              </p>
+            </div>
+
+            {/* Selector de medio de pago */}
+            <div className="mb-6">
+              <label className="block text-base font-medium text-stone-700 mb-3 text-center">
+                Medio de pago:
+              </label>
               <div className="grid grid-cols-3 gap-2">
-                {[100000, 50000, 20000, 10000, 5000].map((amount) => (
-                  <button
-                    key={amount}
-                    onClick={() => {
-                      const current = parseFloat(amountPaid) || 0
-                      setAmountPaid(String(current + amount))
-                    }}
-                    className="px-3 py-2 bg-berry-100 hover:bg-berry-200 text-berry-700 font-semibold rounded-lg transition-colors active:scale-95 text-sm sm:text-base"
-                  >
-                    ${formatPrice(amount)}
-                  </button>
-                ))}
+                <button
+                  onClick={() => {
+                    setPaymentMethod('efectivo')
+                    setAmountPaid('')
+                  }}
+                  className={`px-4 py-3 rounded-lg font-semibold transition-colors ${
+                    paymentMethod === 'efectivo'
+                      ? 'bg-berry-600 text-white'
+                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                  }`}
+                >
+                  Efectivo
+                </button>
+                <button
+                  onClick={() => {
+                    setPaymentMethod('nequi')
+                    setAmountPaid('')
+                  }}
+                  className={`px-4 py-3 rounded-lg font-semibold transition-colors ${
+                    paymentMethod === 'nequi'
+                      ? 'bg-berry-600 text-white'
+                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                  }`}
+                >
+                  Nequi
+                </button>
+                <button
+                  onClick={() => {
+                    setPaymentMethod('daviplata')
+                    setAmountPaid('')
+                  }}
+                  className={`px-4 py-3 rounded-lg font-semibold transition-colors ${
+                    paymentMethod === 'daviplata'
+                      ? 'bg-berry-600 text-white'
+                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                  }`}
+                >
+                  Daviplata
+                </button>
               </div>
             </div>
 
-            {amountPaid && parseFloat(amountPaid) >= getTotal() && (
+            {/* Campo de monto solo para efectivo */}
+            {paymentMethod === 'efectivo' && (
+              <div className="mb-6">
+                <label className="block text-base font-medium text-stone-700 mb-3 text-center">
+                  Monto recibido:
+                </label>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={amountPaid}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '')
+                    setAmountPaid(value)
+                  }}
+                  placeholder="0"
+                  className="w-full px-4 py-4 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-2xl font-semibold text-center mb-3"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handlePayment()
+                    }
+                  }}
+                />
+                
+                {/* Botones de billetes sugeridos */}
+                <div className="grid grid-cols-3 gap-2">
+                  {[100000, 50000, 20000, 10000, 5000].map((amount) => (
+                    <button
+                      key={amount}
+                      onClick={() => {
+                        const current = parseFloat(amountPaid) || 0
+                        setAmountPaid(String(current + amount))
+                      }}
+                      className="px-3 py-2 bg-berry-100 hover:bg-berry-200 text-berry-700 font-semibold rounded-lg transition-colors active:scale-95 text-sm sm:text-base"
+                    >
+                      ${formatPrice(amount)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Mostrar cambio solo para efectivo */}
+            {paymentMethod === 'efectivo' && amountPaid && parseFloat(amountPaid) >= getTotal() && (
               <div className="mb-6 p-4 bg-green-50 border-2 border-green-300 rounded-lg">
                 <div className="flex justify-between items-center">
                   <span className="text-green-800 font-semibold text-lg">Cambio:</span>
@@ -366,7 +488,7 @@ export default function WaiterPage() {
               </div>
             )}
 
-            {amountPaid && parseFloat(amountPaid) < getTotal() && (
+            {paymentMethod === 'efectivo' && amountPaid && parseFloat(amountPaid) < getTotal() && (
               <div className="mb-6 p-4 bg-red-50 border-2 border-red-300 rounded-lg">
                 <p className="text-red-800 font-medium text-center text-lg">
                   Falta: ${formatPrice(getTotal() - parseFloat(amountPaid))}
@@ -379,6 +501,8 @@ export default function WaiterPage() {
                 onClick={() => {
                   setShowPaymentModal(false)
                   setAmountPaid('')
+                  setPaymentMethod('efectivo')
+                  setPaymentDate('')
                 }}
                 className="flex-1 px-4 py-3 border-2 border-stone-300 rounded-lg hover:bg-stone-50 transition-colors font-medium"
                 disabled={processing}
@@ -387,7 +511,10 @@ export default function WaiterPage() {
               </button>
               <button
                 onClick={handlePayment}
-                disabled={processing || !amountPaid || parseFloat(amountPaid) < getTotal()}
+                disabled={
+                  processing ||
+                  (paymentMethod === 'efectivo' && (!amountPaid || parseFloat(amountPaid) < getTotal()))
+                }
                 className="flex-1 px-4 py-3 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-lg"
               >
                 {processing ? 'Procesando...' : 'Confirmar Pago'}

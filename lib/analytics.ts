@@ -2,6 +2,43 @@ import { Product } from './products'
 import { Sale, getSales, getSalesByProduct } from './sales'
 import { Expense, getExpenses, getMonthlyFixedExpenses } from './expenses'
 
+// Función para obtener el número de semana del año (ISO 8601)
+export function getWeekOfYear(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+  const dayNum = d.getUTCDay() || 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
+}
+
+// Función para obtener el primer día de la semana
+export function getWeekStart(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1) // Ajustar para lunes como primer día
+  return new Date(d.setDate(diff))
+}
+
+// Función para obtener el último día de la semana
+export function getWeekEnd(date: Date): Date {
+  const weekStart = getWeekStart(date)
+  const weekEnd = new Date(weekStart)
+  weekEnd.setDate(weekEnd.getDate() + 6)
+  return weekEnd
+}
+
+// Función para obtener el rango de fechas de una semana
+export function getWeekRange(weekNumber: number, year: number): { start: Date; end: Date } {
+  const jan4 = new Date(year, 0, 4)
+  const jan4Day = jan4.getDay() || 7
+  const weekStart = new Date(jan4)
+  weekStart.setDate(jan4.getDate() - jan4Day + 1)
+  weekStart.setDate(weekStart.getDate() + (weekNumber - 1) * 7)
+  const weekEnd = new Date(weekStart)
+  weekEnd.setDate(weekEnd.getDate() + 6)
+  return { start: weekStart, end: weekEnd }
+}
+
 export interface ProductAnalytics {
   product: Product
   totalSold: number
@@ -31,6 +68,8 @@ export interface KPIs {
   
   // Rentabilidad
   totalCosts: number
+  fixedExpenses: number
+  variableExpenses: number
   grossMargin: number
   netMargin: number
   breakEvenPoint: number // Pedidos necesarios para punto de equilibrio
@@ -40,6 +79,21 @@ export interface KPIs {
   volumeProducts: number
   premiumProducts: number
   problemProducts: number
+}
+
+export interface WeeklyKPIs extends KPIs {
+  weekNumber: number
+  year: number
+  startDate: string
+  endDate: string
+}
+
+export interface MonthlyKPIs extends KPIs {
+  month: number
+  year: number
+  startDate: string
+  endDate: string
+  weeks: number[]
 }
 
 export function calculateProductAnalytics(
@@ -168,8 +222,13 @@ export function calculateKPIs(
   })
   
   // Rentabilidad
-  const totalCosts = expenses.reduce((sum, e) => sum + e.amount, 0)
-  const productCosts = products.reduce((sum, p) => {
+  // Gastos fijos desde expenses
+  const fixedExpenses = expenses
+    .filter(e => e.type === 'fixed')
+    .reduce((sum, e) => sum + e.amount, 0)
+  
+  // Gastos variables calculados desde inventario (productos vendidos × costo)
+  const variableExpenses = products.reduce((sum, p) => {
     const productSales = sales.filter(s =>
       s.items.some(item => item.productId === p.id)
     )
@@ -180,13 +239,12 @@ export function calculateKPIs(
     return sum + (sold * (p.cost || 0))
   }, 0)
   
+  const totalCosts = fixedExpenses + variableExpenses
+  const productCosts = variableExpenses // Los costos de productos son los gastos variables
   const grossMargin = totalRevenue - productCosts
   const netMargin = grossMargin - totalCosts
   
   // Punto de equilibrio
-  const fixedExpenses = expenses
-    .filter(e => e.type === 'fixed')
-    .reduce((sum, e) => sum + e.amount, 0)
   const avgOrderValue = averageTicket
   const breakEvenPoint = avgOrderValue > 0 ? Math.ceil(fixedExpenses / avgOrderValue) : 0
   
@@ -208,6 +266,8 @@ export function calculateKPIs(
     nightSales,
     revenuePerHour,
     totalCosts,
+    fixedExpenses,
+    variableExpenses,
     grossMargin,
     netMargin,
     breakEvenPoint,
@@ -216,5 +276,98 @@ export function calculateKPIs(
     premiumProducts,
     problemProducts
   }
+}
+
+// Calcular KPIs agrupados por semana
+export function calculateWeeklyKPIs(
+  products: Product[],
+  year: number
+): WeeklyKPIs[] {
+  const sales = getSales()
+  const expenses = getExpenses()
+  
+  // Obtener todas las semanas del año que tienen datos
+  const weeksWithData = new Set<number>()
+  
+  sales.forEach(sale => {
+    const saleDate = new Date(sale.date)
+    if (saleDate.getFullYear() === year) {
+      weeksWithData.add(getWeekOfYear(saleDate))
+    }
+  })
+  
+  expenses.forEach(expense => {
+    const expenseDate = new Date(expense.date)
+    if (expenseDate.getFullYear() === year) {
+      weeksWithData.add(getWeekOfYear(expenseDate))
+    }
+  })
+  
+  const weeklyKPIs: WeeklyKPIs[] = []
+  
+  weeksWithData.forEach(weekNumber => {
+    const weekRange = getWeekRange(weekNumber, year)
+    const startDate = weekRange.start.toISOString().split('T')[0]
+    const endDate = weekRange.end.toISOString().split('T')[0]
+    
+    const kpis = calculateKPIs(products, startDate, endDate)
+    
+    weeklyKPIs.push({
+      ...kpis,
+      weekNumber,
+      year,
+      startDate,
+      endDate
+    })
+  })
+  
+  return weeklyKPIs.sort((a, b) => a.weekNumber - b.weekNumber)
+}
+
+// Calcular KPIs agrupados por mes (cuando hay 4 semanas completas)
+export function calculateMonthlyKPIs(
+  products: Product[],
+  year: number
+): MonthlyKPIs[] {
+  const weeklyKPIs = calculateWeeklyKPIs(products, year)
+  const monthlyKPIs: MonthlyKPIs[] = []
+  
+  // Agrupar semanas por mes
+  const monthGroups = new Map<number, WeeklyKPIs[]>()
+  
+  weeklyKPIs.forEach(week => {
+    const weekStart = new Date(week.startDate)
+    const month = weekStart.getMonth()
+    
+    if (!monthGroups.has(month)) {
+      monthGroups.set(month, [])
+    }
+    monthGroups.get(month)!.push(week)
+  })
+  
+  // Crear KPIs mensuales solo si hay 4 semanas completas
+  monthGroups.forEach((weeks, month) => {
+    if (weeks.length >= 4) {
+      // Calcular el rango de fechas del mes
+      const firstWeek = weeks[0]
+      const lastWeek = weeks[weeks.length - 1]
+      const startDate = firstWeek.startDate
+      const endDate = lastWeek.endDate
+      
+      // Calcular KPIs agregados del mes
+      const monthlyKpis = calculateKPIs(products, startDate, endDate)
+      
+      monthlyKPIs.push({
+        ...monthlyKpis,
+        month,
+        year,
+        startDate,
+        endDate,
+        weeks: weeks.map(w => w.weekNumber)
+      })
+    }
+  })
+  
+  return monthlyKPIs.sort((a, b) => a.month - b.month)
 }
 

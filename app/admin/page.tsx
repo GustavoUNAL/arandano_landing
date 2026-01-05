@@ -51,6 +51,9 @@ export default function AdminPage() {
   const [alert, setAlert] = useState<{ type: 'success' | 'error', message: string } | null>(null)
   const [pendingTasks, setPendingTasks] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<'products' | 'inventory'>('products')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'products' | 'products-for-sale'>('dashboard')
+  const [sales, setSales] = useState<any[]>([])
+  const [editingStock, setEditingStock] = useState<{ id: string; stock: number } | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -79,6 +82,7 @@ export default function AdminPage() {
       setIsAuthenticated(data.authenticated)
       if (data.authenticated) {
         loadProducts()
+        loadSales()
       }
     } catch (error) {
       setIsAuthenticated(false)
@@ -103,6 +107,7 @@ export default function AdminPage() {
       if (data.success) {
         setIsAuthenticated(true)
         loadProducts()
+        loadSales()
         showAlert('success', 'Sesión iniciada correctamente')
       } else {
         setLoginError(data.error || 'Contraseña incorrecta')
@@ -128,6 +133,35 @@ export default function AdminPage() {
       console.error('Error loading products:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadSales = async () => {
+    try {
+      const response = await fetch('/api/sales')
+      const data = await response.json()
+      setSales(data)
+    } catch (error) {
+      console.error('Error loading sales:', error)
+    }
+  }
+
+  const updateProductStock = async (productId: string, newStock: number) => {
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stock: newStock })
+      })
+      if (response.ok) {
+        await loadProducts()
+        showAlert('success', 'Stock actualizado exitosamente')
+      } else {
+        showAlert('error', 'Error al actualizar el stock')
+      }
+    } catch (error) {
+      console.error('Error updating stock:', error)
+      showAlert('error', 'Error al actualizar el stock')
     }
   }
 
@@ -350,39 +384,26 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* Título principal */}
+        <h1 className="text-2xl sm:text-3xl font-bold text-berry-950 mb-4 sm:mb-6">
+          Panel de Administración
+        </h1>
+
+        {/* Header con botones de acción */}
         <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
-            <h1 className="text-2xl sm:text-3xl font-bold text-berry-950">
-              Panel de Administración
-            </h1>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
-              <button
-                onClick={() => router.push('/analytics')}
-                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
-              >
-                📊 Analytics
-              </button>
-              <button
-                onClick={() => router.push('/expenses')}
-                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
-              >
-                💰 Gastos
-              </button>
-              <button
-                onClick={() => router.push('/tasks')}
-                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
-              >
-                ✅ Tareas
-              </button>
-              <button
-                onClick={() => router.push('/inventory')}
-                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
-              >
-                📦 Inventario
-              </button>
+              {currentView !== 'dashboard' && (
+                <button
+                  onClick={() => setCurrentView('dashboard')}
+                  className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-berry-600 hover:text-berry-800 text-xs sm:text-sm font-medium border border-berry-300 rounded-lg transition-colors"
+                >
+                  ← Dashboard
+                </button>
+              )}
               <button
                 onClick={() => router.push('/')}
-                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-berry-600 hover:text-berry-800 text-xs sm:text-sm font-medium border border-berry-300 rounded-lg"
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-berry-600 hover:text-berry-800 text-xs sm:text-sm font-medium border border-berry-300 rounded-lg transition-colors"
               >
                 Ver sitio
               </button>
@@ -394,6 +415,115 @@ export default function AdminPage() {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Dashboard con tarjetas */}
+        {currentView === 'dashboard' && (
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+            {/* Tarjeta Productos a la venta */}
+            <button
+              onClick={() => {
+                setCurrentView('products-for-sale')
+                loadSales()
+              }}
+              className="bg-white rounded-lg sm:rounded-xl shadow-md sm:shadow-lg p-3 sm:p-4 lg:p-6 hover:shadow-lg sm:hover:shadow-xl transition-all transform active:scale-95 sm:hover:scale-105 text-left"
+            >
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 lg:gap-4 mb-2 sm:mb-3 lg:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-berry-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl sm:text-2xl">☕</span>
+                </div>
+                <h2 className="text-sm sm:text-base lg:text-xl font-bold text-berry-950 text-center sm:text-left">Productos a la venta</h2>
+              </div>
+              <p className="text-stone-600 text-xs sm:text-sm leading-tight">
+                Calcula rentabilidad y gestiona stock
+              </p>
+            </button>
+
+            {/* Tarjeta Inventario */}
+            <button
+              onClick={() => router.push('/inventory')}
+              className="bg-white rounded-lg sm:rounded-xl shadow-md sm:shadow-lg p-3 sm:p-4 lg:p-6 hover:shadow-lg sm:hover:shadow-xl transition-all transform active:scale-95 sm:hover:scale-105 text-left"
+            >
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 lg:gap-4 mb-2 sm:mb-3 lg:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl sm:text-2xl">📦</span>
+                </div>
+                <h2 className="text-sm sm:text-base lg:text-xl font-bold text-berry-950 text-center sm:text-left">Inventario</h2>
+              </div>
+              <p className="text-stone-600 text-xs sm:text-sm leading-tight">
+                Control de insumos, stock y proveedores
+              </p>
+            </button>
+
+            {/* Tarjeta Tareas */}
+            <button
+              onClick={() => router.push('/tasks')}
+              className="bg-white rounded-lg sm:rounded-xl shadow-md sm:shadow-lg p-3 sm:p-4 lg:p-6 hover:shadow-lg sm:hover:shadow-xl transition-all transform active:scale-95 sm:hover:scale-105 text-left"
+            >
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 lg:gap-4 mb-2 sm:mb-3 lg:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl sm:text-2xl">✅</span>
+                </div>
+                <h2 className="text-sm sm:text-base lg:text-xl font-bold text-berry-950 text-center sm:text-left">Tareas</h2>
+              </div>
+              <p className="text-stone-600 text-xs sm:text-sm leading-tight">
+                Organiza y gestiona tareas pendientes
+              </p>
+            </button>
+
+            {/* Tarjeta Gastos */}
+            <button
+              onClick={() => router.push('/expenses')}
+              className="bg-white rounded-lg sm:rounded-xl shadow-md sm:shadow-lg p-3 sm:p-4 lg:p-6 hover:shadow-lg sm:hover:shadow-xl transition-all transform active:scale-95 sm:hover:scale-105 text-left"
+            >
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 lg:gap-4 mb-2 sm:mb-3 lg:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl sm:text-2xl">💰</span>
+                </div>
+                <h2 className="text-sm sm:text-base lg:text-xl font-bold text-berry-950 text-center sm:text-left">Gastos</h2>
+              </div>
+              <p className="text-stone-600 text-xs sm:text-sm leading-tight">
+                Registra y controla gastos fijos y variables
+              </p>
+            </button>
+
+            {/* Tarjeta Analytics */}
+            <button
+              onClick={() => router.push('/analytics')}
+              className="bg-white rounded-lg sm:rounded-xl shadow-md sm:shadow-lg p-3 sm:p-4 lg:p-6 hover:shadow-lg sm:hover:shadow-xl transition-all transform active:scale-95 sm:hover:scale-105 text-left"
+            >
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 lg:gap-4 mb-2 sm:mb-3 lg:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl sm:text-2xl">📊</span>
+                </div>
+                <h2 className="text-sm sm:text-base lg:text-xl font-bold text-berry-950 text-center sm:text-left">Analytics</h2>
+              </div>
+              <p className="text-stone-600 text-xs sm:text-sm leading-tight">
+                Métricas, KPIs y análisis de ventas
+              </p>
+            </button>
+
+            {/* Tarjeta Sistema de Cobros */}
+            <button
+              onClick={() => router.push('/waiter')}
+              className="bg-white rounded-lg sm:rounded-xl shadow-md sm:shadow-lg p-3 sm:p-4 lg:p-6 hover:shadow-lg sm:hover:shadow-xl transition-all transform active:scale-95 sm:hover:scale-105 text-left"
+            >
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 lg:gap-4 mb-2 sm:mb-3 lg:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl sm:text-2xl">💳</span>
+                </div>
+                <h2 className="text-sm sm:text-base lg:text-xl font-bold text-berry-950 text-center sm:text-left">Cobros</h2>
+              </div>
+              <p className="text-stone-600 text-xs sm:text-sm leading-tight">
+                Registro de ventas y procesamiento de pagos
+              </p>
+            </button>
+          </div>
+        )}
+
+        {/* Vista de Productos */}
+        {currentView === 'products' && (
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
 
 
           {/* Tabs para móvil */}
@@ -890,6 +1020,159 @@ export default function AdminPage() {
             )}
           </div>
         </div>
+        )}
+
+        {/* Vista de Productos a la venta con rentabilidad */}
+        {currentView === 'products-for-sale' && (
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-berry-950 mb-4 sm:mb-6">
+              Productos a la venta - Rentabilidad
+            </h2>
+
+            {loading ? (
+              <div className="text-center py-8 text-berry-600">Cargando...</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b-2 border-berry-200">
+                      <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-berry-950">Producto</th>
+                      <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-berry-950">Precio</th>
+                      <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-berry-950">Costo</th>
+                      <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-berry-950">Margen</th>
+                      <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-berry-950">Margen %</th>
+                      <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-berry-950">Vendidos</th>
+                      <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-berry-950">Stock</th>
+                      <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-berry-950">Rentabilidad</th>
+                      <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-berry-950">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {products.map((product) => {
+                      // Calcular ventas del producto
+                      const productSales = sales.filter(sale =>
+                        sale.items?.some((item: any) => item.productId === product.id)
+                      )
+                      const totalSold = productSales.reduce((sum, sale) => {
+                        const item = sale.items?.find((i: any) => i.productId === product.id)
+                        return sum + (item?.quantity || 0)
+                      }, 0)
+
+                      const cost = product.cost || 0
+                      const price = product.price
+                      const margin = price - cost
+                      const marginPercent = price > 0 ? ((margin / price) * 100) : 0
+                      const totalProfit = totalSold * margin
+
+                      return (
+                        <tr key={product.id} className="border-b border-stone-200 hover:bg-stone-50">
+                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium text-berry-950">
+                            {product.name}
+                          </td>
+                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-center">
+                            ${price.toLocaleString('es-CO')}
+                          </td>
+                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-center">
+                            {cost > 0 ? `$${cost.toLocaleString('es-CO')}` : '-'}
+                          </td>
+                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-center">
+                            {cost > 0 ? `$${margin.toLocaleString('es-CO')}` : '-'}
+                          </td>
+                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-center">
+                            {cost > 0 ? (
+                              <span className={`font-semibold ${
+                                marginPercent >= 50 ? 'text-green-600' :
+                                marginPercent >= 30 ? 'text-blue-600' :
+                                marginPercent >= 10 ? 'text-amber-600' : 'text-red-600'
+                              }`}>
+                                {marginPercent.toFixed(1)}%
+                              </span>
+                            ) : '-'}
+                          </td>
+                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-center font-medium">
+                            {totalSold}
+                          </td>
+                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-center">
+                            {editingStock?.id === product.id ? (
+                              <input
+                                type="number"
+                                value={editingStock.stock}
+                                onChange={(e) => setEditingStock({ id: product.id, stock: parseInt(e.target.value) || 0 })}
+                                className="w-20 px-2 py-1 border border-berry-300 rounded text-center text-xs"
+                                autoFocus
+                                onBlur={() => {
+                                  if (editingStock) {
+                                    updateProductStock(editingStock.id, editingStock.stock)
+                                    setEditingStock(null)
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && editingStock) {
+                                    updateProductStock(editingStock.id, editingStock.stock)
+                                    setEditingStock(null)
+                                  }
+                                  if (e.key === 'Escape') {
+                                    setEditingStock(null)
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <button
+                                onClick={() => setEditingStock({ id: product.id, stock: product.stock })}
+                                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                  product.stock <= (product.minStock || 0)
+                                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                                }`}
+                              >
+                                {product.stock}
+                              </button>
+                            )}
+                          </td>
+                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-center">
+                            {cost > 0 && totalSold > 0 ? (
+                              <span className={`font-semibold ${
+                                totalProfit > 0 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                ${totalProfit.toLocaleString('es-CO')}
+                              </span>
+                            ) : '-'}
+                          </td>
+                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-center">
+                            <button
+                              onClick={() => {
+                                // Ajustar stock restando las ventas del día
+                                const today = new Date().toISOString().split('T')[0]
+                                const todaySales = productSales.filter(sale => sale.date?.startsWith(today))
+                                const soldToday = todaySales.reduce((sum, sale) => {
+                                  const item = sale.items?.find((i: any) => i.productId === product.id)
+                                  return sum + (item?.quantity || 0)
+                                }, 0)
+                                const newStock = Math.max(0, product.stock - soldToday)
+                                updateProductStock(product.id, newStock)
+                              }}
+                              className="px-2 py-1 bg-berry-600 hover:bg-berry-700 text-white rounded text-xs font-medium transition-colors"
+                              title="Ajustar stock restando ventas del día"
+                            >
+                              Ajustar
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-berry-50 rounded-lg">
+              <p className="text-xs sm:text-sm text-berry-700">
+                <strong>Nota:</strong> El stock se puede ajustar manualmente haciendo clic en el número. 
+                El botón &quot;Ajustar&quot; resta automáticamente las ventas del día actual del stock.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

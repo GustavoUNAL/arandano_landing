@@ -14,6 +14,7 @@ export interface Sale {
   }>
   total: number
   channel: 'presencial' | 'whatsapp'
+  paymentMethod?: 'efectivo' | 'nequi' | 'daviplata'
   ticketNumber?: string
 }
 

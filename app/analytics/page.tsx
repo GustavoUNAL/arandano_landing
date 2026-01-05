@@ -15,6 +15,8 @@ interface KPIs {
   nightSales: number
   revenuePerHour: number[]
   totalCosts: number
+  fixedExpenses: number
+  variableExpenses: number
   grossMargin: number
   netMargin: number
   breakEvenPoint: number
@@ -22,6 +24,21 @@ interface KPIs {
   volumeProducts: number
   premiumProducts: number
   problemProducts: number
+}
+
+interface WeeklyKPIs extends KPIs {
+  weekNumber: number
+  year: number
+  startDate: string
+  endDate: string
+}
+
+interface MonthlyKPIs extends KPIs {
+  month: number
+  year: number
+  startDate: string
+  endDate: string
+  weeks: number[]
 }
 
 interface ProductAnalytics {
@@ -47,8 +64,12 @@ export default function AnalyticsPage() {
   const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [kpis, setKpis] = useState<KPIs | null>(null)
+  const [weeklyKPIs, setWeeklyKPIs] = useState<WeeklyKPIs[]>([])
+  const [monthlyKPIs, setMonthlyKPIs] = useState<MonthlyKPIs[]>([])
   const [productAnalytics, setProductAnalytics] = useState<ProductAnalytics[]>([])
   const [loading, setLoading] = useState(true)
+  const [groupBy, setGroupBy] = useState<'range' | 'week' | 'month'>('week')
+  const [year, setYear] = useState(new Date().getFullYear())
   const [dateRange, setDateRange] = useState({
     startDate: new Date(new Date().setDate(1)).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0]
@@ -63,7 +84,7 @@ export default function AnalyticsPage() {
       loadAnalytics()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, dateRange])
+  }, [isAuthenticated, dateRange, groupBy, year])
 
   const checkAuth = async () => {
     try {
@@ -78,11 +99,16 @@ export default function AnalyticsPage() {
   const loadAnalytics = async () => {
     setLoading(true)
     try {
-      const response = await fetch(
-        `/api/analytics?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`
-      )
+      let url = `/api/analytics?groupBy=${groupBy}&year=${year}`
+      if (groupBy === 'range') {
+        url += `&startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`
+      }
+      
+      const response = await fetch(url)
       const data = await response.json()
       setKpis(data.kpis)
+      setWeeklyKPIs(data.weeklyKPIs || [])
+      setMonthlyKPIs(data.monthlyKPIs || [])
       setProductAnalytics(data.productAnalytics)
     } catch (error) {
       console.error('Error loading analytics:', error)
@@ -127,9 +153,9 @@ export default function AnalyticsPage() {
   return (
     <div className="min-h-screen bg-stone-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-6 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-berry-950">📊 Dashboard de Análisis</h1>
-          <div className="flex gap-4">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-berry-950 text-center mb-4">📊 Dashboard de Análisis</h1>
+          <div className="flex justify-center">
             <Link
               href="/admin"
               className="px-4 py-2 text-berry-600 hover:text-berry-800 text-sm font-medium"
@@ -139,31 +165,62 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Filtros de fecha */}
+        {/* Filtros */}
         <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
-          <div className="flex gap-4 items-end">
+          <div className="flex flex-wrap gap-4 items-end">
             <div>
               <label className="block text-sm font-medium text-berry-700 mb-2">
-                Fecha Inicio
+                Agrupar por
               </label>
-              <input
-                type="date"
-                value={dateRange.startDate}
-                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+              <select
+                value={groupBy}
+                onChange={(e) => setGroupBy(e.target.value as 'range' | 'week' | 'month')}
                 className="px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500"
-              />
+              >
+                <option value="week">Semana</option>
+                <option value="month">Mes (4 semanas)</option>
+                <option value="range">Rango de fechas</option>
+              </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-berry-700 mb-2">
-                Fecha Fin
-              </label>
-              <input
-                type="date"
-                value={dateRange.endDate}
-                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                className="px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500"
-              />
-            </div>
+            {groupBy !== 'range' && (
+              <div>
+                <label className="block text-sm font-medium text-berry-700 mb-2">
+                  Año
+                </label>
+                <input
+                  type="number"
+                  value={year}
+                  onChange={(e) => setYear(parseInt(e.target.value))}
+                  className="px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 w-32"
+                />
+              </div>
+            )}
+            {groupBy === 'range' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-berry-700 mb-2">
+                    Fecha Inicio
+                  </label>
+                  <input
+                    type="date"
+                    value={dateRange.startDate}
+                    onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                    className="px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-berry-700 mb-2">
+                    Fecha Fin
+                  </label>
+                  <input
+                    type="date"
+                    value={dateRange.endDate}
+                    onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                    className="px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500"
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -171,10 +228,133 @@ export default function AnalyticsPage() {
           <div className="text-center py-12">
             <div className="text-berry-600">Cargando análisis...</div>
           </div>
+        ) : groupBy === 'week' ? (
+          weeklyKPIs.length > 0 ? (
+          <>
+            {/* KPIs por Semana */}
+            <div className="space-y-4 mb-6">
+              {weeklyKPIs.map((week) => (
+                <div key={`${week.year}-${week.weekNumber}`} className="bg-white rounded-xl shadow-lg p-6">
+                  <div className="mb-4">
+                    <h3 className="text-xl font-bold text-berry-950 text-center">
+                      Semana {week.weekNumber} - {new Date(week.startDate).toLocaleDateString('es-CO', { month: 'short', day: 'numeric' })} 
+                      {' - '}
+                      {new Date(week.endDate).toLocaleDateString('es-CO', { month: 'short', day: 'numeric' })}
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <div>
+                      <div className="text-xs text-berry-600 mb-1">Ingresos</div>
+                      <div className="text-lg font-bold text-berry-950">
+                        ${week.totalRevenue.toLocaleString('es-CO')}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-berry-600 mb-1">Gastos Fijos</div>
+                      <div className="text-lg font-bold text-red-600">
+                        ${week.fixedExpenses.toLocaleString('es-CO')}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-berry-600 mb-1">Gastos Variables</div>
+                      <div className="text-lg font-bold text-orange-600">
+                        ${week.variableExpenses.toLocaleString('es-CO')}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-berry-600 mb-1">Margen Bruto</div>
+                      <div className={`text-lg font-bold ${week.grossMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        ${week.grossMargin.toLocaleString('es-CO')}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-berry-600 mb-1">Margen Neto</div>
+                      <div className={`text-lg font-bold ${week.netMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        ${week.netMargin.toLocaleString('es-CO')}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-berry-600 mb-1">Ticket Promedio</div>
+                      <div className="text-lg font-bold text-berry-950">
+                        ${week.averageTicket.toLocaleString('es-CO')}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-xl shadow-lg">
+              <div className="text-berry-600">No hay datos de semanas para el año {year}</div>
+            </div>
+          )
+        ) : groupBy === 'month' ? (
+          monthlyKPIs.length > 0 ? (
+          <>
+            {/* KPIs por Mes */}
+            <div className="space-y-4 mb-6">
+              {monthlyKPIs.map((month) => (
+                <div key={`${month.year}-${month.month}`} className="bg-white rounded-xl shadow-lg p-6">
+                  <div className="mb-4">
+                    <h3 className="text-xl font-bold text-berry-950 text-center">
+                      {new Date(month.year, month.month, 1).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}
+                      <span className="text-sm font-normal text-berry-600 ml-2">
+                        (Semanas: {month.weeks.join(', ')})
+                      </span>
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <div>
+                      <div className="text-xs text-berry-600 mb-1">Ingresos</div>
+                      <div className="text-lg font-bold text-berry-950">
+                        ${month.totalRevenue.toLocaleString('es-CO')}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-berry-600 mb-1">Gastos Fijos</div>
+                      <div className="text-lg font-bold text-red-600">
+                        ${month.fixedExpenses.toLocaleString('es-CO')}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-berry-600 mb-1">Gastos Variables</div>
+                      <div className="text-lg font-bold text-orange-600">
+                        ${month.variableExpenses.toLocaleString('es-CO')}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-berry-600 mb-1">Margen Bruto</div>
+                      <div className={`text-lg font-bold ${month.grossMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        ${month.grossMargin.toLocaleString('es-CO')}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-berry-600 mb-1">Margen Neto</div>
+                      <div className={`text-lg font-bold ${month.netMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        ${month.netMargin.toLocaleString('es-CO')}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-berry-600 mb-1">Ticket Promedio</div>
+                      <div className="text-lg font-bold text-berry-950">
+                        ${month.averageTicket.toLocaleString('es-CO')}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-xl shadow-lg">
+              <div className="text-berry-600">No hay meses con 4 semanas completas para el año {year}</div>
+            </div>
+          )
         ) : kpis ? (
           <>
             {/* KPIs Principales */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <div className="text-sm text-berry-600 mb-2">Ingresos Totales</div>
                 <div className="text-3xl font-bold text-berry-950">
@@ -194,6 +374,18 @@ export default function AnalyticsPage() {
                 </div>
               </div>
               <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="text-sm text-red-600 mb-2">Gastos Fijos</div>
+                <div className="text-2xl font-bold text-red-700">
+                  ${(kpis.fixedExpenses || 0).toLocaleString('es-CO')}
+                </div>
+              </div>
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="text-sm text-orange-600 mb-2">Gastos Variables</div>
+                <div className="text-2xl font-bold text-orange-700">
+                  ${(kpis.variableExpenses || 0).toLocaleString('es-CO')}
+                </div>
+              </div>
+              <div className="bg-white rounded-xl shadow-lg p-6">
                 <div className="text-sm text-berry-600 mb-2">Punto de Equilibrio</div>
                 <div className="text-3xl font-bold text-berry-950">
                   {kpis.breakEvenPoint} pedidos/día
@@ -203,7 +395,7 @@ export default function AnalyticsPage() {
 
             {/* Inventario */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-              <h2 className="text-2xl font-bold text-berry-950 mb-4">📦 Inventario</h2>
+              <h2 className="text-2xl font-bold text-berry-950 mb-4 text-center">📦 Inventario</h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="border border-stone-200 rounded-lg p-4">
                   <div className="text-sm text-berry-600 mb-1">Valor Total Inventario</div>
@@ -228,7 +420,7 @@ export default function AnalyticsPage() {
 
             {/* Ventas por Horario */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-              <h2 className="text-2xl font-bold text-berry-950 mb-4">⏰ Ventas por Horario</h2>
+              <h2 className="text-2xl font-bold text-berry-950 mb-4 text-center">⏰ Ventas por Horario</h2>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="border border-stone-200 rounded-lg p-4">
                   <div className="text-sm text-berry-600 mb-1">☀️ Ventas Día (6am-6pm)</div>
@@ -265,7 +457,7 @@ export default function AnalyticsPage() {
 
             {/* Clasificación de Productos */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-              <h2 className="text-2xl font-bold text-berry-950 mb-4">🎯 Clasificación de Productos</h2>
+              <h2 className="text-2xl font-bold text-berry-950 mb-4 text-center">🎯 Clasificación de Productos</h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="border-2 border-green-300 rounded-lg p-4 bg-green-50">
                   <div className="text-sm text-green-600 mb-1">⭐ Estrella</div>

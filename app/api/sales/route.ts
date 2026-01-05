@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { items, total, channel } = body
+    const { items, total, channel, paymentMethod, date, hour } = body
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -35,10 +35,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const now = new Date()
+    // Usar fecha proporcionada o fecha actual
+    const saleDate = date ? new Date(date) : new Date()
+    const saleHour = hour !== undefined ? hour : saleDate.getHours()
+    
     const sale = createSale({
-      date: now.toISOString(),
-      hour: now.getHours(),
+      date: saleDate.toISOString(),
+      hour: saleHour,
       items: items.map((item: any) => ({
         productId: item.productId,
         productName: item.productName,
@@ -48,6 +51,7 @@ export async function POST(request: NextRequest) {
       })),
       total,
       channel: channel || 'whatsapp',
+      paymentMethod: paymentMethod || 'efectivo',
       ticketNumber: `T-${Date.now()}`
     })
 
@@ -57,7 +61,7 @@ export async function POST(request: NextRequest) {
       if (product) {
         updateProduct(item.productId, {
           stock: product.stock - item.quantity,
-          lastSaleDate: now.toISOString(),
+          lastSaleDate: saleDate.toISOString(),
           totalSold: (product.totalSold || 0) + item.quantity
         })
       }
