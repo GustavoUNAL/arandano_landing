@@ -41,6 +41,9 @@ export default function WaiterPage() {
     const minutes = String(now.getMinutes()).padStart(2, '0')
     return `${year}-${month}-${day}T${hours}:${minutes}`
   })
+  const [discount, setDiscount] = useState<string>('')
+  const [discountType, setDiscountType] = useState<'percentage' | 'amount'>('percentage')
+  const [orderComment, setOrderComment] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
 
@@ -93,8 +96,23 @@ export default function WaiterPage() {
     setCart((prevCart) => prevCart.filter((item) => item.id !== id))
   }
 
-  const getTotal = () => {
+  const getSubtotal = () => {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0)
+  }
+
+  const getDiscountAmount = () => {
+    if (!discount) return 0
+    const discountValue = parseFloat(discount) || 0
+    if (discountType === 'percentage') {
+      return (getSubtotal() * discountValue) / 100
+    }
+    return discountValue
+  }
+
+  const getTotal = () => {
+    const subtotal = getSubtotal()
+    const discountAmount = getDiscountAmount()
+    return Math.max(0, subtotal - discountAmount)
   }
 
   const formatPrice = (price: number) => {
@@ -141,6 +159,11 @@ export default function WaiterPage() {
             unitPrice: item.price
           })),
           total,
+          subtotal: getSubtotal(),
+          discount: getDiscountAmount(),
+          discountType: discount ? discountType : undefined,
+          discountValue: discount ? parseFloat(discount) : undefined,
+          comment: orderComment || undefined,
           channel: 'presencial',
           paymentMethod,
           date: saleDate.toISOString(),
@@ -153,6 +176,9 @@ export default function WaiterPage() {
         setCart([])
         setAmountPaid('')
         setPaymentMethod('efectivo')
+        setDiscount('')
+        setDiscountType('percentage')
+        setOrderComment('')
         // Resetear fecha a la actual
         const now = new Date()
         const year = now.getFullYear()
@@ -350,18 +376,37 @@ export default function WaiterPage() {
                   </div>
 
                   <div className="border-t border-stone-200 pt-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-lg font-semibold text-berry-950">Total:</span>
-                      <span className="text-2xl font-bold text-berry-600">
-                        ${formatPrice(getTotal())}
-                      </span>
+                    {/* Resumen de precios */}
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between text-sm text-stone-600">
+                        <span>Subtotal:</span>
+                        <span>${formatPrice(getSubtotal())}</span>
+                      </div>
+                      {discount && (
+                        <div className="flex justify-between text-sm text-red-600">
+                          <span>
+                            Descuento ({discountType === 'percentage' ? `${discount}%` : 'Monto'}):
+                          </span>
+                          <span>-${formatPrice(getDiscountAmount())}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center pt-2 border-t border-stone-200">
+                        <span className="text-lg font-semibold text-berry-950">Total:</span>
+                        <span className="text-2xl font-bold text-berry-600">
+                          ${formatPrice(getTotal())}
+                        </span>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => setShowPaymentModal(true)}
-                      className="w-full bg-berry-600 hover:bg-berry-700 text-white font-semibold py-3 rounded-lg transition-colors"
-                    >
-                      Cobrar
-                    </button>
+
+                    {/* Botones de acción */}
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => setShowPaymentModal(true)}
+                        className="w-full bg-berry-600 hover:bg-berry-700 text-white font-semibold py-3 rounded-lg transition-colors"
+                      >
+                        Cobrar
+                      </button>
+                    </div>
                   </div>
                 </>
               )}
@@ -377,12 +422,101 @@ export default function WaiterPage() {
             <h3 className="text-xl sm:text-2xl font-bold text-berry-950 mb-4 text-center">Procesar Pago</h3>
             
             <div className="mb-6">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-stone-600 text-lg">Total a pagar:</span>
-                <span className="text-3xl font-bold text-berry-600">
-                  ${formatPrice(getTotal())}
-                </span>
+              <div className="space-y-2 p-3 bg-stone-50 rounded-lg">
+                <div className="flex justify-between text-sm text-stone-600">
+                  <span>Subtotal:</span>
+                  <span>${formatPrice(getSubtotal())}</span>
+                </div>
+                {discount && (
+                  <div className="flex justify-between text-sm text-red-600">
+                    <span>
+                      Descuento ({discountType === 'percentage' ? `${discount}%` : 'Monto'}):
+                    </span>
+                    <span>-${formatPrice(getDiscountAmount())}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-2 border-t border-stone-200">
+                  <span className="text-stone-700 text-lg font-semibold">Total a pagar:</span>
+                  <span className="text-3xl font-bold text-berry-600">
+                    ${formatPrice(getTotal())}
+                  </span>
+                </div>
               </div>
+            </div>
+
+            {/* Descuento */}
+            <div className="mb-4">
+              <label className="block text-sm sm:text-base font-medium text-stone-700 mb-2">
+                Descuento (opcional):
+              </label>
+              <div className="flex gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDiscountType('percentage')
+                    setDiscount('')
+                  }}
+                  className={`flex-1 px-3 py-2 rounded-lg font-medium transition-colors text-sm ${
+                    discountType === 'percentage'
+                      ? 'bg-berry-600 text-white'
+                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                  }`}
+                >
+                  Porcentaje
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDiscountType('amount')
+                    setDiscount('')
+                  }}
+                  className={`flex-1 px-3 py-2 rounded-lg font-medium transition-colors text-sm ${
+                    discountType === 'amount'
+                      ? 'bg-berry-600 text-white'
+                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                  }`}
+                >
+                  Monto fijo
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  step={discountType === 'percentage' ? '0.1' : '100'}
+                  min="0"
+                  max={discountType === 'percentage' ? '100' : undefined}
+                  value={discount}
+                  onChange={(e) => setDiscount(e.target.value)}
+                  placeholder={discountType === 'percentage' ? 'Ej: 10' : 'Ej: 5000'}
+                  className="flex-1 px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent text-sm sm:text-base"
+                />
+                <button
+                  type="button"
+                  onClick={() => setDiscount('')}
+                  className="px-3 py-2 bg-stone-200 hover:bg-stone-300 rounded-lg text-sm font-medium"
+                >
+                  Limpiar
+                </button>
+              </div>
+              {discount && (
+                <p className="text-xs text-stone-500 mt-1">
+                  Descuento: ${formatPrice(getDiscountAmount())}
+                </p>
+              )}
+            </div>
+
+            {/* Comentario */}
+            <div className="mb-4">
+              <label className="block text-sm sm:text-base font-medium text-stone-700 mb-2">
+                Comentario de la orden (opcional):
+              </label>
+              <textarea
+                value={orderComment}
+                onChange={(e) => setOrderComment(e.target.value)}
+                placeholder="Ej: Cliente frecuente, pedido especial, etc."
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent text-sm sm:text-base"
+                rows={3}
+              />
             </div>
 
             {/* Selector de fecha y hora de cobro - Siempre visible y editable */}

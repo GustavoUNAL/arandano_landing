@@ -6,13 +6,21 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "migrate:firebase": "node scripts/migrate-to-firebase.js",
+    "backup:firebase": "node scripts/backup-firebase.js",
+    "backup:json": "node scripts/export-json-to-backup.js",
+    "check:firebase": "node scripts/check-firebase-setup.js",
+    "test:firebase": "node scripts/test-firebase-connection.js",
+    "verify:firebase": "node scripts/verify-firebase-data.js"
   },
   "dependencies": {
     "next": "^14.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "firebase": "^10.7.1",
+    "firebase-admin": "^12.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.6",

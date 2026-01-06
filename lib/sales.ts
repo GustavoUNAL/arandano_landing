@@ -13,6 +13,11 @@ export interface Sale {
     totalPrice: number
   }>
   total: number
+  subtotal?: number
+  discount?: number
+  discountType?: 'percentage' | 'amount'
+  discountValue?: number
+  comment?: string
   channel: 'presencial' | 'whatsapp'
   paymentMethod?: 'efectivo' | 'nequi' | 'daviplata'
   ticketNumber?: string

@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { items, total, channel, paymentMethod, date, hour } = body
+    const { items, total, subtotal, discount, discountType, discountValue, comment, channel, paymentMethod, date, hour } = body
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -50,6 +50,11 @@ export async function POST(request: NextRequest) {
         totalPrice: item.quantity * item.unitPrice
       })),
       total,
+      subtotal: subtotal || total,
+      discount: discount || 0,
+      discountType: discountType,
+      discountValue: discountValue,
+      comment: comment,
       channel: channel || 'whatsapp',
       paymentMethod: paymentMethod || 'efectivo',
       ticketNumber: `T-${Date.now()}`
