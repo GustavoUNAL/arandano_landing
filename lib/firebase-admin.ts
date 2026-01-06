@@ -16,17 +16,25 @@ if (!admin.apps.length) {
     // Prioridad 2: Archivo local (desarrollo)
     else {
       try {
-        serviceAccount = require('../firebase-service-account.json')
-      } catch (fileError) {
-        // Si no existe el archivo, intentar desde la raíz del proyecto
         const path = require('path')
         const fs = require('fs')
         const serviceAccountPath = path.join(process.cwd(), 'firebase-service-account.json')
         if (fs.existsSync(serviceAccountPath)) {
           serviceAccount = require(serviceAccountPath)
         } else {
-          throw new Error('Firebase Service Account no encontrado')
+          // Si no existe el archivo y estamos en producción, lanzar error
+          if (process.env.NODE_ENV === 'production') {
+            throw new Error('Firebase Service Account no encontrado. Configura FIREBASE_SERVICE_ACCOUNT o el archivo firebase-service-account.json')
+          }
+          // En desarrollo, solo mostrar warning
+          console.warn('⚠️  Firebase Service Account no encontrado. Usa FIREBASE_SERVICE_ACCOUNT o crea firebase-service-account.json')
         }
+      } catch (fileError: any) {
+        // Si no existe el archivo y estamos en producción, lanzar error
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error('Firebase Service Account no encontrado: ' + fileError.message)
+        }
+        console.warn('⚠️  Firebase Service Account no encontrado:', fileError.message)
       }
     }
 

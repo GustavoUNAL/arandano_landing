@@ -892,7 +892,7 @@ export default function WaiterPage() {
                 onClick={handlePayment}
                 disabled={
                   processing ||
-                  (paymentAction === 'pay' && paymentMethod === 'efectivo' && amountPaid && parseFloat(amountPaid) > 0 && parseFloat(amountPaid) < getTotal())
+                  (paymentAction === 'pay' && paymentMethod === 'efectivo' && amountPaid !== '' && parseFloat(amountPaid) > 0 && parseFloat(amountPaid) < getTotal())
                 }
                 className="flex-1 px-4 py-2.5 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
