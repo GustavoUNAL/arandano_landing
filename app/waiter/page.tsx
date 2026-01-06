@@ -962,7 +962,7 @@ export default function WaiterPage() {
                           </div>
                           {sale.comment && (
                             <div className="text-xs text-stone-500 mt-1 italic line-clamp-2">
-                              "{sale.comment}"
+                              &quot;{sale.comment}&quot;
                             </div>
                           )}
                         </div>
