@@ -5,6 +5,7 @@
 
 import { db } from './firebase-admin'
 import { Expense, ExpenseType, ExpenseCategory } from './expenses'
+import { isDbAvailable } from './db-utils'
 
 // Re-exportar tipos
 export type { Expense, ExpenseType, ExpenseCategory } from './expenses'
@@ -16,7 +17,7 @@ const DB_MODE = (process.env.DB_MODE || 'firebase') as 'firebase' | 'json' | 'hy
 import { getExpenses as getExpensesJSON, saveExpenses as saveExpensesJSON, createExpense as createExpenseJSON, updateExpense as updateExpenseJSON, deleteExpense as deleteExpenseJSON, getExpensesByDateRange as getExpensesByDateRangeJSON, getMonthlyFixedExpenses as getMonthlyFixedExpensesJSON } from './expenses'
 
 export async function getExpenses(): Promise<Expense[]> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return getExpensesJSON()
   }
 
@@ -45,11 +46,14 @@ export async function createExpense(expense: Omit<Expense, 'id'>): Promise<Expen
     id: `expense-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   }
 
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return createExpenseJSON(expense)
   }
 
   try {
+    if (!isDbAvailable()) {
+      return createExpenseJSON(expense)
+    }
     await db.collection('expenses').doc(newExpense.id).set(newExpense)
     
     if (DB_MODE === 'hybrid') {
@@ -66,11 +70,14 @@ export async function createExpense(expense: Omit<Expense, 'id'>): Promise<Expen
 }
 
 export async function updateExpense(id: string, updates: Partial<Expense>): Promise<Expense | null> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return updateExpenseJSON(id, updates)
   }
 
   try {
+    if (!isDbAvailable()) {
+      return updateExpenseJSON(id, updates)
+    }
     const docRef = db.collection('expenses').doc(id)
     await docRef.update(updates)
     
@@ -96,11 +103,14 @@ export async function updateExpense(id: string, updates: Partial<Expense>): Prom
 }
 
 export async function deleteExpense(id: string): Promise<boolean> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return deleteExpenseJSON(id)
   }
 
   try {
+    if (!isDbAvailable()) {
+      return deleteExpenseJSON(id)
+    }
     await db.collection('expenses').doc(id).delete()
     
     if (DB_MODE === 'hybrid') {
@@ -117,11 +127,14 @@ export async function deleteExpense(id: string): Promise<boolean> {
 }
 
 export async function getExpensesByDateRange(startDate: string, endDate: string): Promise<Expense[]> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return getExpensesByDateRangeJSON(startDate, endDate)
   }
 
   try {
+    if (!isDbAvailable()) {
+      return getExpensesByDateRangeJSON(startDate, endDate)
+    }
     const snapshot = await db.collection('expenses')
       .where('date', '>=', startDate)
       .where('date', '<=', endDate)
@@ -135,11 +148,14 @@ export async function getExpensesByDateRange(startDate: string, endDate: string)
 }
 
 export async function getMonthlyFixedExpenses(year: number, month: number): Promise<Expense[]> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return getMonthlyFixedExpensesJSON(year, month)
   }
 
   try {
+    if (!isDbAvailable()) {
+      return getMonthlyFixedExpensesJSON(year, month)
+    }
     const startDate = new Date(year, month, 1).toISOString()
     const endDate = new Date(year, month + 1, 0).toISOString()
     

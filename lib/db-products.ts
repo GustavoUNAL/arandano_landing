@@ -6,6 +6,7 @@
 import { db } from './firebase-admin'
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore'
 import { Product } from './products'
+import { isDbAvailable } from './db-utils'
 
 // Re-exportar Product para que pueda ser importado desde otros archivos
 export type { Product } from './products'
@@ -17,11 +18,15 @@ const DB_MODE = (process.env.DB_MODE || 'json') as 'firebase' | 'json' | 'hybrid
 import { getProducts as getProductsJSON, saveProducts as saveProductsJSON } from './products'
 
 export async function getProducts(): Promise<Product[]> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return getProductsJSON()
   }
 
   try {
+    if (!isDbAvailable()) {
+      return getProductsJSON()
+    }
+    
     if (DB_MODE === 'firebase') {
       const snapshot = await db.collection('products').get()
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product))
@@ -43,7 +48,7 @@ export async function getProducts(): Promise<Product[]> {
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     const products = getProductsJSON()
     return products.find(p => p.id === id) || null
   }
@@ -70,7 +75,7 @@ export async function createProduct(product: Omit<Product, 'id'>): Promise<Produ
     id: `prod-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   }
 
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     const products = getProductsJSON()
     products.push(newProduct)
     saveProductsJSON(products)
@@ -99,7 +104,7 @@ export async function createProduct(product: Omit<Product, 'id'>): Promise<Produ
 }
 
 export async function updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     const products = getProductsJSON()
     const index = products.findIndex(p => p.id === id)
     if (index === -1) return null
@@ -143,7 +148,7 @@ export async function updateProduct(id: string, updates: Partial<Product>): Prom
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     const products = getProductsJSON()
     const filtered = products.filter(p => p.id !== id)
     saveProductsJSON(filtered)

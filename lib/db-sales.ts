@@ -5,6 +5,7 @@
 
 import { db } from './firebase-admin'
 import { Sale } from './sales'
+import { isDbAvailable } from './db-utils'
 
 // Re-exportar tipos
 export type { Sale } from './sales'
@@ -16,11 +17,15 @@ const DB_MODE = (process.env.DB_MODE || 'firebase') as 'firebase' | 'json' | 'hy
 import { getSales as getSalesJSON, saveSales as saveSalesJSON, getSalesByDateRange as getSalesByDateRangeJSON, getSalesByProduct as getSalesByProductJSON, getSaleById as getSaleByIdJSON, deleteSale as deleteSaleJSON, createSale as createSaleJSON } from './sales'
 
 export async function getSales(): Promise<Sale[]> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return getSalesJSON()
   }
 
   try {
+    if (!isDbAvailable()) {
+      return getSalesJSON()
+    }
+    
     if (DB_MODE === 'firebase') {
       const snapshot = await db.collection('sales').orderBy('date', 'desc').get()
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale))
@@ -41,7 +46,7 @@ export async function getSales(): Promise<Sale[]> {
 }
 
 export async function getSaleById(id: string): Promise<Sale | undefined> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return getSaleByIdJSON(id)
   }
 
@@ -65,7 +70,7 @@ export async function createSale(sale: Omit<Sale, 'id'>): Promise<Sale> {
     id: `sale-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   }
 
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return createSaleJSON(sale)
   }
 
@@ -86,7 +91,7 @@ export async function createSale(sale: Omit<Sale, 'id'>): Promise<Sale> {
 }
 
 export async function deleteSale(id: string): Promise<boolean> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return deleteSaleJSON(id)
   }
 
@@ -107,7 +112,7 @@ export async function deleteSale(id: string): Promise<boolean> {
 }
 
 export async function getSalesByDateRange(startDate: string, endDate: string): Promise<Sale[]> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return getSalesByDateRangeJSON(startDate, endDate)
   }
 
@@ -125,7 +130,7 @@ export async function getSalesByDateRange(startDate: string, endDate: string): P
 }
 
 export async function getSalesByProduct(productId: string): Promise<Sale[]> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return getSalesByProductJSON(productId)
   }
 

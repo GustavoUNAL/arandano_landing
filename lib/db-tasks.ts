@@ -5,6 +5,7 @@
 
 import { db } from './firebase-admin'
 import { Task, TaskCategory, TaskPriority } from './tasks'
+import { isDbAvailable } from './db-utils'
 
 // Re-exportar tipos
 export type { Task, TaskCategory, TaskPriority } from './tasks'
@@ -16,11 +17,15 @@ const DB_MODE = (process.env.DB_MODE || 'firebase') as 'firebase' | 'json' | 'hy
 import { getTasks as getTasksJSON, saveTasks as saveTasksJSON, createTask as createTaskJSON, updateTask as updateTaskJSON, deleteTask as deleteTaskJSON, getTasksByCategory as getTasksByCategoryJSON, getTasksByPriority as getTasksByPriorityJSON, getOverdueTasks as getOverdueTasksJSON } from './tasks'
 
 export async function getTasks(): Promise<Task[]> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return getTasksJSON()
   }
 
   try {
+    if (!isDbAvailable()) {
+      return getTasksJSON()
+    }
+    
     if (DB_MODE === 'firebase') {
       const snapshot = await db.collection('tasks').orderBy('createdAt', 'desc').get()
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task))
@@ -47,7 +52,7 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'complete
     completed: false
   }
 
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return createTaskJSON(task)
   }
 
@@ -68,7 +73,7 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'complete
 }
 
 export async function updateTask(id: string, updates: Partial<Task>): Promise<Task | null> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return updateTaskJSON(id, updates)
   }
 
@@ -107,7 +112,7 @@ export async function updateTask(id: string, updates: Partial<Task>): Promise<Ta
 }
 
 export async function deleteTask(id: string): Promise<boolean> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return deleteTaskJSON(id)
   }
 
@@ -128,7 +133,7 @@ export async function deleteTask(id: string): Promise<boolean> {
 }
 
 export async function getTasksByCategory(category: TaskCategory): Promise<Task[]> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return getTasksByCategoryJSON(category)
   }
 
@@ -145,7 +150,7 @@ export async function getTasksByCategory(category: TaskCategory): Promise<Task[]
 }
 
 export async function getTasksByPriority(priority: TaskPriority): Promise<Task[]> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return getTasksByPriorityJSON(priority)
   }
 
@@ -162,7 +167,7 @@ export async function getTasksByPriority(priority: TaskPriority): Promise<Task[]
 }
 
 export async function getOverdueTasks(): Promise<Task[]> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return getOverdueTasksJSON()
   }
 

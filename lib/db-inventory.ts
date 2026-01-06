@@ -5,6 +5,7 @@
 
 import { db } from './firebase-admin'
 import { InventoryItem } from './inventory'
+import { isDbAvailable } from './db-utils'
 
 // Re-exportar tipos
 export type { InventoryItem } from './inventory'
@@ -16,11 +17,15 @@ const DB_MODE = (process.env.DB_MODE || 'firebase') as 'firebase' | 'json' | 'hy
 import { getInventory as getInventoryJSON, saveInventory as saveInventoryJSON, createInventoryItem as createInventoryItemJSON, updateInventoryItem as updateInventoryItemJSON, deleteInventoryItem as deleteInventoryItemJSON } from './inventory'
 
 export async function getInventory(): Promise<InventoryItem[]> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return getInventoryJSON()
   }
 
   try {
+    if (!isDbAvailable()) {
+      return getInventoryJSON()
+    }
+    
     if (DB_MODE === 'firebase') {
       const snapshot = await db.collection('inventory').get()
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem))
@@ -45,7 +50,7 @@ export async function createInventoryItem(item: Omit<InventoryItem, 'id'>): Prom
     id: `inv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   }
 
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return createInventoryItemJSON(item)
   }
 
@@ -66,7 +71,7 @@ export async function createInventoryItem(item: Omit<InventoryItem, 'id'>): Prom
 }
 
 export async function updateInventoryItem(id: string, updates: Partial<InventoryItem>): Promise<InventoryItem | null> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return updateInventoryItemJSON(id, updates)
   }
 
@@ -96,7 +101,7 @@ export async function updateInventoryItem(id: string, updates: Partial<Inventory
 }
 
 export async function deleteInventoryItem(id: string): Promise<boolean> {
-  if (DB_MODE === 'json') {
+  if (DB_MODE === 'json' || !isDbAvailable()) {
     return deleteInventoryItemJSON(id)
   }
 
