@@ -6,6 +6,9 @@
 import { db } from './firebase-admin'
 import { Task, TaskCategory, TaskPriority } from './tasks'
 
+// Re-exportar tipos
+export type { Task, TaskCategory, TaskPriority } from './tasks'
+
 // Modo: 'firebase' | 'json' | 'hybrid'
 const DB_MODE = (process.env.DB_MODE || 'firebase') as 'firebase' | 'json' | 'hybrid'
 

@@ -6,6 +6,9 @@
 import { db } from './firebase-admin'
 import { Expense, ExpenseType, ExpenseCategory } from './expenses'
 
+// Re-exportar tipos
+export type { Expense, ExpenseType, ExpenseCategory } from './expenses'
+
 // Modo: 'firebase' | 'json' | 'hybrid'
 const DB_MODE = (process.env.DB_MODE || 'firebase') as 'firebase' | 'json' | 'hybrid'
 

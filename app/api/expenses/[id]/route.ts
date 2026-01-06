@@ -7,7 +7,7 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const updated = updateExpense(params.id, body)
+    const updated = await updateExpense(params.id, body)
     
     if (!updated) {
       return NextResponse.json(
@@ -30,7 +30,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const deleted = deleteExpense(params.id)
+    const deleted = await deleteExpense(params.id)
     
     if (!deleted) {
       return NextResponse.json(

@@ -9,7 +9,7 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const item = updateInventoryItem(params.id, body)
+    const item = await updateInventoryItem(params.id, body)
     
     if (!item) {
       return NextResponse.json(
@@ -33,7 +33,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const deleted = deleteInventoryItem(params.id)
+    const deleted = await deleteInventoryItem(params.id)
     
     if (!deleted) {
       return NextResponse.json(

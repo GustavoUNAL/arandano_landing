@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const priority = searchParams.get('priority')
     const completed = searchParams.get('completed')
     
-    let tasks = getTasks()
+    let tasks = await getTasks()
     
     if (category) {
       tasks = tasks.filter(t => t.category === category)
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const task = createTask({
+    const task = await createTask({
       title,
       description: description || '',
       category,

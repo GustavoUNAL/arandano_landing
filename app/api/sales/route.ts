@@ -9,11 +9,11 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate')
     
     if (startDate && endDate) {
-      const sales = getSalesByDateRange(startDate, endDate)
+      const sales = await getSalesByDateRange(startDate, endDate)
       return NextResponse.json(sales)
     }
     
-    const sales = getSales()
+    const sales = await getSales()
     return NextResponse.json(sales)
   } catch (error) {
     return NextResponse.json(
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const saleDate = date ? new Date(date) : new Date()
     const saleHour = hour !== undefined ? hour : saleDate.getHours()
     
-    const sale = createSale({
+    const sale = await createSale({
       date: saleDate.toISOString(),
       hour: saleHour,
       items: items.map((item: any) => ({
@@ -62,9 +62,9 @@ export async function POST(request: NextRequest) {
 
     // Actualizar stock y última fecha de venta de productos
     for (const item of items) {
-      const product = getProductById(item.productId)
+      const product = await getProductById(item.productId)
       if (product) {
-        updateProduct(item.productId, {
+        await updateProduct(item.productId, {
           stock: product.stock - item.quantity,
           lastSaleDate: saleDate.toISOString(),
           totalSold: (product.totalSold || 0) + item.quantity

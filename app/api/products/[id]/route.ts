@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const product = getProductById(params.id)
+    const product = await getProductById(params.id)
     if (!product) {
       return NextResponse.json(
         { error: 'Producto no encontrado' },
@@ -30,7 +30,7 @@ export async function PUT(
     const body = await request.json()
     const { name, price, description, category, type, stock, imageUrl, size } = body
 
-    const updatedProduct = updateProduct(params.id, {
+    const updatedProduct = await updateProduct(params.id, {
       name,
       price: price !== undefined ? Number(price) : undefined,
       description,
@@ -62,7 +62,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const deleted = deleteProduct(params.id)
+    const deleted = await deleteProduct(params.id)
     if (!deleted) {
       return NextResponse.json(
         { error: 'Producto no encontrado' },

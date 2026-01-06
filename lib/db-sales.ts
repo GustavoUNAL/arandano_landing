@@ -6,6 +6,9 @@
 import { db } from './firebase-admin'
 import { Sale } from './sales'
 
+// Re-exportar tipos
+export type { Sale } from './sales'
+
 // Modo: 'firebase' | 'json' | 'hybrid'
 const DB_MODE = (process.env.DB_MODE || 'firebase') as 'firebase' | 'json' | 'hybrid'
 

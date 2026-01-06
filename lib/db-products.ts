@@ -7,6 +7,9 @@ import { db } from './firebase-admin'
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore'
 import { Product } from './products'
 
+// Re-exportar Product para que pueda ser importado desde otros archivos
+export type { Product } from './products'
+
 // Modo: 'firebase' | 'json' | 'hybrid'
 const DB_MODE = (process.env.DB_MODE || 'json') as 'firebase' | 'json' | 'hybrid'
 

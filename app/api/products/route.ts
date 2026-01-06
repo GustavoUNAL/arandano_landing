@@ -3,7 +3,7 @@ import { getProducts, createProduct, Product } from '@/lib/db-products'
 
 export async function GET() {
   try {
-    const products = getProducts()
+    const products = await getProducts()
     return NextResponse.json(products)
   } catch (error) {
     return NextResponse.json(
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const newProduct = createProduct({
+    const newProduct = await createProduct({
       name,
       price: Number(price),
       description: description || '',

@@ -8,11 +8,11 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate')
     
     if (startDate && endDate) {
-      const expenses = getExpensesByDateRange(startDate, endDate)
+      const expenses = await getExpensesByDateRange(startDate, endDate)
       return NextResponse.json(expenses)
     }
     
-    const expenses = getExpenses()
+    const expenses = await getExpenses()
     return NextResponse.json(expenses)
   } catch (error) {
     return NextResponse.json(
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const expense = createExpense({
+    const expense = await createExpense({
       date,
       type,
       category,

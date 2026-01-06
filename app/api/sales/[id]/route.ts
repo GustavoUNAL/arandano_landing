@@ -7,7 +7,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const sale = getSaleById(params.id)
+    const sale = await getSaleById(params.id)
     
     if (!sale) {
       return NextResponse.json(
@@ -18,12 +18,12 @@ export async function DELETE(
 
     // Restaurar stock de productos
     for (const item of sale.items) {
-      const product = getProductById(item.productId)
+      const product = await getProductById(item.productId)
       if (product) {
         const newStock = product.stock + item.quantity
         const newTotalSold = Math.max(0, (product.totalSold || 0) - item.quantity)
         
-        updateProduct(item.productId, {
+        await updateProduct(item.productId, {
           stock: newStock,
           totalSold: newTotalSold
         })
@@ -31,7 +31,7 @@ export async function DELETE(
     }
 
     // Eliminar la venta
-    const deleted = deleteSale(params.id)
+    const deleted = await deleteSale(params.id)
     
     if (!deleted) {
       return NextResponse.json(
