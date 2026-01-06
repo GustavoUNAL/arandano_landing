@@ -4,6 +4,16 @@ const nextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
     unoptimized: false, // Habilitar optimización de imágenes
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
+    ],
   },
   // Optimizaciones para build más rápido
   swcMinify: true,

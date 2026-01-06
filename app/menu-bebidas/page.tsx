@@ -5,6 +5,7 @@ import FloatingWhatsApp from '@/components/FloatingWhatsApp'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import WhatsAppIcon from '@/components/WhatsAppIcon'
+import Image from 'next/image'
 
 interface Product {
   id: string
@@ -150,11 +151,12 @@ export default function MenuBebidas() {
       <div className="bg-white border-2 border-stone-200 rounded-xl p-4 sm:p-5 md:p-6 hover:bg-stone-50 hover:border-berry-300 transition-all duration-300 hover:shadow-lg">
         <div className="flex flex-col gap-3 sm:gap-4">
           {item.imageUrl && (
-            <div className="w-full h-32 sm:h-40 bg-stone-100 rounded-lg overflow-hidden mb-2">
-              <img 
+            <div className="w-full h-32 sm:h-40 bg-stone-100 rounded-lg overflow-hidden mb-2 relative">
+              <Image 
                 src={item.imageUrl} 
                 alt={item.name}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none'
                 }}

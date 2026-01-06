@@ -8,6 +8,7 @@ import Footer from '@/components/Footer'
 import FloatingWhatsApp from '@/components/FloatingWhatsApp'
 import { useState, useMemo, useEffect } from 'react'
 import WhatsAppIcon from '@/components/WhatsAppIcon'
+import Image from 'next/image'
 
 interface Product {
   id: string
@@ -244,11 +245,12 @@ export default function CarritoPage() {
       <div className="bg-white border-2 border-stone-200 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 lg:p-6 hover:bg-stone-50 hover:border-berry-300 transition-all duration-300 hover:shadow-lg">
         <div className="flex flex-col gap-2 sm:gap-3 md:gap-4">
           {product.imageUrl && (
-            <div className="w-full h-32 sm:h-40 bg-stone-100 rounded-lg overflow-hidden mb-2">
-              <img 
+            <div className="w-full h-32 sm:h-40 bg-stone-100 rounded-lg overflow-hidden mb-2 relative">
+              <Image 
                 src={product.imageUrl} 
                 alt={product.name}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none'
                 }}

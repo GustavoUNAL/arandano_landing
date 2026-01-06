@@ -141,7 +141,7 @@ export async function getSalesByProduct(productId: string): Promise<Sale[]> {
       .get()
     
     // Filtrar en memoria porque Firestore no soporta búsqueda anidada directamente
-    const allSales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale))
+    const allSales = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Sale))
     return allSales.filter(sale => 
       sale.items.some(item => item.productId === productId)
     )
