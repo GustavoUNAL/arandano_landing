@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { updateTask, deleteTask } from '@/lib/tasks'
+import { updateTask, deleteTask } from '@/lib/db-tasks'
 
 export async function PUT(
   request: NextRequest,

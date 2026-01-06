@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { updateExpense, deleteExpense, getExpenses } from '@/lib/expenses'
+import { updateExpense, deleteExpense, getExpenses } from '@/lib/db-expenses'
 
 export async function PUT(
   request: NextRequest,

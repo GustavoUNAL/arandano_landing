@@ -54,6 +54,7 @@ export default function AdminPage() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'products' | 'products-for-sale'>('dashboard')
   const [sales, setSales] = useState<any[]>([])
   const [editingStock, setEditingStock] = useState<{ id: string; stock: number } | null>(null)
+  const [selectedProductDetail, setSelectedProductDetail] = useState<Product | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -394,12 +395,12 @@ export default function AdminPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
               {currentView !== 'dashboard' && (
-                <button
-                  onClick={() => setCurrentView('dashboard')}
-                  className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-berry-600 hover:text-berry-800 text-xs sm:text-sm font-medium border border-berry-300 rounded-lg transition-colors"
+                <a
+                  href="/admin"
+                  className="px-4 py-2 text-berry-600 hover:text-berry-800 text-sm font-medium"
                 >
-                  ← Dashboard
-                </button>
+                  ← Volver a Admin
+                </a>
               )}
               <button
                 onClick={() => router.push('/')}
@@ -1032,54 +1033,57 @@ export default function AdminPage() {
             {loading ? (
               <div className="text-center py-8 text-berry-600">Cargando...</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b-2 border-berry-200">
-                      <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-berry-950">Producto</th>
-                      <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-berry-950">Precio</th>
-                      <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-berry-950">Costo</th>
-                      <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-berry-950">Margen</th>
-                      <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-berry-950">Margen %</th>
-                      <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-berry-950">Vendidos</th>
-                      <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-berry-950">Stock</th>
-                      <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-berry-950">Rentabilidad</th>
-                      <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-berry-950">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {products.map((product) => {
-                      // Calcular ventas del producto
-                      const productSales = sales.filter(sale =>
-                        sale.items?.some((item: any) => item.productId === product.id)
-                      )
-                      const totalSold = productSales.reduce((sum, sale) => {
-                        const item = sale.items?.find((i: any) => i.productId === product.id)
-                        return sum + (item?.quantity || 0)
-                      }, 0)
+              <>
+                {/* Vista Cards para móvil */}
+                <div className="sm:hidden space-y-3">
+                  {products.map((product) => {
+                    const productSales = sales.filter(sale =>
+                      sale.items?.some((item: any) => item.productId === product.id)
+                    )
+                    const totalSold = productSales.reduce((sum, sale) => {
+                      const item = sale.items?.find((i: any) => i.productId === product.id)
+                      return sum + (item?.quantity || 0)
+                    }, 0)
 
-                      const cost = product.cost || 0
-                      const price = product.price
-                      const margin = price - cost
-                      const marginPercent = price > 0 ? ((margin / price) * 100) : 0
-                      const totalProfit = totalSold * margin
+                    const cost = product.cost || 0
+                    const price = product.price
+                    const margin = price - cost
+                    const marginPercent = price > 0 ? ((margin / price) * 100) : 0
+                    const totalProfit = totalSold * margin
 
-                      return (
-                        <tr key={product.id} className="border-b border-stone-200 hover:bg-stone-50">
-                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium text-berry-950">
-                            {product.name}
-                          </td>
-                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-center">
-                            ${price.toLocaleString('es-CO')}
-                          </td>
-                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-center">
-                            {cost > 0 ? `$${cost.toLocaleString('es-CO')}` : '-'}
-                          </td>
-                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-center">
-                            {cost > 0 ? `$${margin.toLocaleString('es-CO')}` : '-'}
-                          </td>
-                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-center">
-                            {cost > 0 ? (
+                    return (
+                      <div
+                        key={product.id}
+                        className="border border-stone-200 rounded-lg p-4 bg-white hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-berry-950 text-base mb-1">
+                              {product.name}
+                            </h3>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm text-stone-600">
+                                Precio: <span className="font-semibold text-berry-600">${price.toLocaleString('es-CO')}</span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
+                          <div className="bg-stone-50 rounded p-2">
+                            <div className="text-xs text-stone-600">Vendidos</div>
+                            <div className="font-semibold text-berry-950">{totalSold}</div>
+                          </div>
+                          <div className="bg-stone-50 rounded p-2">
+                            <div className="text-xs text-stone-600">Stock</div>
+                            <div className="font-semibold text-berry-950">{product.stock}</div>
+                          </div>
+                        </div>
+
+                        {cost > 0 && (
+                          <div className="mb-3 p-2 bg-berry-50 rounded">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-stone-600">Margen:</span>
                               <span className={`font-semibold ${
                                 marginPercent >= 50 ? 'text-green-600' :
                                 marginPercent >= 30 ? 'text-blue-600' :
@@ -1087,82 +1091,177 @@ export default function AdminPage() {
                               }`}>
                                 {marginPercent.toFixed(1)}%
                               </span>
-                            ) : '-'}
-                          </td>
-                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-center font-medium">
-                            {totalSold}
-                          </td>
-                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-center">
-                            {editingStock?.id === product.id ? (
-                              <input
-                                type="number"
-                                value={editingStock.stock}
-                                onChange={(e) => setEditingStock({ id: product.id, stock: parseInt(e.target.value) || 0 })}
-                                className="w-20 px-2 py-1 border border-berry-300 rounded text-center text-xs"
-                                autoFocus
-                                onBlur={() => {
-                                  if (editingStock) {
-                                    updateProductStock(editingStock.id, editingStock.stock)
-                                    setEditingStock(null)
-                                  }
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && editingStock) {
-                                    updateProductStock(editingStock.id, editingStock.stock)
-                                    setEditingStock(null)
-                                  }
-                                  if (e.key === 'Escape') {
-                                    setEditingStock(null)
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <button
-                                onClick={() => setEditingStock({ id: product.id, stock: product.stock })}
-                                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                                  product.stock <= (product.minStock || 0)
-                                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                                }`}
-                              >
-                                {product.stock}
-                              </button>
+                            </div>
+                            {totalProfit > 0 && (
+                              <div className="flex justify-between items-center mt-1">
+                                <span className="text-xs text-stone-600">Rentabilidad:</span>
+                                <span className="font-semibold text-green-600">
+                                  ${totalProfit.toLocaleString('es-CO')}
+                                </span>
+                              </div>
                             )}
-                          </td>
-                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-center">
-                            {cost > 0 && totalSold > 0 ? (
-                              <span className={`font-semibold ${
-                                totalProfit > 0 ? 'text-green-600' : 'text-red-600'
-                              }`}>
-                                ${totalProfit.toLocaleString('es-CO')}
-                              </span>
-                            ) : '-'}
-                          </td>
-                          <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-center">
-                            <button
-                              onClick={() => {
-                                // Ajustar stock restando las ventas del día
-                                const today = new Date().toISOString().split('T')[0]
-                                const todaySales = productSales.filter(sale => sale.date?.startsWith(today))
-                                const soldToday = todaySales.reduce((sum, sale) => {
-                                  const item = sale.items?.find((i: any) => i.productId === product.id)
-                                  return sum + (item?.quantity || 0)
-                                }, 0)
-                                const newStock = Math.max(0, product.stock - soldToday)
-                                updateProductStock(product.id, newStock)
-                              }}
-                              className="px-2 py-1 bg-berry-600 hover:bg-berry-700 text-white rounded text-xs font-medium transition-colors"
-                              title="Ajustar stock restando ventas del día"
-                            >
-                              Ajustar
-                            </button>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                          </div>
+                        )}
+
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setSelectedProductDetail(product)}
+                            className="flex-1 px-3 py-2 bg-berry-600 hover:bg-berry-700 text-white rounded-lg text-sm font-medium"
+                          >
+                            Ver Detalles
+                          </button>
+                          <button
+                            onClick={() => {
+                              const today = new Date().toISOString().split('T')[0]
+                              const todaySales = productSales.filter(sale => sale.date?.startsWith(today))
+                              const soldToday = todaySales.reduce((sum, sale) => {
+                                const item = sale.items?.find((i: any) => i.productId === product.id)
+                                return sum + (item?.quantity || 0)
+                              }, 0)
+                              const newStock = Math.max(0, product.stock - soldToday)
+                              updateProductStock(product.id, newStock)
+                            }}
+                            className="px-3 py-2 bg-stone-600 hover:bg-stone-700 text-white rounded-lg text-sm font-medium"
+                          >
+                            Ajustar
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Vista Tabla para desktop */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b-2 border-berry-200">
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-berry-950">Producto</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-berry-950">Precio</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-berry-950">Costo</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-berry-950">Margen</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-berry-950">Margen %</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-berry-950">Vendidos</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-berry-950">Stock</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-berry-950">Rentabilidad</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-berry-950">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {products.map((product) => {
+                        const productSales = sales.filter(sale =>
+                          sale.items?.some((item: any) => item.productId === product.id)
+                        )
+                        const totalSold = productSales.reduce((sum, sale) => {
+                          const item = sale.items?.find((i: any) => i.productId === product.id)
+                          return sum + (item?.quantity || 0)
+                        }, 0)
+
+                        const cost = product.cost || 0
+                        const price = product.price
+                        const margin = price - cost
+                        const marginPercent = price > 0 ? ((margin / price) * 100) : 0
+                        const totalProfit = totalSold * margin
+
+                        return (
+                          <tr key={product.id} className="border-b border-stone-200 hover:bg-stone-50">
+                            <td className="px-4 py-3 text-sm font-medium text-berry-950">
+                              {product.name}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-center">
+                              ${price.toLocaleString('es-CO')}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-center">
+                              {cost > 0 ? `$${cost.toLocaleString('es-CO')}` : '-'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-center">
+                              {cost > 0 ? `$${margin.toLocaleString('es-CO')}` : '-'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-center">
+                              {cost > 0 ? (
+                                <span className={`font-semibold ${
+                                  marginPercent >= 50 ? 'text-green-600' :
+                                  marginPercent >= 30 ? 'text-blue-600' :
+                                  marginPercent >= 10 ? 'text-amber-600' : 'text-red-600'
+                                }`}>
+                                  {marginPercent.toFixed(1)}%
+                                </span>
+                              ) : '-'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-center font-medium">
+                              {totalSold}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-center">
+                              {editingStock?.id === product.id ? (
+                                <input
+                                  type="number"
+                                  value={editingStock.stock}
+                                  onChange={(e) => setEditingStock({ id: product.id, stock: parseInt(e.target.value) || 0 })}
+                                  className="w-20 px-2 py-1 border border-berry-300 rounded text-center text-xs"
+                                  autoFocus
+                                  onBlur={() => {
+                                    if (editingStock) {
+                                      updateProductStock(editingStock.id, editingStock.stock)
+                                      setEditingStock(null)
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && editingStock) {
+                                      updateProductStock(editingStock.id, editingStock.stock)
+                                      setEditingStock(null)
+                                    }
+                                    if (e.key === 'Escape') {
+                                      setEditingStock(null)
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <button
+                                  onClick={() => setEditingStock({ id: product.id, stock: product.stock })}
+                                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                    product.stock <= (product.minStock || 0)
+                                      ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                                  }`}
+                                >
+                                  {product.stock}
+                                </button>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-center">
+                              {cost > 0 && totalSold > 0 ? (
+                                <span className={`font-semibold ${
+                                  totalProfit > 0 ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  ${totalProfit.toLocaleString('es-CO')}
+                                </span>
+                              ) : '-'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-center">
+                              <button
+                                onClick={() => {
+                                  const today = new Date().toISOString().split('T')[0]
+                                  const todaySales = productSales.filter(sale => sale.date?.startsWith(today))
+                                  const soldToday = todaySales.reduce((sum, sale) => {
+                                    const item = sale.items?.find((i: any) => i.productId === product.id)
+                                    return sum + (item?.quantity || 0)
+                                  }, 0)
+                                  const newStock = Math.max(0, product.stock - soldToday)
+                                  updateProductStock(product.id, newStock)
+                                }}
+                                className="px-2 py-1 bg-berry-600 hover:bg-berry-700 text-white rounded text-xs font-medium transition-colors"
+                                title="Ajustar stock restando ventas del día"
+                              >
+                                Ajustar
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
 
             <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-berry-50 rounded-lg">
@@ -1170,6 +1269,146 @@ export default function AdminPage() {
                 <strong>Nota:</strong> El stock se puede ajustar manualmente haciendo clic en el número. 
                 El botón &quot;Ajustar&quot; resta automáticamente las ventas del día actual del stock.
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de detalle del producto */}
+        {selectedProductDetail && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="bg-white rounded-lg p-4 sm:p-6 max-w-lg w-full my-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl sm:text-2xl font-bold text-berry-950">Detalle del Producto</h3>
+                <button
+                  onClick={() => setSelectedProductDetail(null)}
+                  className="w-8 h-8 flex items-center justify-center text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors text-xl font-bold"
+                  aria-label="Cerrar"
+                >
+                  ×
+                </button>
+              </div>
+
+              {(() => {
+                const product = selectedProductDetail
+                const productSales = sales.filter(sale =>
+                  sale.items?.some((item: any) => item.productId === product.id)
+                )
+                const totalSold = productSales.reduce((sum, sale) => {
+                  const item = sale.items?.find((i: any) => i.productId === product.id)
+                  return sum + (item?.quantity || 0)
+                }, 0)
+
+                const cost = product.cost || 0
+                const price = product.price
+                const margin = price - cost
+                const marginPercent = price > 0 ? ((margin / price) * 100) : 0
+                const totalProfit = totalSold * margin
+
+                return (
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-berry-950 text-lg mb-2">{product.name}</h4>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          product.type === 'cafeteria' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {product.type}
+                        </span>
+                        <span className="text-xs text-stone-500">{product.category}</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-stone-50 rounded-lg p-4">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="block text-xs text-stone-600 mb-1">Precio de venta:</span>
+                          <span className="font-semibold text-berry-600 text-base">
+                            ${price.toLocaleString('es-CO')}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block text-xs text-stone-600 mb-1">Costo:</span>
+                          <span className="font-semibold text-stone-700 text-base">
+                            {cost > 0 ? `$${cost.toLocaleString('es-CO')}` : 'No definido'}
+                          </span>
+                        </div>
+                        {cost > 0 && (
+                          <>
+                            <div>
+                              <span className="block text-xs text-stone-600 mb-1">Margen:</span>
+                              <span className="font-semibold text-berry-600 text-base">
+                                ${margin.toLocaleString('es-CO')}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="block text-xs text-stone-600 mb-1">Margen %:</span>
+                              <span className={`font-semibold text-base ${
+                                marginPercent >= 50 ? 'text-green-600' :
+                                marginPercent >= 30 ? 'text-blue-600' :
+                                marginPercent >= 10 ? 'text-amber-600' : 'text-red-600'
+                              }`}>
+                                {marginPercent.toFixed(1)}%
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="bg-berry-50 rounded-lg p-4">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="block text-xs text-stone-600 mb-1">Total vendido:</span>
+                          <span className="font-semibold text-berry-950 text-base">{totalSold} unidades</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs text-stone-600 mb-1">Stock actual:</span>
+                          <span className={`font-semibold text-base ${
+                            product.stock <= (product.minStock || 0) ? 'text-red-600' : 'text-berry-600'
+                          }`}>
+                            {product.stock} unidades
+                          </span>
+                        </div>
+                        {cost > 0 && totalSold > 0 && (
+                          <div className="col-span-2">
+                            <span className="block text-xs text-stone-600 mb-1">Rentabilidad total:</span>
+                            <span className={`font-semibold text-lg ${
+                              totalProfit > 0 ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              ${totalProfit.toLocaleString('es-CO')}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-stone-200">
+                      <button
+                        onClick={() => {
+                          const today = new Date().toISOString().split('T')[0]
+                          const todaySales = productSales.filter(sale => sale.date?.startsWith(today))
+                          const soldToday = todaySales.reduce((sum, sale) => {
+                            const item = sale.items?.find((i: any) => i.productId === product.id)
+                            return sum + (item?.quantity || 0)
+                          }, 0)
+                          const newStock = Math.max(0, product.stock - soldToday)
+                          updateProductStock(product.id, newStock)
+                          setSelectedProductDetail(null)
+                        }}
+                        className="flex-1 px-4 py-2 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors"
+                      >
+                        Ajustar Stock
+                      </button>
+                      <button
+                        onClick={() => setSelectedProductDetail(null)}
+                        className="flex-1 px-4 py-2 border-2 border-stone-300 rounded-lg hover:bg-stone-50 transition-colors font-medium"
+                      >
+                        Cerrar
+                      </button>
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
           </div>
         )}

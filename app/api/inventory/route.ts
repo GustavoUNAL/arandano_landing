@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem } from '@/lib/inventory'
+import { getInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem } from '@/lib/db-inventory'
 
 export const dynamic = 'force-dynamic'
 

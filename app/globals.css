@@ -17,6 +17,23 @@
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+  /* Optimización para iPhone 12 Pro y dispositivos móviles */
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Safe area para iPhone con notch */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Optimización de toques para móvil */
+button, a {
+  -webkit-tap-highlight-color: rgba(124, 45, 18, 0.1);
+  touch-action: manipulation;
 }
 
 /* Animations */

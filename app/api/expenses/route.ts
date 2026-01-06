@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getExpenses, createExpense, getExpensesByDateRange } from '@/lib/expenses'
+import { getExpenses, createExpense, getExpensesByDateRange } from '@/lib/db-expenses'
 
 export async function GET(request: NextRequest) {
   try {

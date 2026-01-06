@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getTasks, createTask } from '@/lib/tasks'
+import { getTasks, createTask } from '@/lib/db-tasks'
 
 export async function GET(request: NextRequest) {
   try {

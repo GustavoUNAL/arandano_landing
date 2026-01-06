@@ -75,3 +75,17 @@ export function getSalesByProduct(productId: string): Sale[] {
   )
 }
 
+export function getSaleById(id: string): Sale | undefined {
+  const sales = getSales()
+  return sales.find(sale => sale.id === id)
+}
+
+export function deleteSale(id: string): boolean {
+  const sales = getSales()
+  const filtered = sales.filter(sale => sale.id !== id)
+  if (filtered.length === sales.length) return false
+  
+  saveSales(filtered)
+  return true
+}
+

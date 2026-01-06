@@ -19,6 +19,19 @@ export const metadata: Metadata = {
   title: 'Arándano Café Bar - Café de día · Servicio de bebidas 24/7',
   description: 'Arándano Café Bar en Pasto, Colombia. Zona universitaria. Abierto 24/7. Café, snacks y servicio de bebidas.',
   keywords: 'café, pasto, colombia, zona universitaria, 24/7, bebidas, snacks',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+    viewportFit: 'cover',
+  },
+  themeColor: '#7c2d12',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Arándano Café Bar',
+  },
 }
 
 export default function RootLayout({

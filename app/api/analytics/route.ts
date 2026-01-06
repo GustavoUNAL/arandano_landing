@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getProducts } from '@/lib/products'
+import { getProducts } from '@/lib/db-products'
 import { calculateKPIs, calculateProductAnalytics, calculateWeeklyKPIs, calculateMonthlyKPIs } from '@/lib/analytics'
-import { getSales } from '@/lib/sales'
+import { getSales } from '@/lib/db-sales'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
     const groupBy = searchParams.get('groupBy') || 'range' // 'range', 'week', 'month'
     const year = searchParams.get('year') ? parseInt(searchParams.get('year')!) : new Date().getFullYear()
     
-    const products = getProducts()
-    const sales = getSales()
+    const products = await getProducts()
+    const sales = await getSales()
     
     if (groupBy === 'week') {
       // KPIs agrupados por semana

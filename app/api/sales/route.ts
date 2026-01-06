@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSale, getSales, getSalesByDateRange } from '@/lib/sales'
-import { updateProduct, getProductById } from '@/lib/products'
+import { createSale, getSales, getSalesByDateRange } from '@/lib/db-sales'
+import { updateProduct, getProductById } from '@/lib/db-products'
 
 export async function GET(request: NextRequest) {
   try {

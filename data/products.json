@@ -6,10 +6,11 @@
     "description": "Café artesanal preparado tradicionalmente, sin adiciones",
     "category": "cafe-caliente",
     "type": "cafeteria",
-    "stock": 90,
+    "stock": 93,
     "imageUrl": "https://media.meer.com/attachments/fba1b86643734e2732c8ef1c90afaa39e48442e0/store/fill/1090/613/021d4d27589f6cdbe7b8d2c998f29e3d5eb5cf31e1e96b881e9f3cc41a73/El-primer-reporte-sobre-el-tostado-de-las-semillas-de-cafe-para-molerlas-y-mezclarlas-con-agua.jpg",
     "size": "",
-    "cost": 430
+    "cost": 430,
+    "totalSold": 0
   },
   {
     "id": "cafe-leche",

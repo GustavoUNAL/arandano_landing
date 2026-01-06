@@ -275,12 +275,12 @@ export default function InventoryPage() {
             >
               + Agregar Nuevo Lote
             </button>
-            <button
-              onClick={() => router.push('/admin')}
-              className="px-4 py-2 text-berry-600 hover:text-berry-800 text-sm font-medium border border-berry-300 rounded-lg transition-colors"
+            <a
+              href="/admin"
+              className="px-4 py-2 text-berry-600 hover:text-berry-800 text-sm font-medium"
             >
               ← Volver a Admin
-            </button>
+            </a>
           </div>
         </div>
 
