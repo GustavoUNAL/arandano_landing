@@ -28,11 +28,11 @@ export async function getTasks(): Promise<Task[]> {
     
     if (DB_MODE === 'firebase') {
       const snapshot = await db.collection('tasks').orderBy('createdAt', 'desc').get()
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task))
+      return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Task))
     } else {
       try {
         const snapshot = await db.collection('tasks').orderBy('createdAt', 'desc').get()
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task))
+        return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Task))
       } catch (error) {
         console.warn('Error leyendo de Firestore, usando JSON:', error)
         return getTasksJSON()
@@ -142,7 +142,7 @@ export async function getTasksByCategory(category: TaskCategory): Promise<Task[]
       .where('category', '==', category)
       .orderBy('createdAt', 'desc')
       .get()
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task))
+    return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Task))
   } catch (error) {
     console.error('Error obteniendo tareas por categoría:', error)
     return getTasksByCategoryJSON(category)
@@ -159,7 +159,7 @@ export async function getTasksByPriority(priority: TaskPriority): Promise<Task[]
       .where('priority', '==', priority)
       .orderBy('createdAt', 'desc')
       .get()
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task))
+    return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Task))
   } catch (error) {
     console.error('Error obteniendo tareas por prioridad:', error)
     return getTasksByPriorityJSON(priority)
@@ -177,7 +177,7 @@ export async function getOverdueTasks(): Promise<Task[]> {
       .where('completed', '==', false)
       .where('dueDate', '<', now)
       .get()
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task))
+    return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Task))
   } catch (error) {
     console.error('Error obteniendo tareas vencidas:', error)
     return getOverdueTasksJSON()

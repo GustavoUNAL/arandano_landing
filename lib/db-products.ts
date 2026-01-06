@@ -29,12 +29,12 @@ export async function getProducts(): Promise<Product[]> {
     
     if (DB_MODE === 'firebase') {
       const snapshot = await db.collection('products').get()
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product))
+      return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Product))
     } else {
       // Modo híbrido: intentar Firestore, fallback a JSON
       try {
         const snapshot = await db.collection('products').get()
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product))
+        return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Product))
       } catch (error) {
         console.warn('Error leyendo de Firestore, usando JSON:', error)
         return getProductsJSON()

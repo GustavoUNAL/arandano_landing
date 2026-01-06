@@ -24,11 +24,11 @@ export async function getExpenses(): Promise<Expense[]> {
   try {
     if (DB_MODE === 'firebase') {
       const snapshot = await db.collection('expenses').orderBy('date', 'desc').get()
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense))
+      return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Expense))
     } else {
       try {
         const snapshot = await db.collection('expenses').orderBy('date', 'desc').get()
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense))
+        return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Expense))
       } catch (error) {
         console.warn('Error leyendo de Firestore, usando JSON:', error)
         return getExpensesJSON()
@@ -140,7 +140,7 @@ export async function getExpensesByDateRange(startDate: string, endDate: string)
       .where('date', '<=', endDate)
       .orderBy('date', 'desc')
       .get()
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense))
+    return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Expense))
   } catch (error) {
     console.error('Error obteniendo gastos por rango:', error)
     return getExpensesByDateRangeJSON(startDate, endDate)
@@ -164,7 +164,7 @@ export async function getMonthlyFixedExpenses(year: number, month: number): Prom
       .where('date', '>=', startDate)
       .where('date', '<=', endDate)
       .get()
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense))
+    return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Expense))
   } catch (error) {
     console.error('Error obteniendo gastos fijos mensuales:', error)
     return getMonthlyFixedExpensesJSON(year, month)

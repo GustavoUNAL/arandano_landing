@@ -28,11 +28,11 @@ export async function getInventory(): Promise<InventoryItem[]> {
     
     if (DB_MODE === 'firebase') {
       const snapshot = await db.collection('inventory').get()
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem))
+      return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as InventoryItem))
     } else {
       try {
         const snapshot = await db.collection('inventory').get()
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem))
+        return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as InventoryItem))
       } catch (error) {
         console.warn('Error leyendo de Firestore, usando JSON:', error)
         return getInventoryJSON()

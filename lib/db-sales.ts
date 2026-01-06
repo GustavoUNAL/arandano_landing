@@ -28,12 +28,12 @@ export async function getSales(): Promise<Sale[]> {
     
     if (DB_MODE === 'firebase') {
       const snapshot = await db.collection('sales').orderBy('date', 'desc').get()
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale))
+      return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Sale))
     } else {
       // Modo híbrido: intentar Firestore, fallback a JSON
       try {
         const snapshot = await db.collection('sales').orderBy('date', 'desc').get()
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale))
+        return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Sale))
       } catch (error) {
         console.warn('Error leyendo de Firestore, usando JSON:', error)
         return getSalesJSON()
@@ -122,7 +122,7 @@ export async function getSalesByDateRange(startDate: string, endDate: string): P
       .where('date', '<=', endDate)
       .orderBy('date', 'desc')
       .get()
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale))
+    return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Sale))
   } catch (error) {
     console.error('Error obteniendo ventas por rango:', error)
     return getSalesByDateRangeJSON(startDate, endDate)
