@@ -3,12 +3,30 @@
  * Mantiene compatibilidad con la interfaz existente
  */
 
+import admin from 'firebase-admin'
 import { db } from './firebase-admin'
 import { Sale } from './sales'
 import { isDbAvailable } from './db-utils'
 
 // Re-exportar tipos
 export type { Sale } from './sales'
+
+// Tipo helper para convertir documentos de Firestore a Sale
+type FirestoreSale = Omit<Sale, 'id'>
+type FirestoreDocument = admin.firestore.QueryDocumentSnapshot<FirestoreSale>
+type FirestoreDocumentSnapshot = admin.firestore.DocumentSnapshot<FirestoreSale>
+
+// Función helper para convertir documento de Firestore a Sale
+function documentToSale(doc: FirestoreDocument | FirestoreDocumentSnapshot): Sale {
+  const data = doc.data()
+  if (!data) {
+    throw new Error('Document data is undefined')
+  }
+  return {
+    id: doc.id,
+    ...data
+  }
+}
 
 // Modo: 'firebase' | 'json' | 'hybrid'
 const DB_MODE = (process.env.DB_MODE || 'firebase') as 'firebase' | 'json' | 'hybrid'
@@ -28,12 +46,12 @@ export async function getSales(): Promise<Sale[]> {
     
     if (DB_MODE === 'firebase') {
       const snapshot = await db.collection('sales').orderBy('date', 'desc').get()
-      return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Sale))
+      return snapshot.docs.map((doc: FirestoreDocument) => documentToSale(doc))
     } else {
       // Modo híbrido: intentar Firestore, fallback a JSON
       try {
         const snapshot = await db.collection('sales').orderBy('date', 'desc').get()
-        return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Sale))
+        return snapshot.docs.map((doc: FirestoreDocument) => documentToSale(doc))
       } catch (error) {
         console.warn('Error leyendo de Firestore, usando JSON:', error)
         return getSalesJSON()
@@ -52,10 +70,10 @@ export async function getSaleById(id: string): Promise<Sale | undefined> {
 
   try {
     const docRef = db.collection('sales').doc(id)
-    const docSnap = await docRef.get()
+    const docSnap = await docRef.get() as FirestoreDocumentSnapshot
     
     if (docSnap.exists) {
-      return { id: docSnap.id, ...docSnap.data() } as Sale
+      return documentToSale(docSnap)
     }
     return undefined
   } catch (error) {
@@ -100,7 +118,7 @@ export async function deleteSale(id: string): Promise<boolean> {
     
     if (DB_MODE === 'hybrid') {
       const sales = getSalesJSON()
-      const filtered = sales.filter(sale => sale.id !== id)
+      const filtered = sales.filter((sale: Sale) => sale.id !== id)
       saveSalesJSON(filtered)
     }
     
@@ -122,7 +140,7 @@ export async function getSalesByDateRange(startDate: string, endDate: string): P
       .where('date', '<=', endDate)
       .orderBy('date', 'desc')
       .get()
-    return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Sale))
+    return snapshot.docs.map((doc: FirestoreDocument) => documentToSale(doc))
   } catch (error) {
     console.error('Error obteniendo ventas por rango:', error)
     return getSalesByDateRangeJSON(startDate, endDate)
@@ -141,9 +159,9 @@ export async function getSalesByProduct(productId: string): Promise<Sale[]> {
       .get()
     
     // Filtrar en memoria porque Firestore no soporta búsqueda anidada directamente
-    const allSales = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Sale))
-    return allSales.filter(sale => 
-      sale.items.some(item => item.productId === productId)
+    const allSales: Sale[] = snapshot.docs.map((doc: FirestoreDocument) => documentToSale(doc))
+    return allSales.filter((sale: Sale) => 
+      sale.items.some((item) => item.productId === productId)
     )
   } catch (error) {
     console.error('Error obteniendo ventas por producto:', error)
