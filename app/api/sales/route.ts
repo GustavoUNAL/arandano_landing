@@ -15,9 +15,14 @@ export async function GET(request: NextRequest) {
     
     const sales = await getSales()
     return NextResponse.json(sales)
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[API] Error obteniendo ventas:', error)
+    const errorMessage = error?.message || 'Error desconocido al obtener ventas'
     return NextResponse.json(
-      { error: 'Error al obtener ventas' },
+      { 
+        error: 'Error al obtener ventas',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }
@@ -73,9 +78,14 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(sale, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[API] Error creando venta:', error)
+    const errorMessage = error?.message || 'Error desconocido al crear venta'
     return NextResponse.json(
-      { error: 'Error al crear venta' },
+      { 
+        error: 'Error al crear venta',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }

@@ -43,9 +43,14 @@ export async function GET(request: NextRequest) {
     })
     
     return NextResponse.json(tasks)
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[API] Error obteniendo tareas:', error)
+    const errorMessage = error?.message || 'Error desconocido al obtener tareas'
     return NextResponse.json(
-      { error: 'Error al obtener tareas' },
+      { 
+        error: 'Error al obtener tareas',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }
@@ -74,9 +79,14 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(task, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[API] Error creando tarea:', error)
+    const errorMessage = error?.message || 'Error desconocido al crear tarea'
     return NextResponse.json(
-      { error: 'Error al crear tarea' },
+      { 
+        error: 'Error al crear tarea',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }

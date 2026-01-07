@@ -13,6 +13,7 @@
     "backup:json": "node scripts/export-json-to-backup.js",
     "check:firebase": "node scripts/check-firebase-setup.js",
     "diagnose:firebase": "node scripts/diagnose-firebase.js",
+    "test:api": "node scripts/test-api-functions.js",
     "test:firebase": "node scripts/test-firebase-connection.js",
     "verify:firebase": "node scripts/verify-firebase-data.js",
     "pre-deploy": "node scripts/pre-deploy-check.js"

@@ -20,19 +20,45 @@ if (!admin.apps.length) {
         serviceAccount = null
       }
     } 
-    // Prioridad 2: Archivo local (desarrollo)
+    // Prioridad 2: Archivo local (desarrollo y producción)
     if (!serviceAccount) {
       try {
         const path = require('path')
         const fs = require('fs')
-        const serviceAccountPath = path.join(process.cwd(), 'firebase-service-account.json')
-        if (fs.existsSync(serviceAccountPath)) {
-          serviceAccount = require(serviceAccountPath)
+        
+        // Intentar múltiples ubicaciones posibles
+        const possiblePaths = [
+          path.join(process.cwd(), 'firebase-service-account.json'), // Raíz del proyecto
+          path.join(process.cwd(), '..', 'firebase-service-account.json'), // Un nivel arriba (standalone)
+          path.join(process.cwd(), '..', '..', 'firebase-service-account.json'), // Dos niveles arriba
+          path.join(__dirname, '..', 'firebase-service-account.json'), // Relativo a lib/
+          path.join(__dirname, '..', '..', 'firebase-service-account.json'), // Desde lib/ hacia raíz
+        ]
+        
+        for (const serviceAccountPath of possiblePaths) {
+          if (fs.existsSync(serviceAccountPath)) {
+            try {
+              serviceAccount = require(serviceAccountPath)
+              console.log(`[DB] Firebase Service Account encontrado en: ${serviceAccountPath}`)
+              break
+            } catch (requireError: any) {
+              // Si require falla, intentar leer como JSON
+              try {
+                const fileContent = fs.readFileSync(serviceAccountPath, 'utf8')
+                serviceAccount = JSON.parse(fileContent)
+                console.log(`[DB] Firebase Service Account cargado desde: ${serviceAccountPath}`)
+                break
+              } catch (parseError) {
+                // Continuar con el siguiente path
+                continue
+              }
+            }
+          }
         }
       } catch (fileError: any) {
         // Ignorar errores de archivo durante build
         if (process.env.NEXT_PHASE !== 'phase-production-build') {
-          console.warn('⚠️  Firebase Service Account no encontrado:', fileError.message)
+          console.warn('⚠️  Error buscando Firebase Service Account:', fileError.message)
         }
       }
     }
