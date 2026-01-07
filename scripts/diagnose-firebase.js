@@ -88,7 +88,19 @@ if (fs.existsSync(credPath)) {
 async function checkFirebaseConnection() {
   console.log('\n3️⃣  Verificando conexión a Firebase...');
   try {
-    const admin = require('firebase-admin');
+    // Verificar si firebase-admin está instalado
+    let admin;
+    try {
+      admin = require('firebase-admin');
+    } catch (requireError) {
+      if (requireError.code === 'MODULE_NOT_FOUND' && requireError.message.includes('firebase-admin')) {
+        issues.push('firebase-admin no está instalado. Ejecuta: npm install');
+        console.log('   ❌ Error: Cannot find module \'firebase-admin\'');
+        console.log('   💡 Solución: Ejecuta "npm install" para instalar las dependencias');
+        return;
+      }
+      throw requireError;
+    }
     
     let serviceAccount;
     if (envCred) {
@@ -200,23 +212,37 @@ if (issues.length > 0) {
   console.log('💡 Soluciones sugeridas:');
   console.log('');
   
-  if (dbMode === 'no configurado' || dbMode === 'json') {
-    console.log('1. Configura DB_MODE en tu servidor:');
-    console.log('   export DB_MODE=firebase  # o hybrid');
-    console.log('   # O en .env:');
-    console.log('   echo "DB_MODE=firebase" >> .env');
+  // Verificar si falta firebase-admin
+  const missingDeps = issues.some(issue => issue.includes('firebase-admin') && issue.includes('instalado'));
+  if (missingDeps) {
+    console.log('1. Instala las dependencias:');
+    console.log('   npm install');
+    console.log('   # O si tienes package-lock.json:');
+    console.log('   npm ci');
     console.log('');
   }
   
+  let suggestionNum = missingDeps ? 2 : 1;
+  
+  if (dbMode === 'no configurado' || dbMode === 'json') {
+    console.log(`${suggestionNum}. Configura DB_MODE en tu servidor:`);
+    console.log('   export DB_MODE=firebase  # o hybrid');
+    console.log('   # O en .env.local:');
+    console.log('   echo "DB_MODE=firebase" >> .env.local');
+    console.log('');
+    suggestionNum++;
+  }
+  
   if (!fs.existsSync(credPath) && !envCred) {
-    console.log('2. Configura las credenciales de Firebase:');
+    console.log(`${suggestionNum}. Configura las credenciales de Firebase:`);
     console.log('   a) Descarga firebase-service-account.json desde Firebase Console');
     console.log('   b) O configura la variable de entorno:');
     console.log('      export FIREBASE_SERVICE_ACCOUNT=\'{"type":"service_account",...}\'');
     console.log('');
+    suggestionNum++;
   }
   
-  console.log('3. Si Firebase está vacío, restaura desde backup:');
+  console.log(`${suggestionNum}. Si Firebase está vacío, restaura desde backup:`);
   console.log('   npm run restore:firebase');
   console.log('');
 } else {
