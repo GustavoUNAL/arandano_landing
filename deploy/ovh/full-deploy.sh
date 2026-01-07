@@ -1,19 +1,16 @@
 #!/bin/bash
 
 ###############################################################################
-# Script de Despliegue Completo para EC2
+# Script de Despliegue Completo para OVH/EC2
 # Arándano Café Bar - arandanocafe.com
 # 
-# Este script realiza un despliegue completo en EC2:
-# 1. Verifica pre-requisitos
-# 2. Configura variables de entorno
-# 3. Instala dependencias
-# 4. Crea build de producción (standalone)
-# 5. Configura PM2 con ecosystem.config.js
-# 6. Configura Nginx con dominio arandanocafe.com
-# 7. Verifica que todo funcione
+# Este script realiza un despliegue completo:
+# 1. Build de producción
+# 2. Configuración de PM2
+# 3. Configuración de Nginx con dominio arandanocafe.com
+# 4. Verificación de todo el sistema
 # 
-# Uso: bash deploy-ec2.sh
+# Uso: bash deploy/ovh/full-deploy.sh
 ###############################################################################
 
 set -e
@@ -33,46 +30,46 @@ NODE_ENV="production"
 PORT=3000
 
 echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}  🚀 DESPLIEGUE COMPLETO EN EC2 - ARÁNDANO CAFÉ BAR${NC}"
+echo -e "${BLUE}  🚀 DESPLIEGUE COMPLETO - ARÁNDANO CAFÉ BAR${NC}"
 echo -e "${BLUE}  Dominio: ${DOMAIN}${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
 echo ""
 
-# Detectar directorio del proyecto
-PROJECT_DIR=""
-POSSIBLE_DIRS=(
-    "${HOME}/projects/arandano_landing"
-    "${HOME}/ARANDANO"
-    "/home/ubuntu/projects/arandano_landing"
-    "/home/ubuntu/ARANDANO"
-    "/var/www/arandano"
-)
-
-for DIR in "${POSSIBLE_DIRS[@]}"; do
-    if [ -d "$DIR" ] && [ -f "$DIR/package.json" ]; then
-        PROJECT_DIR="$DIR"
-        break
-    fi
-done
-
-if [ -z "$PROJECT_DIR" ]; then
-    # Si estamos en el directorio del proyecto
-    if [ -f "package.json" ]; then
-        PROJECT_DIR=$(pwd)
-    else
-        echo -e "${RED}❌ No se encontró el directorio del proyecto${NC}"
-        echo -e "${YELLOW}   Buscado en:${NC}"
+# Verificar que estamos en el directorio correcto
+# Buscar package.json en el directorio actual o en directorios comunes
+if [ ! -f "package.json" ]; then
+    # Intentar encontrar el proyecto en ubicaciones comunes
+    POSSIBLE_DIRS=(
+        "${HOME}/projects/arandano_landing"
+        "${HOME}/arandano"
+        "${HOME}/projects/arandano"
+        "/home/ubuntu/projects/arandano_landing"
+        "/home/ubuntu/arandano"
+    )
+    
+    FOUND=false
+    for DIR in "${POSSIBLE_DIRS[@]}"; do
+        if [ -d "$DIR" ] && [ -f "$DIR/package.json" ]; then
+            cd "$DIR"
+            echo -e "${YELLOW}   📁 Cambiando al directorio: $DIR${NC}"
+            FOUND=true
+            break
+        fi
+    done
+    
+    if [ "$FOUND" = false ]; then
+        echo -e "${RED}❌ No se encontró package.json${NC}"
+        echo -e "${YELLOW}   Por favor, ejecuta este script desde el directorio del proyecto${NC}"
+        echo -e "${YELLOW}   o asegúrate de que el proyecto esté en una de estas ubicaciones:${NC}"
         for DIR in "${POSSIBLE_DIRS[@]}"; do
             echo -e "${YELLOW}     - $DIR${NC}"
         done
-        echo ""
-        echo -e "${YELLOW}   Por favor, ejecuta este script desde el directorio del proyecto${NC}"
         exit 1
     fi
 fi
 
-cd "$PROJECT_DIR"
-echo -e "${GREEN}📁 Directorio del proyecto: $PROJECT_DIR${NC}"
+CURRENT_DIR=$(pwd)
+echo -e "${GREEN}📁 Directorio actual: $CURRENT_DIR${NC}"
 echo ""
 
 # 1. Verificar pre-requisitos
@@ -80,30 +77,21 @@ echo -e "${CYAN}1️⃣  Verificando pre-requisitos...${NC}"
 
 if ! command -v node &> /dev/null; then
     echo -e "${RED}❌ Node.js no está instalado${NC}"
-    echo -e "${YELLOW}   Instala Node.js: curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && sudo apt install -y nodejs${NC}"
     exit 1
 fi
 
-NODE_VERSION=$(node --version)
-echo -e "${GREEN}   ✅ Node.js: $NODE_VERSION${NC}"
-
 if ! command -v pm2 &> /dev/null; then
-    echo -e "${YELLOW}   ⚠️  PM2 no está instalado. Instalando...${NC}"
-    sudo npm install -g pm2
+    echo -e "${RED}❌ PM2 no está instalado. Instalando...${NC}"
+    npm install -g pm2
 fi
 
-PM2_VERSION=$(pm2 --version)
-echo -e "${GREEN}   ✅ PM2: v$PM2_VERSION${NC}"
-
 if ! command -v nginx &> /dev/null; then
-    echo -e "${YELLOW}   ⚠️  Nginx no está instalado. Instalando...${NC}"
+    echo -e "${YELLOW}⚠️  Nginx no está instalado. Instalando...${NC}"
     sudo apt update
     sudo apt install -y nginx
 fi
 
-NGINX_VERSION=$(nginx -v 2>&1 | cut -d'/' -f2)
-echo -e "${GREEN}   ✅ Nginx: $NGINX_VERSION${NC}"
-
+echo -e "${GREEN}   ✅ Pre-requisitos verificados${NC}"
 echo ""
 
 # 2. Configurar variables de entorno
@@ -115,9 +103,6 @@ ENV_FILE=".env.local"
 if [ ! -f "$ENV_FILE" ]; then
     echo -e "${YELLOW}   📄 Creando $ENV_FILE...${NC}"
     touch "$ENV_FILE"
-    echo -e "${YELLOW}   ⚠️  IMPORTANTE: Configura las variables de entorno en $ENV_FILE${NC}"
-else
-    echo -e "${GREEN}   ✅ $ENV_FILE encontrado${NC}"
 fi
 
 # Configurar DB_MODE si no existe
@@ -133,7 +118,7 @@ fi
 # Verificar que firebase-service-account.json existe
 if [ ! -f "firebase-service-account.json" ]; then
     echo -e "${YELLOW}   ⚠️  firebase-service-account.json no encontrado${NC}"
-    echo -e "${YELLOW}      Asegúrate de que el archivo existe o configura FIREBASE_SERVICE_ACCOUNT${NC}"
+    echo -e "${YELLOW}      Asegúrate de que el archivo existe${NC}"
 else
     echo -e "${GREEN}   ✅ firebase-service-account.json encontrado${NC}"
 fi
@@ -174,19 +159,6 @@ if npm run build; then
         # Copiar archivos necesarios al directorio standalone
         echo -e "${YELLOW}   📋 Copiando archivos necesarios al build standalone...${NC}"
         
-        # Copiar directorio .next/static (necesario para archivos estáticos)
-        if [ -d ".next/static" ]; then
-            mkdir -p .next/standalone/.next
-            cp -r .next/static .next/standalone/.next/ 2>/dev/null || true
-            echo -e "${GREEN}   ✅ Directorio .next/static copiado${NC}"
-        fi
-        
-        # Copiar directorio public si existe
-        if [ -d "public" ]; then
-            cp -r public .next/standalone/ 2>/dev/null || true
-            echo -e "${GREEN}   ✅ Directorio public copiado${NC}"
-        fi
-        
         # Copiar firebase-service-account.json si existe
         if [ -f "firebase-service-account.json" ]; then
             cp firebase-service-account.json .next/standalone/ 2>/dev/null || true
@@ -197,6 +169,12 @@ if npm run build; then
         if [ -f ".env.local" ]; then
             cp .env.local .next/standalone/ 2>/dev/null || true
             echo -e "${GREEN}   ✅ .env.local copiado${NC}"
+        fi
+        
+        # Copiar directorio public si existe
+        if [ -d "public" ]; then
+            cp -r public .next/standalone/ 2>/dev/null || true
+            echo -e "${GREEN}   ✅ Directorio public copiado${NC}"
         fi
         
         echo -e "${GREEN}   ✅ Build standalone listo${NC}"
@@ -236,14 +214,8 @@ if [ ! -f ".next/standalone/server.js" ]; then
     exit 1
 fi
 
-# Verificar que ecosystem.config.js existe
-if [ ! -f "ecosystem.config.js" ]; then
-    echo -e "${RED}   ❌ Error: ecosystem.config.js no encontrado${NC}"
-    exit 1
-fi
-
 # Iniciar aplicación con PM2 usando ecosystem.config.js
-echo -e "${YELLOW}   ▶️  Iniciando aplicación con PM2...${NC}"
+echo -e "${YELLOW}   ▶️  Iniciando aplicación...${NC}"
 if pm2 start ecosystem.config.js; then
     echo -e "${GREEN}   ✅ Aplicación iniciada con PM2${NC}"
 else
@@ -286,13 +258,19 @@ echo ""
 # 8. Configurar Nginx
 echo -e "${CYAN}8️⃣  Configurando Nginx para ${DOMAIN}...${NC}"
 
-NGINX_CONFIG="/etc/nginx/sites-available/$PM2_APP_NAME"
-
-# Crear configuración de Nginx
-sudo tee "$NGINX_CONFIG" > /dev/null <<EOF
+# Ejecutar script de configuración de Nginx
+if [ -f "deploy/ovh/configure-nginx.sh" ]; then
+    bash deploy/ovh/configure-nginx.sh "$DOMAIN"
+    echo -e "${GREEN}   ✅ Nginx configurado${NC}"
+else
+    echo -e "${YELLOW}   ⚠️  Script de configuración de Nginx no encontrado${NC}"
+    echo -e "${YELLOW}      Configurando Nginx manualmente...${NC}"
+    
+    NGINX_CONFIG="/etc/nginx/sites-available/$PM2_APP_NAME"
+    
+    sudo tee "$NGINX_CONFIG" > /dev/null <<EOF
 # Configuración de Nginx para Arándano Café Bar
 # Dominio: $DOMAIN
-# Generado automáticamente por deploy-ec2.sh
 
 server {
     listen 80;
@@ -302,21 +280,6 @@ server {
     # Logs
     access_log /var/log/nginx/${PM2_APP_NAME}-access.log;
     error_log /var/log/nginx/${PM2_APP_NAME}-error.log;
-
-    # Tamaño máximo de upload
-    client_max_body_size 10M;
-
-    # Compresión
-    gzip on;
-    gzip_vary on;
-    gzip_min_length 1024;
-    gzip_types text/plain text/css text/xml text/javascript application/json application/javascript application/xml+rss application/rss+xml font/truetype font/opentype application/vnd.ms-fontobject image/svg+xml;
-
-    # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "no-referrer-when-downgrade" always;
 
     # Configuración para Next.js - Reverse Proxy al puerto 3000
     location / {
@@ -350,38 +313,28 @@ server {
         add_header Cache-Control "public, immutable";
     }
 
-    # Favicon y otros archivos estáticos
-    location ~* \.(ico|css|js|gif|jpe?g|png|svg|woff|woff2|ttf|eot)$ {
-        proxy_pass http://localhost:${PORT};
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-
-    # Denegar acceso a archivos sensibles
-    location ~ /\. {
-        deny all;
-        access_log off;
-        log_not_found off;
-    }
+    # Seguridad adicional
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
 }
 EOF
 
-# Habilitar sitio
-sudo ln -sf "$NGINX_CONFIG" /etc/nginx/sites-enabled/
-
-# Eliminar configuración por defecto si existe
-if [ -f /etc/nginx/sites-enabled/default ]; then
-    sudo rm /etc/nginx/sites-enabled/default
-fi
-
-# Verificar y recargar Nginx
-if sudo nginx -t; then
-    sudo systemctl reload nginx
-    sudo systemctl enable nginx
-    echo -e "${GREEN}   ✅ Nginx configurado y recargado${NC}"
-else
-    echo -e "${RED}   ❌ Error en la configuración de Nginx${NC}"
-    exit 1
+    # Habilitar sitio
+    sudo ln -sf "$NGINX_CONFIG" /etc/nginx/sites-enabled/
+    
+    # Eliminar configuración por defecto si existe
+    if [ -f /etc/nginx/sites-enabled/default ]; then
+        sudo rm /etc/nginx/sites-enabled/default
+    fi
+    
+    # Verificar y recargar Nginx
+    if sudo nginx -t; then
+        sudo systemctl reload nginx
+        echo -e "${GREEN}   ✅ Nginx configurado y recargado${NC}"
+    else
+        echo -e "${RED}   ❌ Error en la configuración de Nginx${NC}"
+    fi
 fi
 
 echo ""
@@ -415,8 +368,3 @@ echo -e "${CYAN}🔐 Configurar SSL (opcional):${NC}"
 echo "   - Instalar Certbot: ${GREEN}sudo apt install -y certbot python3-certbot-nginx${NC}"
 echo "   - Obtener certificado: ${GREEN}sudo certbot --nginx -d $DOMAIN -d www.$DOMAIN${NC}"
 echo ""
-echo -e "${GREEN}🌐 Tu aplicación debería estar disponible en:${NC}"
-echo "   - http://${DOMAIN}"
-echo "   - http://www.${DOMAIN}"
-echo ""
-

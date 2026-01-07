@@ -18,7 +18,9 @@
     "test:firebase": "node scripts/test-firebase-connection.js",
     "verify:firebase": "node scripts/verify-firebase-data.js",
     "pre-deploy": "node scripts/pre-deploy-check.js",
-    "deploy": "bash deploy.sh"
+    "deploy": "bash deploy/ovh/deploy.sh",
+    "deploy:ovh": "bash deploy/ovh/deploy.sh",
+    "setup:ovh": "bash deploy/ovh/setup-ovh.sh"
   },
   "dependencies": {
     "next": "^14.0.4",
