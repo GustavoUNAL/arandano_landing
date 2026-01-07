@@ -43,6 +43,10 @@ if (!admin.apps.length) {
         credential: admin.credential.cert(serviceAccount)
       })
       firestoreDb = admin.firestore()
+      
+      // Log de depuración con projectId
+      const projectId = serviceAccount.project_id || 'unknown'
+      console.log(`[DB] Firebase conectado a proyecto: ${projectId}`)
     } else {
       // Durante el build, no lanzar error si no hay configuración
       if (process.env.NEXT_PHASE === 'phase-production-build') {
@@ -67,6 +71,15 @@ if (!admin.apps.length) {
 } else {
   // Si ya está inicializado, obtener db
   firestoreDb = admin.firestore()
+  
+  // Log de depuración si ya estaba inicializado
+  try {
+    const app = admin.app()
+    const projectId = (app.options as any).projectId || 'unknown'
+    console.log(`[DB] Firebase ya inicializado, proyecto: ${projectId}`)
+  } catch {
+    // Ignorar si no se puede obtener el projectId
+  }
 }
 
 // Exportar db con fallback seguro para build

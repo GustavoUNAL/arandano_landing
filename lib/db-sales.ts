@@ -6,7 +6,7 @@
 import admin from 'firebase-admin'
 import { db } from './firebase-admin'
 import { Sale } from './sales'
-import { isDbAvailable } from './db-utils'
+import { getDbMode, isDbAvailable } from './db-utils'
 
 // Re-exportar tipos
 export type { Sale } from './sales'
@@ -28,44 +28,38 @@ function documentToSale(doc: FirestoreDocument | FirestoreDocumentSnapshot): Sal
   }
 }
 
-// Modo: 'firebase' | 'json' | 'hybrid'
-const DB_MODE = (process.env.DB_MODE || 'firebase') as 'firebase' | 'json' | 'hybrid'
-
-// Importar funciones JSON como fallback
+// Importar funciones JSON (solo si DB_MODE === 'json')
 import { getSales as getSalesJSON, saveSales as saveSalesJSON, getSalesByDateRange as getSalesByDateRangeJSON, getSalesByProduct as getSalesByProductJSON, getSaleById as getSaleByIdJSON, deleteSale as deleteSaleJSON, createSale as createSaleJSON } from './sales'
 
 export async function getSales(): Promise<Sale[]> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     return getSalesJSON()
   }
-
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
+  }
+  
   try {
-    if (!isDbAvailable()) {
-      return getSalesJSON()
-    }
-    
-    if (DB_MODE === 'firebase') {
-      const snapshot = await db.collection('sales').orderBy('date', 'desc').get()
-      return snapshot.docs.map((doc: FirestoreDocument) => documentToSale(doc))
-    } else {
-      // Modo híbrido: intentar Firestore, fallback a JSON
-      try {
-        const snapshot = await db.collection('sales').orderBy('date', 'desc').get()
-        return snapshot.docs.map((doc: FirestoreDocument) => documentToSale(doc))
-      } catch (error) {
-        console.warn('Error leyendo de Firestore, usando JSON:', error)
-        return getSalesJSON()
-      }
-    }
+    const snapshot = await db.collection('sales').orderBy('date', 'desc').get()
+    return snapshot.docs.map((doc: FirestoreDocument) => documentToSale(doc))
   } catch (error) {
-    console.error('Error obteniendo ventas:', error)
-    return getSalesJSON()
+    console.error('[DB] Error obteniendo ventas de Firebase:', error)
+    throw error
   }
 }
 
 export async function getSaleById(id: string): Promise<Sale | undefined> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     return getSaleByIdJSON(id)
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
@@ -77,61 +71,64 @@ export async function getSaleById(id: string): Promise<Sale | undefined> {
     }
     return undefined
   } catch (error) {
-    console.error('Error obteniendo venta:', error)
-    return getSaleByIdJSON(id)
+    console.error('[DB] Error obteniendo venta de Firebase:', error)
+    throw error
   }
 }
 
 export async function createSale(sale: Omit<Sale, 'id'>): Promise<Sale> {
+  const mode = getDbMode()
   const newSale: Sale = {
     ...sale,
     id: `sale-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   }
 
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  if (mode === 'json') {
     return createSaleJSON(sale)
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
     await db.collection('sales').doc(newSale.id).set(newSale)
-    
-    if (DB_MODE === 'hybrid') {
-      const sales = getSalesJSON()
-      sales.push(newSale)
-      saveSalesJSON(sales)
-    }
-    
     return newSale
   } catch (error) {
-    console.error('Error creando venta:', error)
-    return createSaleJSON(sale)
+    console.error('[DB] Error creando venta en Firebase:', error)
+    throw error
   }
 }
 
 export async function deleteSale(id: string): Promise<boolean> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     return deleteSaleJSON(id)
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
     await db.collection('sales').doc(id).delete()
-    
-    if (DB_MODE === 'hybrid') {
-      const sales = getSalesJSON()
-      const filtered = sales.filter((sale: Sale) => sale.id !== id)
-      saveSalesJSON(filtered)
-    }
-    
     return true
   } catch (error) {
-    console.error('Error eliminando venta:', error)
-    return deleteSaleJSON(id)
+    console.error('[DB] Error eliminando venta de Firebase:', error)
+    throw error
   }
 }
 
 export async function getSalesByDateRange(startDate: string, endDate: string): Promise<Sale[]> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     return getSalesByDateRangeJSON(startDate, endDate)
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
@@ -142,14 +139,20 @@ export async function getSalesByDateRange(startDate: string, endDate: string): P
       .get()
     return snapshot.docs.map((doc: FirestoreDocument) => documentToSale(doc))
   } catch (error) {
-    console.error('Error obteniendo ventas por rango:', error)
-    return getSalesByDateRangeJSON(startDate, endDate)
+    console.error('[DB] Error obteniendo ventas por rango de Firebase:', error)
+    throw error
   }
 }
 
 export async function getSalesByProduct(productId: string): Promise<Sale[]> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     return getSalesByProductJSON(productId)
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
@@ -164,8 +167,8 @@ export async function getSalesByProduct(productId: string): Promise<Sale[]> {
       sale.items.some((item) => item.productId === productId)
     )
   } catch (error) {
-    console.error('Error obteniendo ventas por producto:', error)
-    return getSalesByProductJSON(productId)
+    console.error('[DB] Error obteniendo ventas por producto de Firebase:', error)
+    throw error
   }
 }
 

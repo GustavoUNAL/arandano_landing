@@ -3,48 +3,56 @@
  * Mantiene compatibilidad con la interfaz existente
  */
 
+import admin from 'firebase-admin'
 import { db } from './firebase-admin'
 import { Task, TaskCategory, TaskPriority } from './tasks'
-import { isDbAvailable } from './db-utils'
+import { getDbMode, isDbAvailable } from './db-utils'
 
 // Re-exportar tipos
 export type { Task, TaskCategory, TaskPriority } from './tasks'
 
-// Modo: 'firebase' | 'json' | 'hybrid'
-const DB_MODE = (process.env.DB_MODE || 'firebase') as 'firebase' | 'json' | 'hybrid'
+// Tipo helper para documentos de Firestore
+type FirestoreTask = Omit<Task, 'id'>
+type FirestoreDocument = admin.firestore.QueryDocumentSnapshot<FirestoreTask>
+type FirestoreDocumentSnapshot = admin.firestore.DocumentSnapshot<FirestoreTask>
 
-// Importar funciones JSON como fallback
+// Función helper para convertir documento a Task
+function documentToTask(doc: FirestoreDocument | FirestoreDocumentSnapshot): Task {
+  const data = doc.data()
+  if (!data) {
+    throw new Error('Document data is undefined')
+  }
+  return {
+    id: doc.id,
+    ...data
+  }
+}
+
+// Importar funciones JSON (solo si DB_MODE === 'json')
 import { getTasks as getTasksJSON, saveTasks as saveTasksJSON, createTask as createTaskJSON, updateTask as updateTaskJSON, deleteTask as deleteTaskJSON, getTasksByCategory as getTasksByCategoryJSON, getTasksByPriority as getTasksByPriorityJSON, getOverdueTasks as getOverdueTasksJSON } from './tasks'
 
 export async function getTasks(): Promise<Task[]> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     return getTasksJSON()
   }
-
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
+  }
+  
   try {
-    if (!isDbAvailable()) {
-      return getTasksJSON()
-    }
-    
-    if (DB_MODE === 'firebase') {
-      const snapshot = await db.collection('tasks').orderBy('createdAt', 'desc').get()
-      return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Task))
-    } else {
-      try {
-        const snapshot = await db.collection('tasks').orderBy('createdAt', 'desc').get()
-        return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Task))
-      } catch (error) {
-        console.warn('Error leyendo de Firestore, usando JSON:', error)
-        return getTasksJSON()
-      }
-    }
+    const snapshot = await db.collection('tasks').orderBy('createdAt', 'desc').get()
+    return snapshot.docs.map((doc: FirestoreDocument) => documentToTask(doc))
   } catch (error) {
-    console.error('Error obteniendo tareas:', error)
-    return getTasksJSON()
+    console.error('[DB] Error obteniendo tareas de Firebase:', error)
+    throw error
   }
 }
 
 export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'completed'>): Promise<Task> {
+  const mode = getDbMode()
   const newTask: Task = {
     ...task,
     id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -52,29 +60,32 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'complete
     completed: false
   }
 
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  if (mode === 'json') {
     return createTaskJSON(task)
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
     await db.collection('tasks').doc(newTask.id).set(newTask)
-    
-    if (DB_MODE === 'hybrid') {
-      const tasks = getTasksJSON()
-      tasks.push(newTask)
-      saveTasksJSON(tasks)
-    }
-    
     return newTask
   } catch (error) {
-    console.error('Error creando tarea:', error)
-    return createTaskJSON(task)
+    console.error('[DB] Error creando tarea en Firebase:', error)
+    throw error
   }
 }
 
 export async function updateTask(id: string, updates: Partial<Task>): Promise<Task | null> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     return updateTaskJSON(id, updates)
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
@@ -90,51 +101,45 @@ export async function updateTask(id: string, updates: Partial<Task>): Promise<Ta
     const docRef = db.collection('tasks').doc(id)
     await docRef.update(updates)
     
-    const updated = await docRef.get()
+    const updated = await docRef.get() as FirestoreDocumentSnapshot
     if (!updated.exists) return null
     
-    const updatedTask = { id: updated.id, ...updated.data() } as Task
-    
-    if (DB_MODE === 'hybrid') {
-      const tasks = getTasksJSON()
-      const index = tasks.findIndex(t => t.id === id)
-      if (index !== -1) {
-        tasks[index] = updatedTask
-        saveTasksJSON(tasks)
-      }
-    }
-    
-    return updatedTask
+    return documentToTask(updated)
   } catch (error) {
-    console.error('Error actualizando tarea:', error)
-    return updateTaskJSON(id, updates)
+    console.error('[DB] Error actualizando tarea en Firebase:', error)
+    throw error
   }
 }
 
 export async function deleteTask(id: string): Promise<boolean> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     return deleteTaskJSON(id)
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
     await db.collection('tasks').doc(id).delete()
-    
-    if (DB_MODE === 'hybrid') {
-      const tasks = getTasksJSON()
-      const filtered = tasks.filter(t => t.id !== id)
-      saveTasksJSON(filtered)
-    }
-    
     return true
   } catch (error) {
-    console.error('Error eliminando tarea:', error)
-    return deleteTaskJSON(id)
+    console.error('[DB] Error eliminando tarea de Firebase:', error)
+    throw error
   }
 }
 
 export async function getTasksByCategory(category: TaskCategory): Promise<Task[]> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     return getTasksByCategoryJSON(category)
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
@@ -142,16 +147,22 @@ export async function getTasksByCategory(category: TaskCategory): Promise<Task[]
       .where('category', '==', category)
       .orderBy('createdAt', 'desc')
       .get()
-    return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Task))
+    return snapshot.docs.map((doc: FirestoreDocument) => documentToTask(doc))
   } catch (error) {
-    console.error('Error obteniendo tareas por categoría:', error)
-    return getTasksByCategoryJSON(category)
+    console.error('[DB] Error obteniendo tareas por categoría de Firebase:', error)
+    throw error
   }
 }
 
 export async function getTasksByPriority(priority: TaskPriority): Promise<Task[]> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     return getTasksByPriorityJSON(priority)
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
@@ -159,16 +170,22 @@ export async function getTasksByPriority(priority: TaskPriority): Promise<Task[]
       .where('priority', '==', priority)
       .orderBy('createdAt', 'desc')
       .get()
-    return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Task))
+    return snapshot.docs.map((doc: FirestoreDocument) => documentToTask(doc))
   } catch (error) {
-    console.error('Error obteniendo tareas por prioridad:', error)
-    return getTasksByPriorityJSON(priority)
+    console.error('[DB] Error obteniendo tareas por prioridad de Firebase:', error)
+    throw error
   }
 }
 
 export async function getOverdueTasks(): Promise<Task[]> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     return getOverdueTasksJSON()
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
@@ -177,10 +194,10 @@ export async function getOverdueTasks(): Promise<Task[]> {
       .where('completed', '==', false)
       .where('dueDate', '<', now)
       .get()
-    return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Task))
+    return snapshot.docs.map((doc: FirestoreDocument) => documentToTask(doc))
   } catch (error) {
-    console.error('Error obteniendo tareas vencidas:', error)
-    return getOverdueTasksJSON()
+    console.error('[DB] Error obteniendo tareas vencidas de Firebase:', error)
+    throw error
   }
 }
 

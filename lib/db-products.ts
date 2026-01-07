@@ -3,108 +3,113 @@
  * Mantiene compatibilidad con la interfaz existente
  */
 
+import admin from 'firebase-admin'
 import { db } from './firebase-admin'
-import { collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore'
 import { Product } from './products'
-import { isDbAvailable } from './db-utils'
+import { getDbMode, isDbAvailable } from './db-utils'
 
 // Re-exportar Product para que pueda ser importado desde otros archivos
 export type { Product } from './products'
 
-// Modo: 'firebase' | 'json' | 'hybrid'
-const DB_MODE = (process.env.DB_MODE || 'json') as 'firebase' | 'json' | 'hybrid'
+// Tipo helper para documentos de Firestore
+type FirestoreProduct = Omit<Product, 'id'>
+type FirestoreDocument = admin.firestore.QueryDocumentSnapshot<FirestoreProduct>
+type FirestoreDocumentSnapshot = admin.firestore.DocumentSnapshot<FirestoreProduct>
 
-// Importar funciones JSON como fallback
+// Función helper para convertir documento a Product
+function documentToProduct(doc: FirestoreDocument | FirestoreDocumentSnapshot): Product {
+  const data = doc.data()
+  if (!data) {
+    throw new Error('Document data is undefined')
+  }
+  return {
+    id: doc.id,
+    ...data
+  }
+}
+
+// Importar funciones JSON como fallback (solo si DB_MODE === 'json')
 import { getProducts as getProductsJSON, saveProducts as saveProductsJSON } from './products'
 
 export async function getProducts(): Promise<Product[]> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  // Solo usar JSON si está explícitamente configurado
+  if (mode === 'json') {
     return getProductsJSON()
   }
-
+  
+  // En producción, siempre usar Firebase - NO fallback automático
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
+  }
+  
   try {
-    if (!isDbAvailable()) {
-      return getProductsJSON()
-    }
-    
-    if (DB_MODE === 'firebase') {
-      const snapshot = await db.collection('products').get()
-      return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Product))
-    } else {
-      // Modo híbrido: intentar Firestore, fallback a JSON
-      try {
-        const snapshot = await db.collection('products').get()
-        return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Product))
-      } catch (error) {
-        console.warn('Error leyendo de Firestore, usando JSON:', error)
-        return getProductsJSON()
-      }
-    }
+    const snapshot = await db.collection('products').get()
+    return snapshot.docs.map((doc: FirestoreDocument) => documentToProduct(doc))
   } catch (error) {
-    console.error('Error obteniendo productos:', error)
-    // Fallback a JSON en caso de error
-    return getProductsJSON()
+    console.error('[DB] Error obteniendo productos de Firebase:', error)
+    throw error // No hacer fallback automático en producción
   }
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     const products = getProductsJSON()
     return products.find(p => p.id === id) || null
   }
-
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
+  }
+  
   try {
     const docRef = db.collection('products').doc(id)
-    const docSnap = await docRef.get()
+    const docSnap = await docRef.get() as FirestoreDocumentSnapshot
     
     if (docSnap.exists) {
-      return { id: docSnap.id, ...docSnap.data() } as Product
+      return documentToProduct(docSnap)
     }
     return null
   } catch (error) {
-    console.error('Error obteniendo producto:', error)
-    // Fallback
-    const products = getProductsJSON()
-    return products.find(p => p.id === id) || null
+    console.error('[DB] Error obteniendo producto de Firebase:', error)
+    throw error
   }
 }
 
 export async function createProduct(product: Omit<Product, 'id'>): Promise<Product> {
+  const mode = getDbMode()
   const newProduct: Product = {
     ...product,
     id: `prod-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   }
 
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  if (mode === 'json') {
     const products = getProductsJSON()
     products.push(newProduct)
     saveProductsJSON(products)
     return newProduct
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
     await db.collection('products').doc(newProduct.id).set(newProduct)
-    
-    // En modo híbrido, también guardar en JSON
-    if (DB_MODE === 'hybrid') {
-      const products = getProductsJSON()
-      products.push(newProduct)
-      saveProductsJSON(products)
-    }
-    
     return newProduct
   } catch (error) {
-    console.error('Error creando producto:', error)
-    // Fallback a JSON
-    const products = getProductsJSON()
-    products.push(newProduct)
-    saveProductsJSON(products)
-    return newProduct
+    console.error('[DB] Error creando producto en Firebase:', error)
+    throw error
   }
 }
 
 export async function updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     const products = getProductsJSON()
     const index = products.findIndex(p => p.id === id)
     if (index === -1) return null
@@ -112,67 +117,46 @@ export async function updateProduct(id: string, updates: Partial<Product>): Prom
     products[index] = { ...products[index], ...updates }
     saveProductsJSON(products)
     return products[index]
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
     const docRef = db.collection('products').doc(id)
     await docRef.update(updates)
     
-    const updated = await docRef.get()
+    const updated = await docRef.get() as FirestoreDocumentSnapshot
     if (!updated.exists) return null
     
-    const updatedProduct = { id: updated.id, ...updated.data() } as Product
-    
-    // En modo híbrido, también actualizar JSON
-    if (DB_MODE === 'hybrid') {
-      const products = getProductsJSON()
-      const index = products.findIndex(p => p.id === id)
-      if (index !== -1) {
-        products[index] = updatedProduct
-        saveProductsJSON(products)
-      }
-    }
-    
-    return updatedProduct
+    return documentToProduct(updated)
   } catch (error) {
-    console.error('Error actualizando producto:', error)
-    // Fallback a JSON
-    const products = getProductsJSON()
-    const index = products.findIndex(p => p.id === id)
-    if (index === -1) return null
-    
-    products[index] = { ...products[index], ...updates }
-    saveProductsJSON(products)
-    return products[index]
+    console.error('[DB] Error actualizando producto en Firebase:', error)
+    throw error
   }
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     const products = getProductsJSON()
     const filtered = products.filter(p => p.id !== id)
     saveProductsJSON(filtered)
     return filtered.length < products.length
   }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
+  }
 
   try {
     await db.collection('products').doc(id).delete()
-    
-    // En modo híbrido, también eliminar de JSON
-    if (DB_MODE === 'hybrid') {
-      const products = getProductsJSON()
-      const filtered = products.filter(p => p.id !== id)
-      saveProductsJSON(filtered)
-    }
-    
     return true
   } catch (error) {
-    console.error('Error eliminando producto:', error)
-    // Fallback a JSON
-    const products = getProductsJSON()
-    const filtered = products.filter(p => p.id !== id)
-    saveProductsJSON(filtered)
-    return filtered.length < products.length
+    console.error('[DB] Error eliminando producto de Firebase:', error)
+    throw error
   }
 }
 

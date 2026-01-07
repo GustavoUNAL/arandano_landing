@@ -3,159 +3,159 @@
  * Mantiene compatibilidad con la interfaz existente
  */
 
+import admin from 'firebase-admin'
 import { db } from './firebase-admin'
 import { Expense, ExpenseType, ExpenseCategory } from './expenses'
-import { isDbAvailable } from './db-utils'
+import { getDbMode, isDbAvailable } from './db-utils'
 
 // Re-exportar tipos
 export type { Expense, ExpenseType, ExpenseCategory } from './expenses'
 
-// Modo: 'firebase' | 'json' | 'hybrid'
-const DB_MODE = (process.env.DB_MODE || 'firebase') as 'firebase' | 'json' | 'hybrid'
+// Tipo helper para documentos de Firestore
+type FirestoreExpense = Omit<Expense, 'id'>
+type FirestoreDocument = admin.firestore.QueryDocumentSnapshot<FirestoreExpense>
+type FirestoreDocumentSnapshot = admin.firestore.DocumentSnapshot<FirestoreExpense>
 
-// Importar funciones JSON como fallback
+// Función helper para convertir documento a Expense
+function documentToExpense(doc: FirestoreDocument | FirestoreDocumentSnapshot): Expense {
+  const data = doc.data()
+  if (!data) {
+    throw new Error('Document data is undefined')
+  }
+  return {
+    id: doc.id,
+    ...data
+  }
+}
+
+// Importar funciones JSON (solo si DB_MODE === 'json')
 import { getExpenses as getExpensesJSON, saveExpenses as saveExpensesJSON, createExpense as createExpenseJSON, updateExpense as updateExpenseJSON, deleteExpense as deleteExpenseJSON, getExpensesByDateRange as getExpensesByDateRangeJSON, getMonthlyFixedExpenses as getMonthlyFixedExpensesJSON } from './expenses'
 
 export async function getExpenses(): Promise<Expense[]> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     return getExpensesJSON()
   }
-
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
+  }
+  
   try {
-    if (DB_MODE === 'firebase') {
-      const snapshot = await db.collection('expenses').orderBy('date', 'desc').get()
-      return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Expense))
-    } else {
-      try {
-        const snapshot = await db.collection('expenses').orderBy('date', 'desc').get()
-        return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Expense))
-      } catch (error) {
-        console.warn('Error leyendo de Firestore, usando JSON:', error)
-        return getExpensesJSON()
-      }
-    }
+    const snapshot = await db.collection('expenses').orderBy('date', 'desc').get()
+    return snapshot.docs.map((doc: FirestoreDocument) => documentToExpense(doc))
   } catch (error) {
-    console.error('Error obteniendo gastos:', error)
-    return getExpensesJSON()
+    console.error('[DB] Error obteniendo gastos de Firebase:', error)
+    throw error
   }
 }
 
 export async function createExpense(expense: Omit<Expense, 'id'>): Promise<Expense> {
+  const mode = getDbMode()
   const newExpense: Expense = {
     ...expense,
     id: `expense-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   }
 
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  if (mode === 'json') {
     return createExpenseJSON(expense)
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
-    if (!isDbAvailable()) {
-      return createExpenseJSON(expense)
-    }
     await db.collection('expenses').doc(newExpense.id).set(newExpense)
-    
-    if (DB_MODE === 'hybrid') {
-      const expenses = getExpensesJSON()
-      expenses.push(newExpense)
-      saveExpensesJSON(expenses)
-    }
-    
     return newExpense
   } catch (error) {
-    console.error('Error creando gasto:', error)
-    return createExpenseJSON(expense)
+    console.error('[DB] Error creando gasto en Firebase:', error)
+    throw error
   }
 }
 
 export async function updateExpense(id: string, updates: Partial<Expense>): Promise<Expense | null> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     return updateExpenseJSON(id, updates)
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
-    if (!isDbAvailable()) {
-      return updateExpenseJSON(id, updates)
-    }
     const docRef = db.collection('expenses').doc(id)
     await docRef.update(updates)
     
-    const updated = await docRef.get()
+    const updated = await docRef.get() as FirestoreDocumentSnapshot
     if (!updated.exists) return null
     
-    const updatedExpense = { id: updated.id, ...updated.data() } as Expense
-    
-    if (DB_MODE === 'hybrid') {
-      const expenses = getExpensesJSON()
-      const index = expenses.findIndex(e => e.id === id)
-      if (index !== -1) {
-        expenses[index] = updatedExpense
-        saveExpensesJSON(expenses)
-      }
-    }
-    
-    return updatedExpense
+    return documentToExpense(updated)
   } catch (error) {
-    console.error('Error actualizando gasto:', error)
-    return updateExpenseJSON(id, updates)
+    console.error('[DB] Error actualizando gasto en Firebase:', error)
+    throw error
   }
 }
 
 export async function deleteExpense(id: string): Promise<boolean> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     return deleteExpenseJSON(id)
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
-    if (!isDbAvailable()) {
-      return deleteExpenseJSON(id)
-    }
     await db.collection('expenses').doc(id).delete()
-    
-    if (DB_MODE === 'hybrid') {
-      const expenses = getExpensesJSON()
-      const filtered = expenses.filter(e => e.id !== id)
-      saveExpensesJSON(filtered)
-    }
-    
     return true
   } catch (error) {
-    console.error('Error eliminando gasto:', error)
-    return deleteExpenseJSON(id)
+    console.error('[DB] Error eliminando gasto de Firebase:', error)
+    throw error
   }
 }
 
 export async function getExpensesByDateRange(startDate: string, endDate: string): Promise<Expense[]> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     return getExpensesByDateRangeJSON(startDate, endDate)
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
-    if (!isDbAvailable()) {
-      return getExpensesByDateRangeJSON(startDate, endDate)
-    }
     const snapshot = await db.collection('expenses')
       .where('date', '>=', startDate)
       .where('date', '<=', endDate)
       .orderBy('date', 'desc')
       .get()
-    return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Expense))
+    return snapshot.docs.map((doc: FirestoreDocument) => documentToExpense(doc))
   } catch (error) {
-    console.error('Error obteniendo gastos por rango:', error)
-    return getExpensesByDateRangeJSON(startDate, endDate)
+    console.error('[DB] Error obteniendo gastos por rango de Firebase:', error)
+    throw error
   }
 }
 
 export async function getMonthlyFixedExpenses(year: number, month: number): Promise<Expense[]> {
-  if (DB_MODE === 'json' || !isDbAvailable()) {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
     return getMonthlyFixedExpensesJSON(year, month)
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
 
   try {
-    if (!isDbAvailable()) {
-      return getMonthlyFixedExpensesJSON(year, month)
-    }
     const startDate = new Date(year, month, 1).toISOString()
     const endDate = new Date(year, month + 1, 0).toISOString()
     
@@ -164,10 +164,10 @@ export async function getMonthlyFixedExpenses(year: number, month: number): Prom
       .where('date', '>=', startDate)
       .where('date', '<=', endDate)
       .get()
-    return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Expense))
+    return snapshot.docs.map((doc: FirestoreDocument) => documentToExpense(doc))
   } catch (error) {
-    console.error('Error obteniendo gastos fijos mensuales:', error)
-    return getMonthlyFixedExpensesJSON(year, month)
+    console.error('[DB] Error obteniendo gastos fijos mensuales de Firebase:', error)
+    throw error
   }
 }
 

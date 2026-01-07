@@ -1,16 +1,36 @@
 /**
- * Utilidades compartidas para verificar disponibilidad de Firebase durante build
+ * Utilidades compartidas para gestión de base de datos
  */
 
 import { db } from './firebase-admin'
 
 /**
+ * Obtiene el modo de base de datos configurado
+ * Por defecto retorna 'firebase' para garantizar uso de Firebase en producción
+ * 
+ * @returns 'firebase' | 'json'
+ */
+export function getDbMode(): 'firebase' | 'json' {
+  const mode = process.env.DB_MODE?.toLowerCase().trim()
+  
+  // Solo usar JSON si está explícitamente configurado como 'json'
+  if (mode === 'json') {
+    return 'json'
+  }
+  
+  // Por defecto: firebase (incluso si está vacío, undefined, o cualquier otro valor)
+  return 'firebase'
+}
+
+/**
  * Verifica si db está disponible y funcional
- * Durante el build, siempre retorna false para usar JSON
+ * Solo retorna false si DB_MODE es 'json' o si db no está disponible
  */
 export function isDbAvailable(): boolean {
-  // Durante el build, siempre usar JSON
-  if (process.env.NEXT_PHASE === 'phase-production-build') {
+  const mode = getDbMode()
+  
+  // Si el modo es JSON, db no está disponible (porque no se usa)
+  if (mode === 'json') {
     return false
   }
   
