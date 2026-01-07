@@ -211,9 +211,10 @@ if (issues.length > 0) {
   console.log('');
 }
 
+} // Cerrar función main()
+
 // Ejecutar función principal
 main().catch(error => {
   console.error('\n❌ Error fatal:', error);
   process.exit(1);
 });
-
