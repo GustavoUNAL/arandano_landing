@@ -7,6 +7,22 @@
 const fs = require('fs');
 const path = require('path');
 
+// Cargar variables de entorno desde .env.local si existe
+const envLocalPath = path.join(__dirname, '../.env.local');
+if (fs.existsSync(envLocalPath)) {
+  const envContent = fs.readFileSync(envLocalPath, 'utf8');
+  envContent.split('\n').forEach(line => {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+      const [key, ...values] = trimmed.split('=');
+      const value = values.join('=').replace(/^["']|["']$/g, '');
+      if (!process.env[key.trim()]) {
+        process.env[key.trim()] = value.trim();
+      }
+    }
+  });
+}
+
 // Función principal async
 async function main() {
 console.log('═══════════════════════════════════════════════════════════');
