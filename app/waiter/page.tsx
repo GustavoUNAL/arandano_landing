@@ -219,6 +219,7 @@ export default function WaiterPage() {
       })
 
       if (response.ok) {
+        const data = await response.json()
         // Limpiar carrito y resetear modal
         setCart([])
         setAmountPaid('')
@@ -237,13 +238,33 @@ export default function WaiterPage() {
         setPaymentDate(`${year}-${month}-${day}T${hours}:${minutes}`)
         setShowPaymentModal(false)
         await loadRecentSales()
+        
+        // Mostrar advertencias si hay
+        if (data.warnings && data.warnings.length > 0) {
+          console.warn('Advertencias al crear venta:', data.warnings)
+        }
+        
         alert(paymentAction === 'add' ? 'Venta registrada (sin pago)' : 'Venta registrada exitosamente')
       } else {
-        alert('Error al registrar la venta')
+        // Intentar leer el mensaje de error del servidor
+        let errorMessage = 'Error al registrar la venta'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorData.message || errorMessage
+          if (errorData.details) {
+            console.error('[Waiter] Error detalles:', errorData.details)
+            errorMessage += `: ${errorData.details}`
+          }
+        } catch (e) {
+          console.error('[Waiter] Error al leer respuesta:', e)
+        }
+        console.error('[Waiter] Error al registrar venta:', response.status, errorMessage)
+        alert(errorMessage)
       }
-    } catch (error) {
-      console.error('Error processing payment:', error)
-      alert('Error al procesar el pago')
+    } catch (error: any) {
+      console.error('[Waiter] Error processing payment:', error)
+      const errorMessage = error?.message || 'Error al procesar el pago. Verifica la consola para más detalles.'
+      alert(errorMessage)
     } finally {
       setProcessing(false)
     }
