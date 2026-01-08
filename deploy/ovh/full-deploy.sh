@@ -64,7 +64,7 @@ if [ ! -f "package.json" ]; then
         for DIR in "${POSSIBLE_DIRS[@]}"; do
             echo -e "${YELLOW}     - $DIR${NC}"
         done
-        exit 1
+    exit 1
     fi
 fi
 
@@ -257,12 +257,12 @@ echo ""
 
 # 8. Configurar Nginx
 echo -e "${CYAN}8️⃣  Configurando Nginx para ${DOMAIN}...${NC}"
-
-# Ejecutar script de configuración de Nginx
+    
+    # Ejecutar script de configuración de Nginx
 if [ -f "deploy/ovh/configure-nginx.sh" ]; then
     bash deploy/ovh/configure-nginx.sh "$DOMAIN"
     echo -e "${GREEN}   ✅ Nginx configurado${NC}"
-else
+    else
     echo -e "${YELLOW}   ⚠️  Script de configuración de Nginx no encontrado${NC}"
     echo -e "${YELLOW}      Configurando Nginx manualmente...${NC}"
     
@@ -334,10 +334,10 @@ EOF
         echo -e "${GREEN}   ✅ Nginx configurado y recargado${NC}"
     else
         echo -e "${RED}   ❌ Error en la configuración de Nginx${NC}"
-    fi
+        fi
 fi
 
-echo ""
+        echo ""
 
 # Resumen final
 echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
