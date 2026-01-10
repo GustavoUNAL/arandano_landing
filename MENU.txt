@@ -1,0 +1,110 @@
+============================================================
+📋 MENÚ ARÁNDANO CAFÉ BAR
+============================================================
+
+
+☕ Cafés Calientes
+------------------------------------------------------------
+  • Café aromatizado artesanal (canela / vainilla) - $ 5.000
+    Café artesanal con esencia natural de canela o vainilla
+  • Café artesanal con leche - $ 5.000
+    Café artesanal suavizado con leche fresca
+  • Café irlandés - $ 10.000
+    Café con whisky irlandés y crema batida
+  • Café negro artesanal - $ 4.000
+    Café artesanal preparado tradicionalmente, sin adiciones
+  • Carajillo - $ 8.000
+    Café con licor, tradicional preparación
+  • Vaso de leche - $ 5.000
+    Vaso de leche fresca
+
+🧊 Cafés Fríos
+------------------------------------------------------------
+  • Café artesanal frío con leche - $ 5.000
+    Café artesanal frío con leche, suave y refrescante
+  • Café frío artesanal - $ 4.000
+    Café artesanal servido frío, refrescante
+  • Café helado artesanal (affogato) - $ 10.000
+    Helado bañado con café artesanal caliente
+
+🍰 Pastelería
+------------------------------------------------------------
+  • Acompañante del día (Empanada, Buñuelo) - $ 3.000
+    Delicioso acompañante recién hecho, opción del día
+  • Pastel del día - $ 7.000
+    Pastel casero recién preparado, variedad del día
+  • Sándwich del día - $ 10.000
+    Delicioso sándwich preparado con ingredientes frescos y seleccionados
+
+🍽️ Combos
+------------------------------------------------------------
+  • Café artesanal caliente + pastel del día - $ 12.000
+    Combo perfecto: café caliente artesanal acompañado de nuestro pastel del día
+
+🍹 Cócteles
+------------------------------------------------------------
+  • Cóctel Arándano - $ 15.000
+    Jugo de arándano, Campari y jugo de naranja (copa estándar)
+  • Cóctel de campari  (Copa) - $ 15.000
+    Delicioso coctel seco  y dulce con jugo de naranja 
+  • Coctel de soda sin licor  (Vaso ) - $ 15.000
+    Refrescante bebida con soda de sabores 
+  • Cóctel moscowmule (Vaso ) - $ 15.000
+    Con todo el sabor de Moscú bebida refrescante con hielo, cerveza, limón y vodka 
+  • Hervido de fruta de temporada  (Tasa) - $ 5.000
+    Bebida caliente con fruta y licor a elección artesanal o aguardiente de temporada a elección, ideal para abrigar y como aperitivo 
+  • Margaritas (Copa) - $ 15.000
+    Bebida con tequila refrescante con limón triple sec y limón 
+  • Vino caliente - $ 10.000
+    Vino caliente especiado, ideal para compartir
+
+🍺 Cervezas
+------------------------------------------------------------
+  • Cerveza Águila 330cm3 (330 cm3) - $ 4.500
+    Cerveza colombiana Águila, servida bien fría.
+  • Cerveza Budweiser - $ 5.000
+    Cerveza importada Budweiser, servida bien fría.
+  • Cerveza Club Colombia 330cm3 (330 cm3) - $ 4.500
+    Cerveza colombiana Club Colombia, servida bien fría.
+  • Cerveza Coronita - $ 5.000
+    Cerveza importada Coronita, servida bien fría.
+  • Cerveza Heineken - $ 5.000
+    Cerveza importada Heineken, servida bien fría.
+  • Cerveza Poker 330cm3 (330 cm3) - $ 4.500
+    Cerveza colombiana Poker, servida bien fría.
+  • Cerveza Poker Latón 475cm3 (475 cm3) - $ 7.000
+    Cerveza colombiana Poker, servida bien fría.
+
+🍷 Vinos
+------------------------------------------------------------
+  • Botella vino Tinto Chile Santa Helena (Botella 750ml) - $ 75.000
+  • Copa de vino chileno  (Copa) - $ 10.000
+    Cautivante Bebida refrescante para compartir en una amena charla con todo el sabor de la uva latinoamericana 
+
+🥃 Vodka
+------------------------------------------------------------
+  • Vodka moskaya (Shot) - $ 12.000
+    Delicioso Shot de vodka acompañado con hielo y rodaja de limón ideal para prender la noche  
+  • Vodka Smirnoff (Botella 750ml) - $ 80.000
+  • Vodka Smirnoff (Shot 30ml) - $ 11.000
+    Delicioso licor sabor a tamarindo idealmente servido frío 
+
+🍸 Ginebra
+------------------------------------------------------------
+  • Ginebra Beefeater (Botella 750ml) - $ 165.000
+  • Ginebra Gordon's (Botella 750ml) - $ 165.000
+  • Ginebra Gordon's (Shot 30ml) - $ 12.000
+
+🥃 Tequila
+------------------------------------------------------------
+  • Tequila José Cuervo Especial (Botella 750ml) - $ 155.000
+  • Tequila Olmeca (Botella 750ml) - $ 155.000
+  • Tequila Olmeca (Shot 30ml) - $ 12.000
+
+🥃 Whisky
+------------------------------------------------------------
+  • Whisky Old Parr / Passport Scotch / Jack Daniel's (Shot 30ml) - $ 14.000
+
+============================================================
+Total de productos: 39
+============================================================

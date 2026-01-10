@@ -29,7 +29,7 @@ function documentToSale(doc: FirestoreDocument | FirestoreDocumentSnapshot): Sal
 }
 
 // Importar funciones JSON (solo si DB_MODE === 'json')
-import { getSales as getSalesJSON, saveSales as saveSalesJSON, getSalesByDateRange as getSalesByDateRangeJSON, getSalesByProduct as getSalesByProductJSON, getSaleById as getSaleByIdJSON, deleteSale as deleteSaleJSON, createSale as createSaleJSON } from './sales'
+import { getSales as getSalesJSON, saveSales as saveSalesJSON, getSalesByDateRange as getSalesByDateRangeJSON, getSalesByProduct as getSalesByProductJSON, getSaleById as getSaleByIdJSON, deleteSale as deleteSaleJSON, createSale as createSaleJSON, updateSale as updateSaleJSON } from './sales'
 
 export async function getSales(): Promise<Sale[]> {
   const mode = getDbMode()
@@ -96,6 +96,37 @@ export async function createSale(sale: Omit<Sale, 'id'>): Promise<Sale> {
     return newSale
   } catch (error) {
     console.error('[DB] Error creando venta en Firebase:', error)
+    throw error
+  }
+}
+
+export async function updateSale(id: string, updates: Partial<Sale>): Promise<Sale | null> {
+  const mode = getDbMode()
+  
+  if (mode === 'json') {
+    return updateSaleJSON(id, updates)
+  }
+  
+  if (!isDbAvailable()) {
+    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
+  }
+
+  try {
+    const docRef = db.collection('sales').doc(id)
+    const docSnap = await docRef.get() as FirestoreDocumentSnapshot
+    
+    if (!docSnap.exists) {
+      return null
+    }
+    
+    await docRef.update(updates)
+    
+    const updated = await docRef.get() as FirestoreDocumentSnapshot
+    if (!updated.exists) return null
+    
+    return documentToSale(updated)
+  } catch (error) {
+    console.error('[DB] Error actualizando venta de Firebase:', error)
     throw error
   }
 }

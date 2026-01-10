@@ -80,6 +80,16 @@ export function getSaleById(id: string): Sale | undefined {
   return sales.find(sale => sale.id === id)
 }
 
+export function updateSale(id: string, updates: Partial<Sale>): Sale | null {
+  const sales = getSales()
+  const index = sales.findIndex(sale => sale.id === id)
+  if (index === -1) return null
+  
+  sales[index] = { ...sales[index], ...updates }
+  saveSales(sales)
+  return sales[index]
+}
+
 export function deleteSale(id: string): boolean {
   const sales = getSales()
   const filtered = sales.filter(sale => sale.id !== id)
