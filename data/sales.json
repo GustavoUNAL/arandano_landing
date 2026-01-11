@@ -1,1 +1,42 @@
-[]
+[
+  {
+    "date": "2026-01-11T21:02:00.000Z",
+    "hour": 16,
+    "items": [
+      {
+        "productId": "cafe-leche",
+        "productName": "Café artesanal con leche",
+        "quantity": 1,
+        "unitPrice": 5000,
+        "totalPrice": 5000
+      }
+    ],
+    "total": 5000,
+    "subtotal": 5000,
+    "discount": 0,
+    "channel": "presencial",
+    "paymentMethod": "efectivo",
+    "ticketNumber": "T-1768165351482",
+    "id": "sale-1768165351482-cfpldx8uj"
+  },
+  {
+    "date": "2026-01-11T21:06:00.000Z",
+    "hour": 16,
+    "items": [
+      {
+        "productId": "cafe-negro",
+        "productName": "Café negro artesanal",
+        "quantity": 1,
+        "unitPrice": 4000,
+        "totalPrice": 4000
+      }
+    ],
+    "total": 4000,
+    "subtotal": 4000,
+    "discount": 0,
+    "channel": "presencial",
+    "paymentMethod": "efectivo",
+    "ticketNumber": "T-1768165614410",
+    "id": "sale-1768165614411-c4qo93s0o"
+  }
+]
