@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface InventoryItem {
@@ -38,8 +38,9 @@ export default function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterLot, setFilterLot] = useState<string>('')
   const [filterDate, setFilterDate] = useState<string>('')
+  const [filterProduct, setFilterProduct] = useState<string>('')
   const [groupByProduct, setGroupByProduct] = useState<boolean>(false)
-  const [viewMode, setViewMode] = useState<'product' | 'lot' | 'date-lot'>('date-lot') // 'product', 'lot' o 'date-lot'
+  const [viewMode, setViewMode] = useState<'product' | 'lot' | 'date-lot'>('lot') // 'product', 'lot' o 'date-lot'
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set())
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set())
   const [expandedLots, setExpandedLots] = useState<Set<string>>(new Set())
@@ -221,19 +222,107 @@ export default function InventoryPage() {
   }
 
 
-  // Obtener lotes únicos y ordenados
-  const uniqueLots = Array.from(new Set(
-    items
-      .filter(item => item.lot && item.lot.trim() !== '')
-      .map(item => item.lot!)
-  )).sort()
+  // Obtener lotes únicos con información detallada (proveedor y fecha)
+  const uniqueLotsWithInfo = useMemo(() => {
+    const lotsMap = new Map<string, { lot: string, supplier: string | null, purchaseDate: string | null, formattedDate: string }>()
+    
+    items.forEach(item => {
+      // Verificar que el item tenga un lote válido
+      if (!item.lot) return
+      if (typeof item.lot !== 'string') return
+      const trimmedLot = item.lot.trim()
+      if (trimmedLot === '' || trimmedLot === 'sin-lote' || trimmedLot.toLowerCase() === 'n/a') return
+      
+      if (!lotsMap.has(trimmedLot)) {
+        const purchaseDate = item.purchaseDate ? item.purchaseDate.split('T')[0] : null
+        const dateObj = purchaseDate ? new Date(purchaseDate + 'T00:00:00') : null
+        lotsMap.set(trimmedLot, {
+          lot: trimmedLot,
+          supplier: item.supplier || null,
+          purchaseDate: purchaseDate,
+          formattedDate: dateObj 
+            ? dateObj.toLocaleDateString('es-CO', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })
+            : 'Sin fecha'
+        })
+      } else {
+        // Si el proveedor no está definido, intentar usar el del item actual
+        const existingLot = lotsMap.get(trimmedLot)!
+        if (!existingLot.supplier && item.supplier) {
+          existingLot.supplier = item.supplier
+        }
+        if (!existingLot.purchaseDate && item.purchaseDate) {
+          const purchaseDate = item.purchaseDate.split('T')[0]
+          existingLot.purchaseDate = purchaseDate
+          const dateObj = new Date(purchaseDate + 'T00:00:00')
+          existingLot.formattedDate = dateObj.toLocaleDateString('es-CO', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          })
+        }
+      }
+    })
+    
+    // Ordenar por fecha (más recientes primero), luego por nombre de lote
+    return Array.from(lotsMap.values()).sort((a, b) => {
+      if (a.purchaseDate && b.purchaseDate) {
+        const dateCompare = b.purchaseDate.localeCompare(a.purchaseDate)
+        if (dateCompare !== 0) return dateCompare
+      }
+      return a.lot.localeCompare(b.lot)
+    })
+  }, [items])
+
+  // Lotes únicos simples (solo para compatibilidad)
+  const uniqueLots = useMemo(() => {
+    return uniqueLotsWithInfo.map(l => l.lot)
+  }, [uniqueLotsWithInfo])
+
+  // Contar items con lotes para información
+  const itemsWithLots = useMemo(() => {
+    return items.filter(item => {
+      if (!item.lot) return false
+      if (typeof item.lot !== 'string') return false
+      const trimmedLot = item.lot.trim()
+      return trimmedLot !== '' && trimmedLot !== 'sin-lote' && trimmedLot.toLowerCase() !== 'n/a'
+    }).length
+  }, [items])
 
   // Obtener fechas únicas y ordenadas (solo la parte de la fecha sin hora)
-  const uniqueDates = Array.from(new Set(
-    items
-      .filter(item => item.purchaseDate && item.purchaseDate.trim() !== '')
-      .map(item => item.purchaseDate!.split('T')[0])
-  )).sort().reverse() // Más recientes primero
+  const uniqueDates = useMemo(() => {
+    return Array.from(new Set(
+      items
+        .filter(item => item.purchaseDate && item.purchaseDate.trim() !== '')
+        .map(item => {
+          // Extraer solo la fecha sin la hora si existe
+          const dateStr = item.purchaseDate!
+          return dateStr.includes('T') ? dateStr.split('T')[0] : dateStr
+        })
+    )).sort().reverse() // Más recientes primero
+  }, [items])
+
+  // Obtener productos únicos (nombre + unidad) para el filtro
+  const uniqueProducts = useMemo(() => {
+    const productsMap = new Map<string, { name: string, unit: string, category: string }>()
+    
+    items.forEach(item => {
+      const key = `${item.name.toLowerCase().trim()}_${item.unit.toLowerCase().trim()}`
+      if (!productsMap.has(key)) {
+        productsMap.set(key, {
+          name: item.name,
+          unit: item.unit,
+          category: item.category
+        })
+      }
+    })
+    
+    return Array.from(productsMap.values())
+      .sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }))
+  }, [items])
 
   const filteredItems = items.filter(item => {
     const matchesCategory = !filterCategory || item.category === filterCategory
@@ -242,7 +331,11 @@ export default function InventoryPage() {
       (item.code && item.code.toLowerCase().includes(searchTerm.toLowerCase()))
     const matchesLot = !filterLot || item.lot === filterLot
     const matchesDate = !filterDate || (item.purchaseDate && item.purchaseDate.startsWith(filterDate))
-    return matchesCategory && matchesSearch && matchesLot && matchesDate
+    // Filtro por producto: comparar nombre y unidad
+    const matchesProduct = !filterProduct || 
+      (item.name.toLowerCase().trim() === filterProduct.split('_')[0] && 
+       item.unit.toLowerCase().trim() === filterProduct.split('_')[1])
+    return matchesCategory && matchesSearch && matchesLot && matchesDate && matchesProduct
   })
 
   // Agrupar productos por nombre y unidad para consolidar stock
@@ -304,7 +397,91 @@ export default function InventoryPage() {
     a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
   )
 
-  // Agrupar por fecha de compra y luego por lote
+  // Agrupar directamente por LOTE (cada lote tiene su proveedor y fecha)
+  interface GroupedByLot {
+    lot: string
+    supplier: string | null
+    purchaseDate: string
+    formattedDate: string
+    items: InventoryItem[]
+    totalQuantity: number
+    totalValue: number
+    categories: string[]
+  }
+
+  // Agrupar por lotes directamente - cada lote es único y tiene proveedor y fecha
+  const groupedByLot = useMemo(() => {
+    const lotsMap = new Map<string, GroupedByLot>()
+    
+    filteredItems.forEach(item => {
+      const lot = item.lot && item.lot.trim() !== '' ? item.lot.trim() : 'sin-lote'
+      const supplier = item.supplier || 'Sin proveedor'
+      const purchaseDate = item.purchaseDate ? item.purchaseDate.split('T')[0] : 'sin-fecha'
+      
+      // Crear clave única para el lote (lote + fecha + proveedor para diferenciar)
+      // Pero agrupamos por número de lote principalmente
+      const lotKey = lot
+      
+      if (!lotsMap.has(lotKey)) {
+        const dateObj = purchaseDate !== 'sin-fecha' ? new Date(purchaseDate + 'T00:00:00') : null
+        lotsMap.set(lotKey, {
+          lot: lot,
+          supplier: supplier,
+          purchaseDate: purchaseDate,
+          formattedDate: dateObj 
+            ? dateObj.toLocaleDateString('es-CO', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })
+            : 'Sin fecha registrada',
+          items: [],
+          totalQuantity: 0,
+          totalValue: 0,
+          categories: []
+        })
+      }
+      
+      const lotGroup = lotsMap.get(lotKey)!
+      lotGroup.items.push(item)
+      lotGroup.totalQuantity += item.quantity
+      lotGroup.totalValue += item.totalValue
+      
+      // Si el proveedor no está definido, intentar usar el del item
+      if (lotGroup.supplier === 'Sin proveedor' && item.supplier) {
+        lotGroup.supplier = item.supplier
+      }
+      
+      // Si la fecha no está definida, intentar usar la del item
+      if (lotGroup.purchaseDate === 'sin-fecha' && item.purchaseDate) {
+        const itemDate = item.purchaseDate.split('T')[0]
+        lotGroup.purchaseDate = itemDate
+        const dateObj = new Date(itemDate + 'T00:00:00')
+        lotGroup.formattedDate = dateObj.toLocaleDateString('es-CO', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      }
+      
+      if (!lotGroup.categories.includes(item.category)) {
+        lotGroup.categories.push(item.category)
+      }
+    })
+    
+    // Convertir a array y ordenar por fecha (más recientes primero), luego por nombre de lote
+    return Array.from(lotsMap.values()).sort((a, b) => {
+      // Si tienen fecha, ordenar por fecha (más reciente primero)
+      if (a.purchaseDate !== 'sin-fecha' && b.purchaseDate !== 'sin-fecha') {
+        const dateCompare = b.purchaseDate.localeCompare(a.purchaseDate)
+        if (dateCompare !== 0) return dateCompare
+      }
+      // Si tienen la misma fecha o no tienen fecha, ordenar por nombre de lote
+      return a.lot.localeCompare(b.lot)
+    })
+  }, [filteredItems])
+
+  // Agrupar por fecha de compra y luego por lote (vista alternativa)
   interface GroupedByDate {
     date: string
     formattedDate: string
@@ -314,91 +491,84 @@ export default function InventoryPage() {
     suppliers: string[]
   }
 
-  interface GroupedByLot {
-    lot: string
-    date: string
-    supplier: string | null
-    items: InventoryItem[]
-    totalQuantity: number
-    totalValue: number
-    categories: string[]
-  }
-
-  const groupedByDateAndLot = filteredItems.reduce((acc, item) => {
-    const purchaseDate = item.purchaseDate ? item.purchaseDate.split('T')[0] : 'sin-fecha'
-    const lot = item.lot && item.lot.trim() !== '' ? item.lot : 'sin-lote'
+  // Agrupar por fecha de compra y luego por lote (vista alternativa)
+  const groupedByDateAndLot = useMemo(() => {
+    const dateMap = new Map<string, GroupedByDate>()
     
-    if (!acc[purchaseDate]) {
-      const dateObj = purchaseDate !== 'sin-fecha' ? new Date(purchaseDate + 'T00:00:00') : null
-      acc[purchaseDate] = {
-        date: purchaseDate,
-        formattedDate: dateObj 
-          ? dateObj.toLocaleDateString('es-CO', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              weekday: 'long'
-            })
-          : 'Sin fecha registrada',
-        lots: [],
-        totalItems: 0,
-        totalValue: 0,
-        suppliers: []
+    filteredItems.forEach(item => {
+      const purchaseDate = item.purchaseDate ? item.purchaseDate.split('T')[0] : 'sin-fecha'
+      const lot = item.lot && item.lot.trim() !== '' ? item.lot.trim() : 'sin-lote'
+      
+      if (!dateMap.has(purchaseDate)) {
+        const dateObj = purchaseDate !== 'sin-fecha' ? new Date(purchaseDate + 'T00:00:00') : null
+        dateMap.set(purchaseDate, {
+          date: purchaseDate,
+          formattedDate: dateObj 
+            ? dateObj.toLocaleDateString('es-CO', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'long'
+              })
+            : 'Sin fecha registrada',
+          lots: [],
+          totalItems: 0,
+          totalValue: 0,
+          suppliers: []
+        })
       }
-    }
-
-    // Buscar si ya existe este lote en esta fecha
-    let lotGroup = acc[purchaseDate].lots.find(l => l.lot === lot)
-    
-    if (!lotGroup) {
-      lotGroup = {
-        lot: lot,
-        date: purchaseDate,
-        supplier: item.supplier || null,
-        items: [],
-        totalQuantity: 0,
-        totalValue: 0,
-        categories: []
+      
+      const dateGroup = dateMap.get(purchaseDate)!
+      let lotGroup = dateGroup.lots.find(l => l.lot === lot)
+      
+      if (!lotGroup) {
+        lotGroup = {
+          lot: lot,
+          supplier: item.supplier || null,
+          purchaseDate: purchaseDate,
+          formattedDate: dateGroup.formattedDate,
+          items: [],
+          totalQuantity: 0,
+          totalValue: 0,
+          categories: []
+        }
+        dateGroup.lots.push(lotGroup)
       }
-      acc[purchaseDate].lots.push(lotGroup)
-    }
-
-    lotGroup.items.push(item)
-    lotGroup.totalQuantity += item.quantity
-    lotGroup.totalValue += item.totalValue
+      
+      lotGroup.items.push(item)
+      lotGroup.totalQuantity += item.quantity
+      lotGroup.totalValue += item.totalValue
+      
+      if (!lotGroup.categories.includes(item.category)) {
+        lotGroup.categories.push(item.category)
+      }
+      
+      if (!lotGroup.supplier && item.supplier) {
+        lotGroup.supplier = item.supplier
+      }
+      
+      if (item.supplier && !dateGroup.suppliers.includes(item.supplier)) {
+        dateGroup.suppliers.push(item.supplier)
+      }
+      
+      dateGroup.totalItems += 1
+      dateGroup.totalValue += item.totalValue
+    })
     
-    if (!lotGroup.categories.includes(item.category)) {
-      lotGroup.categories.push(item.category)
-    }
-    
-    // Si hay múltiples proveedores en el mismo lote, usar el primero o más común
-    if (!lotGroup.supplier && item.supplier) {
-      lotGroup.supplier = item.supplier
-    }
-    
-    // Agregar proveedor a la lista de proveedores de la fecha
-    if (item.supplier && !acc[purchaseDate].suppliers.includes(item.supplier)) {
-      acc[purchaseDate].suppliers.push(item.supplier)
-    }
-
-    acc[purchaseDate].totalItems += 1
-    acc[purchaseDate].totalValue += item.totalValue
-
-    return acc
-  }, {} as Record<string, GroupedByDate>)
-
-  // Convertir a array y ordenar por fecha (más recientes primero)
-  const groupedByDateAndLotArray = Object.values(groupedByDateAndLot)
-    .sort((a, b) => {
+    // Convertir a array y ordenar por fecha (más recientes primero)
+    const result = Array.from(dateMap.values()).sort((a, b) => {
       if (a.date === 'sin-fecha') return 1
       if (b.date === 'sin-fecha') return -1
       return b.date.localeCompare(a.date) // Más recientes primero
     })
-
-  // Dentro de cada fecha, ordenar lotes por nombre
-  groupedByDateAndLotArray.forEach(dateGroup => {
-    dateGroup.lots.sort((a, b) => a.lot.localeCompare(b.lot))
-  })
+    
+    // Dentro de cada fecha, ordenar lotes por nombre
+    result.forEach(dateGroup => {
+      dateGroup.lots.sort((a, b) => a.lot.localeCompare(b.lot))
+    })
+    
+    return result
+  }, [filteredItems])
 
   const toggleProductExpansion = (key: string) => {
     const newExpanded = new Set(expandedProducts)
@@ -533,8 +703,8 @@ export default function InventoryPage() {
             />
           </div>
 
-          {/* Filtros por Lote y Fecha */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          {/* Filtros por Lote, Fecha y Producto */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
             {/* Filtro por Lote */}
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-2">
@@ -544,15 +714,31 @@ export default function InventoryPage() {
                 value={filterLot}
                 onChange={(e) => setFilterLot(e.target.value)}
                 className="w-full px-4 py-2 text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent bg-white"
+                disabled={items.length === 0}
               >
-                <option value="">Todos los lotes ({uniqueLots.length} disponibles)</option>
-                {uniqueLots.length > 0 ? (
-                  uniqueLots.map(lot => (
-                    <option key={lot} value={lot}>{lot}</option>
-                  ))
-                ) : (
-                  <option disabled>No hay lotes registrados</option>
-                )}
+                <option value="">
+                  {items.length === 0 
+                    ? 'Cargando...' 
+                    : uniqueLotsWithInfo.length > 0 
+                      ? `Todos los lotes (${uniqueLotsWithInfo.length} disponibles)` 
+                      : 'Todos los lotes (sin lotes registrados)'}
+                </option>
+                {uniqueLotsWithInfo.length > 0 ? (
+                  uniqueLotsWithInfo.map(lotInfo => {
+                    const displayText = lotInfo.supplier && lotInfo.formattedDate !== 'Sin fecha'
+                      ? `${lotInfo.lot} - ${lotInfo.supplier} (${lotInfo.formattedDate})`
+                      : lotInfo.supplier
+                      ? `${lotInfo.lot} - ${lotInfo.supplier}`
+                      : lotInfo.formattedDate !== 'Sin fecha'
+                      ? `${lotInfo.lot} (${lotInfo.formattedDate})`
+                      : lotInfo.lot
+                    return (
+                      <option key={lotInfo.lot} value={lotInfo.lot}>{displayText}</option>
+                    )
+                  })
+                ) : items.length > 0 ? (
+                  <option disabled>No hay lotes registrados en el inventario</option>
+                ) : null}
               </select>
               {filterLot && (
                 <button
@@ -600,10 +786,51 @@ export default function InventoryPage() {
                 </button>
               )}
             </div>
+
+            {/* Filtro por Producto/Artículo */}
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">
+                📦 Filtrar por Artículo/Producto
+              </label>
+              <select
+                value={filterProduct}
+                onChange={(e) => setFilterProduct(e.target.value)}
+                className="w-full px-4 py-2 text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent bg-white"
+                disabled={items.length === 0}
+              >
+                <option value="">
+                  {items.length === 0 
+                    ? 'Cargando...' 
+                    : uniqueProducts.length > 0 
+                      ? `Todos los productos (${uniqueProducts.length} disponibles)` 
+                      : 'Todos los productos (sin productos registrados)'}
+                </option>
+                {uniqueProducts.length > 0 ? (
+                  uniqueProducts.map((product, idx) => {
+                    const productKey = `${product.name.toLowerCase().trim()}_${product.unit.toLowerCase().trim()}`
+                    return (
+                      <option key={productKey} value={productKey}>
+                        {product.name} ({product.unit}) - {product.category}
+                      </option>
+                    )
+                  })
+                ) : items.length > 0 ? (
+                  <option disabled>No hay productos registrados en el inventario</option>
+                ) : null}
+              </select>
+              {filterProduct && (
+                <button
+                  onClick={() => setFilterProduct('')}
+                  className="mt-1 text-xs text-berry-600 hover:text-berry-800 underline"
+                >
+                  Limpiar filtro de producto
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Indicadores de filtros activos */}
-          {(filterLot || filterDate) && (
+          {(filterLot || filterDate || filterProduct) && (
             <div className="mb-4 p-3 bg-berry-50 border border-berry-200 rounded-lg">
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="font-medium text-berry-700">Filtros activos:</span>
@@ -635,10 +862,25 @@ export default function InventoryPage() {
                     </button>
                   </span>
                 )}
+                {filterProduct && (
+                  <span className="px-2 py-1 bg-berry-200 text-berry-800 rounded-full text-xs font-medium">
+                    Producto: {uniqueProducts.find(p => 
+                      `${p.name.toLowerCase().trim()}_${p.unit.toLowerCase().trim()}` === filterProduct
+                    )?.name || filterProduct}
+                    <button
+                      onClick={() => setFilterProduct('')}
+                      className="ml-2 hover:text-berry-900"
+                      title="Remover filtro"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
                 <button
                   onClick={() => {
                     setFilterLot('')
                     setFilterDate('')
+                    setFilterProduct('')
                   }}
                   className="ml-auto text-xs text-berry-600 hover:text-berry-800 underline font-medium"
                 >
@@ -652,6 +894,19 @@ export default function InventoryPage() {
           <div className="mb-4 flex items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-medium text-stone-700">Vista:</span>
+              <button
+                onClick={() => {
+                  setViewMode('lot')
+                  setGroupByProduct(false)
+                }}
+                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm ${
+                  viewMode === 'lot' && !groupByProduct
+                    ? 'bg-berry-600 text-white'
+                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                }`}
+              >
+                📦 Por Lotes (Proveedor/Fecha)
+              </button>
               <button
                 onClick={() => {
                   setViewMode('date-lot')
@@ -678,19 +933,6 @@ export default function InventoryPage() {
               >
                 📊 Por Producto
               </button>
-              <button
-                onClick={() => {
-                  setViewMode('lot')
-                  setGroupByProduct(false)
-                }}
-                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm ${
-                  viewMode === 'lot' && !groupByProduct
-                    ? 'bg-berry-600 text-white'
-                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                }`}
-              >
-                📦 Individuales
-              </button>
             </div>
           </div>
 
@@ -703,7 +945,12 @@ export default function InventoryPage() {
                     <>
                       {viewMode === 'lot' && !groupByProduct ? (
                         <>
-                          Fechas con compras: <span className="font-bold">{groupedByDateAndLotArray.length}</span>
+                          Lotes registrados: <span className="font-bold">{groupedByLot.length}</span>
+                          <span className="text-stone-500 ml-2">({filteredItems.length} items totales)</span>
+                        </>
+                      ) : viewMode === 'date-lot' ? (
+                        <>
+                          Fechas con compras: <span className="font-bold">{groupedByDateAndLot.length}</span>
                           <span className="text-stone-500 ml-2">({filteredItems.length} items totales)</span>
                         </>
                       ) : groupByProduct ? (
@@ -722,7 +969,12 @@ export default function InventoryPage() {
                     <>
                       {viewMode === 'lot' && !groupByProduct ? (
                         <>
-                          Fechas con compras: <span className="font-bold">{groupedByDateAndLotArray.length}</span>
+                          Lotes registrados: <span className="font-bold">{groupedByLot.length}</span>
+                          <span className="text-stone-500 ml-2">({filteredItems.length} items registrados)</span>
+                        </>
+                      ) : viewMode === 'date-lot' ? (
+                        <>
+                          Fechas con compras: <span className="font-bold">{groupedByDateAndLot.length}</span>
                           <span className="text-stone-500 ml-2">({filteredItems.length} items registrados)</span>
                         </>
                       ) : groupByProduct ? (
@@ -786,10 +1038,138 @@ export default function InventoryPage() {
             <div className="text-center py-8 text-berry-600">Cargando...</div>
           ) : filteredItems.length === 0 ? (
             <div className="text-center py-8 text-berry-600">No hay items de inventario</div>
+          ) : viewMode === 'lot' && !groupByProduct ? (
+            /* Vista por Lotes - Organización directa por lote con proveedor y fecha */
+            <div className="space-y-4">
+              {groupedByLot.map((lotGroup) => {
+                const lotKey = `${lotGroup.lot}-${lotGroup.purchaseDate}`
+                return (
+                  <div
+                    key={lotKey}
+                    className="bg-stone-50 border-2 border-stone-200 rounded-lg overflow-hidden hover:border-berry-300 transition-colors"
+                  >
+                    {/* Encabezado del Lote */}
+                    <button
+                      onClick={() => toggleLotExpansion(lotKey)}
+                      className="w-full px-4 sm:px-6 py-4 bg-berry-600 hover:bg-berry-700 text-white text-left transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                            <h2 className="text-lg sm:text-xl font-bold">
+                              🏷️ {lotGroup.lot}
+                            </h2>
+                            {lotGroup.supplier && lotGroup.supplier !== 'Sin proveedor' && (
+                              <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium">
+                                🏪 {lotGroup.supplier}
+                              </span>
+                            )}
+                            <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium">
+                              📅 {lotGroup.formattedDate}
+                            </span>
+                          </div>
+                          <div className="text-sm text-berry-100 flex flex-wrap gap-3 sm:gap-4">
+                            <span>{lotGroup.items.length} producto(s)</span>
+                            <span>Stock total: {lotGroup.totalQuantity} unidades</span>
+                            <span className="font-semibold">Valor: ${lotGroup.totalValue.toLocaleString('es-CO')}</span>
+                            {lotGroup.categories.length > 0 && (
+                              <span>{lotGroup.categories.length} categoría(s)</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-2xl ml-3">
+                          {expandedLots.has(lotKey) ? '▼' : '▶'}
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Productos dentro del lote */}
+                    {expandedLots.has(lotKey) && (
+                      <div className="p-4 space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 p-3 bg-berry-50 rounded-lg border border-berry-200">
+                          <div>
+                            <span className="text-sm font-semibold text-berry-800">Proveedor:</span>
+                            <span className="text-sm text-berry-700 ml-2">{lotGroup.supplier || 'No especificado'}</span>
+                          </div>
+                          <div>
+                            <span className="text-sm font-semibold text-berry-800">Fecha de compra:</span>
+                            <span className="text-sm text-berry-700 ml-2">{lotGroup.formattedDate}</span>
+                          </div>
+                          <div>
+                            <span className="text-sm font-semibold text-berry-800">Categorías:</span>
+                            <span className="text-sm text-berry-700 ml-2">{lotGroup.categories.join(', ')}</span>
+                          </div>
+                          <div>
+                            <span className="text-sm font-semibold text-berry-800">Valor total del lote:</span>
+                            <span className="text-sm font-bold text-berry-700 ml-2">${lotGroup.totalValue.toLocaleString('es-CO')}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="text-sm font-semibold text-stone-700 mb-3">
+                          📋 Productos en este lote ({lotGroup.items.length}):
+                        </div>
+                        
+                        {lotGroup.items.map((item) => (
+                          <div
+                            key={item.id}
+                            className="bg-white rounded-lg p-4 border border-stone-200 hover:border-berry-300 transition-colors"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <h4 className="font-semibold text-sm sm:text-base text-berry-950">
+                                    {item.name}
+                                  </h4>
+                                  <span className="px-2 py-1 bg-berry-50 text-berry-700 rounded text-xs font-medium">
+                                    {item.category}
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs sm:text-sm">
+                                  <div>
+                                    <span className="text-stone-600">Cantidad:</span>
+                                    <span className="font-semibold ml-1 block">{item.quantity} {item.unit}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-stone-600">Precio unit:</span>
+                                    <span className="font-semibold ml-1 block">${item.unitPrice.toLocaleString('es-CO')}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-stone-600">Subtotal:</span>
+                                    <span className="font-semibold ml-1 block text-berry-700">${item.totalValue.toLocaleString('es-CO')}</span>
+                                  </div>
+                                  {item.code && (
+                                    <div>
+                                      <span className="text-stone-600">Código:</span>
+                                      <span className="font-semibold ml-1 block">{item.code}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                {item.notes && (
+                                  <div className="mt-2 text-xs text-stone-600 italic pt-2 border-t border-stone-200">
+                                    📝 {item.notes}
+                                  </div>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => handleEdit(item)}
+                                className="p-1 sm:p-2 text-stone-500 hover:text-berry-600 hover:bg-berry-50 rounded-lg transition-colors"
+                                title="Editar producto"
+                              >
+                                <span className="text-base sm:text-lg">⚙️</span>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           ) : viewMode === 'date-lot' ? (
             /* Vista por Fecha y Lote */
             <div className="space-y-4">
-              {groupedByDateAndLotArray.map((dateGroup) => (
+              {groupedByDateAndLot.map((dateGroup) => (
                 <div
                   key={dateGroup.date}
                   className="bg-stone-50 border-2 border-stone-200 rounded-lg overflow-hidden"

@@ -191,7 +191,7 @@
   {
     "id": "vodka-smirnoff-shot",
     "name": "Vodka Smirnoff",
-    "price": 11000,
+    "price": 7000,
     "description": "Delicioso licor sabor a tamarindo idealmente servido frío ",
     "category": "vodka",
     "type": "bebida",
@@ -224,7 +224,7 @@
   {
     "id": "gin-gordons-shot",
     "name": "Ginebra Gordon's",
-    "price": 12000,
+    "price": 9000,
     "description": "",
     "category": "ginebra",
     "type": "bebida",
@@ -270,7 +270,7 @@
   {
     "id": "tequila-olmeca-shot",
     "name": "Tequila Olmeca",
-    "price": 12000,
+    "price": 9500,
     "description": "",
     "category": "tequila",
     "type": "bebida",
@@ -278,6 +278,50 @@
     "imageUrl": "",
     "size": "Shot 30ml",
     "cost": 3543
+  },
+  {
+    "id": "tequila-jose-cuervo-shot",
+    "name": "Tequila José Cuervo",
+    "price": 12500,
+    "description": "",
+    "category": "tequila",
+    "type": "bebida",
+    "stock": 999,
+    "imageUrl": "",
+    "size": "Shot 30ml"
+  },
+  {
+    "id": "aguardiente-shot",
+    "name": "Shot Aguardiente",
+    "price": 6000,
+    "description": "",
+    "category": "aguardiente",
+    "type": "bebida",
+    "stock": 999,
+    "imageUrl": "",
+    "size": "Shot 30ml"
+  },
+  {
+    "id": "ron-shot",
+    "name": "Shot Ron",
+    "price": 6000,
+    "description": "",
+    "category": "ron",
+    "type": "bebida",
+    "stock": 999,
+    "imageUrl": "",
+    "size": "Shot 30ml"
+  },
+  {
+    "id": "brandy-shot",
+    "name": "Shot Brandy",
+    "price": 5000,
+    "description": "",
+    "category": "brandy",
+    "type": "bebida",
+    "stock": 999,
+    "imageUrl": "",
+    "size": "Shot 30ml"
   },
   {
     "id": "tequila-olmeca-botella",
@@ -304,15 +348,26 @@
     "cost": 10870
   },
   {
-    "name": "Copa de vino chileno ",
-    "price": 10000,
-    "description": "Cautivante Bebida refrescante para compartir en una amena charla con todo el sabor de la uva latinoamericana ",
+    "name": "Copa de vino Cata Vieja",
+    "price": 13000,
+    "description": "Copa de vino Cata Vieja",
     "category": "vino",
     "type": "bebida",
-    "stock": 2,
+    "stock": 999,
     "imageUrl": "",
     "size": "Copa",
-    "id": "bebida-1767478125019-7gnyg8glz"
+    "id": "vino-cata-vieja-copa"
+  },
+  {
+    "name": "Copa de vino Cruzares",
+    "price": 12000,
+    "description": "Copa de vino Cruzares",
+    "category": "vino",
+    "type": "bebida",
+    "stock": 999,
+    "imageUrl": "",
+    "size": "Copa",
+    "id": "vino-cruzares-copa"
   },
   {
     "name": "Cóctel moscowmule",
@@ -432,7 +487,7 @@
   },
   {
     "name": "Hervido de fruta de temporada ",
-    "price": 15000,
+    "price": 5000,
     "description": "Bebida caliente con fruta y licor a elección artesanal o aguardiente de temporada a elección, ideal para abrigar y como aperitivo ",
     "category": "coctel",
     "type": "bebida",
