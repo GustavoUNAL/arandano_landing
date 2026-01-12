@@ -19,7 +19,7 @@ export interface Sale {
   discountValue?: number
   comment?: string
   channel: 'presencial' | 'whatsapp'
-  paymentMethod?: 'efectivo' | 'nequi' | 'daviplata'
+  paymentMethod?: 'efectivo' | 'nequi'
   ticketNumber?: string
 }
 

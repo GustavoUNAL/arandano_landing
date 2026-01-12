@@ -38,5 +38,25 @@
     "paymentMethod": "efectivo",
     "ticketNumber": "T-1768165614410",
     "id": "sale-1768165614411-c4qo93s0o"
+  },
+  {
+    "date": "2026-01-12T01:30:00.000Z",
+    "hour": 20,
+    "items": [
+      {
+        "productId": "coctel-arandano",
+        "productName": "Cóctel Arándano",
+        "quantity": 4,
+        "unitPrice": 15000,
+        "totalPrice": 60000
+      }
+    ],
+    "total": 60000,
+    "subtotal": 60000,
+    "discount": 0,
+    "channel": "presencial",
+    "paymentMethod": "efectivo",
+    "ticketNumber": "T-1768181432156",
+    "id": "sale-1768181432156-aqykoicq7"
   }
 ]

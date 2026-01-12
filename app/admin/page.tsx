@@ -385,36 +385,34 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Título principal */}
-        <h1 className="text-2xl sm:text-3xl font-bold text-berry-950 mb-4 sm:mb-6">
-          Panel de Administración
-        </h1>
-
-        {/* Header con botones de acción */}
-        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
-              {currentView !== 'dashboard' && (
-                <a
-                  href="/admin"
-                  className="px-4 py-2 text-berry-600 hover:text-berry-800 text-sm font-medium"
-                >
-                  ← Volver a Admin
-                </a>
-              )}
-              <button
-                onClick={() => router.push('/')}
-                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-berry-600 hover:text-berry-800 text-xs sm:text-sm font-medium border border-berry-300 rounded-lg transition-colors"
+        {/* Título principal centrado */}
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-berry-950 text-center mb-4">
+            Panel de Administración
+          </h1>
+          
+          {/* Botones de acción centrados */}
+          <div className="flex flex-wrap justify-center items-center gap-3">
+            {currentView !== 'dashboard' && (
+              <a
+                href="/admin"
+                className="px-4 py-2 text-berry-600 hover:text-berry-800 text-sm font-medium"
               >
-                Ver sitio
-              </button>
-              <button
-                onClick={handleLogout}
-                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
-              >
-                Salir
-              </button>
-            </div>
+                ← Volver a Admin
+              </a>
+            )}
+            <button
+              onClick={() => router.push('/')}
+              className="px-4 py-2 text-berry-600 hover:text-berry-800 text-sm font-medium border border-berry-300 rounded-lg transition-colors"
+            >
+              Ver sitio
+            </button>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Salir
+            </button>
           </div>
         </div>
 

@@ -161,10 +161,12 @@
     "description": "Jugo de arándano, Campari y jugo de naranja (copa estándar)",
     "category": "coctel",
     "type": "bebida",
-    "stock": 999,
+    "stock": 995,
     "imageUrl": "",
     "size": "",
-    "cost": 6376
+    "cost": 6376,
+    "lastSaleDate": "2026-01-12T01:30:00.000Z",
+    "totalSold": 4
   },
   {
     "id": "vino-caliente",
