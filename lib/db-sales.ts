@@ -76,6 +76,17 @@ export async function getSaleById(id: string): Promise<Sale | undefined> {
   }
 }
 
+// Helper para eliminar campos undefined de un objeto (Firestore no acepta undefined)
+function removeUndefinedFields(obj: any): any {
+  const cleaned: any = {}
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      cleaned[key] = obj[key]
+    }
+  }
+  return cleaned
+}
+
 export async function createSale(sale: Omit<Sale, 'id'>): Promise<Sale> {
   const mode = getDbMode()
   const newSale: Sale = {
@@ -92,7 +103,9 @@ export async function createSale(sale: Omit<Sale, 'id'>): Promise<Sale> {
   }
 
   try {
-    await db.collection('sales').doc(newSale.id).set(newSale)
+    // Eliminar campos undefined antes de guardar en Firestore
+    const saleData = removeUndefinedFields(newSale)
+    await db.collection('sales').doc(newSale.id).set(saleData)
     return newSale
   } catch (error) {
     console.error('[DB] Error creando venta en Firebase:', error)
@@ -119,7 +132,9 @@ export async function updateSale(id: string, updates: Partial<Sale>): Promise<Sa
       return null
     }
     
-    await docRef.update(updates)
+    // Eliminar campos undefined antes de actualizar en Firestore
+    const cleanedUpdates = removeUndefinedFields(updates)
+    await docRef.update(cleanedUpdates)
     
     const updated = await docRef.get() as FirestoreDocumentSnapshot
     if (!updated.exists) return null
