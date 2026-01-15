@@ -30,16 +30,18 @@ export async function PUT(
     const body = await request.json()
     const { name, price, description, category, type, stock, imageUrl, size } = body
 
-    const updatedProduct = await updateProduct(params.id, {
-      name,
-      price: price !== undefined ? Number(price) : undefined,
-      description,
-      category,
-      type,
-      stock: stock !== undefined ? Number(stock) : undefined,
-      imageUrl,
-      size
-    })
+    // Construir objeto de actualización solo con los campos que se envían
+    const updates: any = {}
+    if (name !== undefined) updates.name = name
+    if (price !== undefined) updates.price = Number(price)
+    if (description !== undefined) updates.description = description
+    if (category !== undefined) updates.category = category
+    if (type !== undefined) updates.type = type
+    if (stock !== undefined) updates.stock = Number(stock)
+    if (imageUrl !== undefined) updates.imageUrl = imageUrl
+    if (size !== undefined) updates.size = size
+
+    const updatedProduct = await updateProduct(params.id, updates)
 
     if (!updatedProduct) {
       return NextResponse.json(
@@ -49,9 +51,10 @@ export async function PUT(
     }
 
     return NextResponse.json(updatedProduct)
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[API] Error actualizando producto:', error)
     return NextResponse.json(
-      { error: 'Error al actualizar producto' },
+      { error: error?.message || 'Error al actualizar producto' },
       { status: 500 }
     )
   }

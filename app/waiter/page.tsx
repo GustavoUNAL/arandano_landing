@@ -78,6 +78,7 @@ export default function WaiterPage() {
   const [showFloatingCart, setShowFloatingCart] = useState(true)
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
   const [showCategoriesModal, setShowCategoriesModal] = useState(false)
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -246,7 +247,11 @@ export default function WaiterPage() {
           console.warn('Advertencias al crear venta:', data.warnings)
         }
         
-        alert('Venta registrada exitosamente')
+        // Mostrar confirmación visual
+        setShowSuccessMessage(true)
+        setTimeout(() => {
+          setShowSuccessMessage(false)
+        }, 3000)
       } else {
         // Intentar leer el mensaje de error del servidor
         let errorMessage = 'Error al registrar la venta'
@@ -313,17 +318,6 @@ export default function WaiterPage() {
   return (
     <div className="min-h-screen bg-stone-50">
       <div className="container mx-auto px-4 py-6 max-w-7xl">
-        {/* Botón Volver a Admin - Primero arriba */}
-        <div className="mb-4">
-          <button
-            onClick={() => router.push('/admin')}
-            className="inline-flex items-center gap-2 text-berry-600 hover:text-berry-800 font-medium transition-colors"
-          >
-            <span>←</span>
-            <span>Volver a Admin</span>
-          </button>
-        </div>
-
         {/* Título Centrado */}
         <div className="mb-6 text-center">
           <h1 className="text-2xl sm:text-3xl font-bold text-berry-950 mb-1">Sistema de Cobros</h1>
@@ -436,13 +430,13 @@ export default function WaiterPage() {
         </div>
 
         {/* Carrito Flotante */}
-        <div className="fixed bottom-4 right-4 z-40">
+        <div className={`fixed bottom-4 right-4 ${showPaymentModal ? 'z-30' : 'z-40'}`}>
           {cart.length > 0 ? (
-            <div className="bg-white rounded-xl shadow-2xl border-2 border-berry-200 max-w-sm w-[calc(100vw-2rem)] sm:w-96">
+            <div className="bg-white rounded-xl shadow-2xl border-2 border-stone-200 max-w-sm w-[calc(100vw-2rem)] sm:w-96">
               {/* Header del carrito */}
-              <div className="flex justify-between items-center p-4 border-b border-stone-200 bg-berry-50 rounded-t-xl">
+              <div className="flex justify-between items-center p-4 border-b border-stone-200 bg-stone-50 rounded-t-xl">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-berry-600 rounded-full flex items-center justify-center text-white font-bold">
+                  <div className="w-8 h-8 bg-stone-700 rounded-full flex items-center justify-center text-white font-bold">
                     {cart.reduce((sum, item) => sum + item.quantity, 0)}
                   </div>
                   <h2 className="text-lg font-bold text-berry-950">Carrito</h2>
@@ -493,7 +487,7 @@ export default function WaiterPage() {
                           <span className="w-8 text-center font-medium text-sm">{item.quantity}</span>
                           <button
                             onClick={() => addToCart(item)}
-                            className="w-7 h-7 flex items-center justify-center bg-berry-600 text-white rounded hover:bg-berry-700 text-sm font-bold"
+                            className="w-7 h-7 flex items-center justify-center bg-stone-600 text-white rounded hover:bg-stone-700 text-sm font-bold"
                           >
                             +
                           </button>
@@ -543,13 +537,31 @@ export default function WaiterPage() {
               )}
             </div>
           ) : (
-            <button
-              onClick={() => setShowFloatingCart(!showFloatingCart)}
-              className="w-16 h-16 bg-berry-600 hover:bg-berry-700 text-white rounded-full shadow-2xl flex items-center justify-center text-2xl font-bold transition-all hover:scale-110"
-              aria-label="Ver carrito"
-            >
-              🛒
-            </button>
+            <>
+              <style jsx global>{`
+                @keyframes floatCart {
+                  0%, 100% {
+                    transform: translateY(0px);
+                  }
+                  50% {
+                    transform: translateY(-12px);
+                  }
+                }
+                .cart-float {
+                  animation: floatCart 3s ease-in-out infinite;
+                }
+                .cart-float:hover {
+                  animation-play-state: paused;
+                }
+              `}</style>
+              <button
+                onClick={() => setShowFloatingCart(!showFloatingCart)}
+                className="cart-float w-16 h-16 bg-gradient-to-br from-berry-500 via-berry-600 to-berry-700 hover:from-berry-600 hover:via-berry-700 hover:to-berry-800 text-white rounded-full shadow-2xl hover:shadow-berry-500/50 flex items-center justify-center text-2xl font-bold transition-all duration-300 hover:scale-110 active:scale-95"
+                aria-label="Ver carrito"
+              >
+                🛒
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -592,7 +604,7 @@ export default function WaiterPage() {
 
       {/* Modal de pago */}
       {showPaymentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[50] p-4 overflow-y-auto">
           <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full my-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4 sm:mb-6">
               <h3 className="text-xl sm:text-2xl font-bold text-berry-950">Procesar Venta</h3>
@@ -889,6 +901,16 @@ export default function WaiterPage() {
 
             <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-stone-200">
               <button
+                onClick={handlePayment}
+                disabled={
+                  processing ||
+                  (paymentMethod === 'efectivo' && amountPaid !== '' && parseFloat(amountPaid) > 0 && parseFloat(amountPaid) < getTotal())
+                }
+                className="flex-1 px-4 py-2.5 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+              >
+                {processing ? 'Procesando...' : '✅ Confirmar Pago'}
+              </button>
+              <button
                 onClick={() => {
                   setShowPaymentModal(false)
                   setAmountPaid('')
@@ -908,16 +930,6 @@ export default function WaiterPage() {
                 disabled={processing}
               >
                 Cancelar
-              </button>
-              <button
-                onClick={handlePayment}
-                disabled={
-                  processing ||
-                  (paymentMethod === 'efectivo' && amountPaid !== '' && parseFloat(amountPaid) > 0 && parseFloat(amountPaid) < getTotal())
-                }
-                className="flex-1 px-4 py-2.5 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-              >
-                {processing ? 'Procesando...' : '✅ Confirmar Pago'}
               </button>
             </div>
           </div>
@@ -1156,6 +1168,68 @@ export default function WaiterPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Botón flotante para volver al panel */}
+      {!(showPaymentModal || showSalesModal || showCategoriesModal || showSaleDetail || (cart.length > 0 && showFloatingCart)) && (
+        <button
+          onClick={() => router.push('/admin')}
+          className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-14 h-14 bg-stone-700 hover:bg-stone-800 text-white rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center z-40"
+          title="Volver al Panel de Administración"
+          aria-label="Volver al Panel de Administración"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+        </button>
+      )}
+
+      {/* Mensaje de confirmación de venta exitosa */}
+      {showSuccessMessage && (
+        <>
+          <style jsx global>{`
+            @keyframes successFadeIn {
+              from {
+                opacity: 0;
+                transform: scale(0.8) translateY(-20px);
+              }
+              to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+              }
+            }
+            @keyframes checkmarkScale {
+              0% {
+                transform: scale(0);
+              }
+              50% {
+                transform: scale(1.2);
+              }
+              100% {
+                transform: scale(1);
+              }
+            }
+            .success-popup {
+              animation: successFadeIn 0.4s ease-out;
+            }
+            .success-checkmark {
+              animation: checkmarkScale 0.6s ease-out 0.2s both;
+            }
+          `}</style>
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[60] pointer-events-none">
+            <div className="success-popup bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 min-w-[280px] pointer-events-auto">
+              <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center success-checkmark">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-berry-950 mb-2">¡Venta Registrada!</h3>
+                <p className="text-stone-600 text-sm">La venta se ha registrado exitosamente</p>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )

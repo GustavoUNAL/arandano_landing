@@ -49,6 +49,12 @@ export default function InventoryPage() {
   const [editForm, setEditForm] = useState<Partial<InventoryItem>>({})
   const [saving, setSaving] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [showCategoryModalInForm, setShowCategoryModalInForm] = useState(false)
+  const [showLotModal, setShowLotModal] = useState(false)
+  const [showDateModal, setShowDateModal] = useState(false)
+  const [showProductModal, setShowProductModal] = useState(false)
+  const [showConfigModal, setShowConfigModal] = useState(false)
   const [newItemForm, setNewItemForm] = useState<Partial<InventoryItem>>({
     name: '',
     category: '',
@@ -644,390 +650,102 @@ export default function InventoryPage() {
           </div>
         )}
 
-        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-berry-950">📦 Inventario Interno</h1>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-berry-600 hover:bg-berry-700 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              + Agregar Nuevo Lote
-            </button>
+        {/* Header con título arriba, búsqueda y configuración abajo */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-3">
             <a
               href="/admin"
-              className="px-4 py-2 text-berry-600 hover:text-berry-800 text-sm font-medium"
+              className="px-2 py-1.5 text-berry-600 hover:text-berry-800 text-base font-medium transition-colors"
             >
-              ← Volver a Admin
+              ←
             </a>
+            <h1 className="flex-1 text-center text-xl sm:text-2xl font-bold text-berry-950">Inventario Interno</h1>
+            <div className="w-8"></div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Buscar por nombre o código..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 px-3 py-2 text-sm border border-stone-300 rounded-lg focus:ring-1 focus:ring-berry-500 focus:border-berry-500 transition-all bg-transparent"
+            />
+            <button
+              onClick={() => setShowConfigModal(true)}
+              className="p-2 text-berry-600 hover:text-berry-700 hover:bg-berry-50 rounded-lg transition-all flex items-center justify-center"
+              title="Configuraciones"
+            >
+              <span className="text-xl">⚙️</span>
+            </button>
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
-          {/* Categorías como botones */}
-          <div className="mb-4">
-            <div className="flex flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start">
-              <button
-                onClick={() => setFilterCategory('')}
-                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base ${
-                  !filterCategory
-                    ? 'bg-berry-600 text-white'
-                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                }`}
-              >
-                Todas
-              </button>
-              {CATEGORIES.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setFilterCategory(cat)}
-                  className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base ${
-                    filterCategory === cat
-                      ? 'bg-berry-600 text-white'
-                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
 
-          {/* Buscador */}
-          <div className="mb-4">
-            <input
-              type="text"
-              placeholder="🔍 Buscar por nombre o código..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
-            />
-          </div>
-
-          {/* Filtros por Lote, Fecha y Producto */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-            {/* Filtro por Lote */}
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">
-                🏷️ Filtrar por Lote
-              </label>
-              <select
-                value={filterLot}
-                onChange={(e) => setFilterLot(e.target.value)}
-                className="w-full px-4 py-2 text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent bg-white"
-                disabled={items.length === 0}
-              >
-                <option value="">
-                  {items.length === 0 
-                    ? 'Cargando...' 
-                    : uniqueLotsWithInfo.length > 0 
-                      ? `Todos los lotes (${uniqueLotsWithInfo.length} disponibles)` 
-                      : 'Todos los lotes (sin lotes registrados)'}
-                </option>
-                {uniqueLotsWithInfo.length > 0 ? (
-                  uniqueLotsWithInfo.map(lotInfo => {
-                    const displayText = lotInfo.supplier && lotInfo.formattedDate !== 'Sin fecha'
-                      ? `${lotInfo.lot} - ${lotInfo.supplier} (${lotInfo.formattedDate})`
-                      : lotInfo.supplier
-                      ? `${lotInfo.lot} - ${lotInfo.supplier}`
-                      : lotInfo.formattedDate !== 'Sin fecha'
-                      ? `${lotInfo.lot} (${lotInfo.formattedDate})`
-                      : lotInfo.lot
-                    return (
-                      <option key={lotInfo.lot} value={lotInfo.lot}>{displayText}</option>
-                    )
-                  })
-                ) : items.length > 0 ? (
-                  <option disabled>No hay lotes registrados en el inventario</option>
-                ) : null}
-              </select>
-              {filterLot && (
-                <button
-                  onClick={() => setFilterLot('')}
-                  className="mt-1 text-xs text-berry-600 hover:text-berry-800 underline"
-                >
-                  Limpiar filtro de lote
-                </button>
-              )}
-            </div>
-
-            {/* Filtro por Fecha */}
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">
-                📅 Filtrar por Fecha de Compra
-              </label>
-              <select
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="w-full px-4 py-2 text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent bg-white"
-              >
-                <option value="">Todas las fechas ({uniqueDates.length} disponibles)</option>
-                {uniqueDates.length > 0 ? (
-                  uniqueDates.map(date => {
-                    const dateObj = new Date(date + 'T00:00:00')
-                    const formattedDate = dateObj.toLocaleDateString('es-CO', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })
-                    return (
-                      <option key={date} value={date}>{formattedDate}</option>
-                    )
-                  })
-                ) : (
-                  <option disabled>No hay fechas registradas</option>
-                )}
-              </select>
-              {filterDate && (
-                <button
-                  onClick={() => setFilterDate('')}
-                  className="mt-1 text-xs text-berry-600 hover:text-berry-800 underline"
-                >
-                  Limpiar filtro de fecha
-                </button>
-              )}
-            </div>
-
-            {/* Filtro por Producto/Artículo */}
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">
-                📦 Filtrar por Artículo/Producto
-              </label>
-              <select
-                value={filterProduct}
-                onChange={(e) => setFilterProduct(e.target.value)}
-                className="w-full px-4 py-2 text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent bg-white"
-                disabled={items.length === 0}
-              >
-                <option value="">
-                  {items.length === 0 
-                    ? 'Cargando...' 
-                    : uniqueProducts.length > 0 
-                      ? `Todos los productos (${uniqueProducts.length} disponibles)` 
-                      : 'Todos los productos (sin productos registrados)'}
-                </option>
-                {uniqueProducts.length > 0 ? (
-                  uniqueProducts.map((product, idx) => {
-                    const productKey = `${product.name.toLowerCase().trim()}_${product.unit.toLowerCase().trim()}`
-                    return (
-                      <option key={productKey} value={productKey}>
-                        {product.name} ({product.unit}) - {product.category}
-                      </option>
-                    )
-                  })
-                ) : items.length > 0 ? (
-                  <option disabled>No hay productos registrados en el inventario</option>
-                ) : null}
-              </select>
-              {filterProduct && (
-                <button
-                  onClick={() => setFilterProduct('')}
-                  className="mt-1 text-xs text-berry-600 hover:text-berry-800 underline"
-                >
-                  Limpiar filtro de producto
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Indicadores de filtros activos */}
-          {(filterLot || filterDate || filterProduct) && (
-            <div className="mb-4 p-3 bg-berry-50 border border-berry-200 rounded-lg">
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="font-medium text-berry-700">Filtros activos:</span>
-                {filterLot && (
-                  <span className="px-2 py-1 bg-berry-200 text-berry-800 rounded-full text-xs font-medium">
-                    Lote: {filterLot}
-                    <button
-                      onClick={() => setFilterLot('')}
-                      className="ml-2 hover:text-berry-900"
-                      title="Remover filtro"
-                    >
-                      ×
-                    </button>
-                  </span>
-                )}
-                {filterDate && (
-                  <span className="px-2 py-1 bg-berry-200 text-berry-800 rounded-full text-xs font-medium">
-                    Fecha: {new Date(filterDate + 'T00:00:00').toLocaleDateString('es-CO', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric'
-                    })}
-                    <button
-                      onClick={() => setFilterDate('')}
-                      className="ml-2 hover:text-berry-900"
-                      title="Remover filtro"
-                    >
-                      ×
-                    </button>
-                  </span>
-                )}
-                {filterProduct && (
-                  <span className="px-2 py-1 bg-berry-200 text-berry-800 rounded-full text-xs font-medium">
-                    Producto: {uniqueProducts.find(p => 
-                      `${p.name.toLowerCase().trim()}_${p.unit.toLowerCase().trim()}` === filterProduct
-                    )?.name || filterProduct}
-                    <button
-                      onClick={() => setFilterProduct('')}
-                      className="ml-2 hover:text-berry-900"
-                      title="Remover filtro"
-                    >
-                      ×
-                    </button>
-                  </span>
-                )}
-                <button
-                  onClick={() => {
-                    setFilterLot('')
-                    setFilterDate('')
-                    setFilterProduct('')
-                  }}
-                  className="ml-auto text-xs text-berry-600 hover:text-berry-800 underline font-medium"
-                >
-                  Limpiar todos los filtros
-                </button>
+          {/* Resumen Mejorado */}
+          <div className="bg-gradient-to-br from-berry-50 to-berry-100 border-2 border-berry-200 rounded-xl p-5 mb-4 shadow-sm">
+            <div className="space-y-3">
+              {/* Primera fila: Lotes e Items */}
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="bg-berry-600 text-white rounded-lg px-3 py-1.5">
+                    <span className="text-sm font-bold">{groupedByLot.length}</span>
+                  </div>
+                  <div>
+                    <div className="text-xs text-stone-600 uppercase tracking-wide">Lotes registrados</div>
+                    <div className="text-sm text-stone-700 font-medium">({filteredItems.length} items registrados)</div>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
 
-          {/* Toggle Vista */}
-          <div className="mb-4 flex items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium text-stone-700">Vista:</span>
-              <button
-                onClick={() => {
-                  setViewMode('lot')
-                  setGroupByProduct(false)
-                }}
-                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm ${
-                  viewMode === 'lot' && !groupByProduct
-                    ? 'bg-berry-600 text-white'
-                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                }`}
-              >
-                📦 Por Lotes (Proveedor/Fecha)
-              </button>
-              <button
-                onClick={() => {
-                  setViewMode('date-lot')
-                  setGroupByProduct(false)
-                }}
-                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm ${
-                  viewMode === 'date-lot'
-                    ? 'bg-berry-600 text-white'
-                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                }`}
-              >
-                📅 Por Fecha y Lote
-              </button>
-              <button
-                onClick={() => {
-                  setViewMode('product')
-                  setGroupByProduct(true)
-                }}
-                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm ${
-                  viewMode === 'product' && groupByProduct
-                    ? 'bg-berry-600 text-white'
-                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                }`}
-              >
-                📊 Por Producto
-              </button>
-            </div>
-          </div>
+              {/* Segunda fila: Valor Total Inventario */}
+              <div className="pt-2 border-t border-berry-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-berry-800">Valor total inventario</span>
+                  <span className="text-lg font-bold text-berry-700">${totalValue.toLocaleString('es-CO')}</span>
+                </div>
+              </div>
 
-          {/* Resumen */}
-          <div className="bg-berry-50 border border-berry-200 rounded-lg p-4 mb-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <div className="flex-1">
-                <div className="text-sm text-berry-700">
-                  {filterLot || filterDate || filterCategory || searchTerm ? (
-                    <>
-                      {viewMode === 'lot' && !groupByProduct ? (
-                        <>
-                          Lotes registrados: <span className="font-bold">{groupedByLot.length}</span>
-                          <span className="text-stone-500 ml-2">({filteredItems.length} items totales)</span>
-                        </>
-                      ) : viewMode === 'date-lot' ? (
-                        <>
-                          Fechas con compras: <span className="font-bold">{groupedByDateAndLot.length}</span>
-                          <span className="text-stone-500 ml-2">({filteredItems.length} items totales)</span>
-                        </>
-                      ) : groupByProduct ? (
-                        <>
-                          Productos únicos: <span className="font-bold">{groupedProductsArray.length}</span>
-                          <span className="text-stone-500 ml-2">({filteredItems.length} items totales)</span>
-                        </>
-                      ) : (
-                        <>
-                          Items filtrados: <span className="font-bold">{filteredItems.length}</span>
-                          <span className="text-stone-500 ml-2">(de {items.length} total)</span>
-                        </>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      {viewMode === 'lot' && !groupByProduct ? (
-                        <>
-                          Lotes registrados: <span className="font-bold">{groupedByLot.length}</span>
-                          <span className="text-stone-500 ml-2">({filteredItems.length} items registrados)</span>
-                        </>
-                      ) : viewMode === 'date-lot' ? (
-                        <>
-                          Fechas con compras: <span className="font-bold">{groupedByDateAndLot.length}</span>
-                          <span className="text-stone-500 ml-2">({filteredItems.length} items registrados)</span>
-                        </>
-                      ) : groupByProduct ? (
-                        <>
-                          Productos únicos: <span className="font-bold">{groupedProductsArray.length}</span>
-                          <span className="text-stone-500 ml-2">({filteredItems.length} items registrados)</span>
-                        </>
-                      ) : (
-                        <>
-                          Total items operativos: <span className="font-bold">{operationalItems.length}</span>
-                          {assetsItems.length > 0 && (
-                            <span className="text-stone-500 ml-2">(+ {assetsItems.length} activos)</span>
-                          )}
-                          {regulatedItems.length > 0 && (
-                            <span className="text-stone-500 ml-2">(+ {regulatedItems.length} regulados)</span>
-                          )}
-                        </>
-                      )}
-                    </>
+              {/* Tercera fila: Activos y Regulados en grid */}
+              {(assetsItems.length > 0 || regulatedItems.length > 0) && (filterCategory === 'activos' || filterCategory === 'productos regulados' || !filterCategory) && (
+                <div className="pt-2 border-t border-berry-200 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {assetsItems.length > 0 && (filterCategory === 'activos' || !filterCategory) && (
+                    <div className="bg-white/60 rounded-lg p-3 border border-berry-200">
+                      <div className="text-xs text-stone-600 mb-1">Valor activos</div>
+                      <div className="text-base font-bold text-stone-700">${totalAssetsValue.toLocaleString('es-CO')}</div>
+                      <div className="text-xs text-stone-500 mt-1">No incluido en inventario general</div>
+                    </div>
+                  )}
+                  {regulatedItems.length > 0 && (filterCategory === 'productos regulados' || !filterCategory) && (
+                    <div className="bg-white/60 rounded-lg p-3 border border-berry-200">
+                      <div className="text-xs text-stone-600 mb-1">Valor productos regulados</div>
+                      <div className="text-base font-bold text-stone-700">${totalRegulatedValue.toLocaleString('es-CO')}</div>
+                      <div className="text-xs text-stone-500 mt-1">Control aparte - no incluido</div>
+                    </div>
                   )}
                 </div>
-                <div className="text-sm text-berry-700">
-                  Valor total inventario: <span className="font-bold">${totalValue.toLocaleString('es-CO')}</span>
+              )}
+
+              {/* Filtros activos */}
+              {(filterLot || filterDate) && (
+                <div className="pt-2 border-t border-berry-200">
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {filterLot && (
+                      <span className="px-2 py-1 bg-berry-200 text-berry-800 rounded-full font-medium">
+                        Lote: {filterLot}
+                      </span>
+                    )}
+                    {filterDate && (
+                      <span className="px-2 py-1 bg-berry-200 text-berry-800 rounded-full font-medium">
+                        {new Date(filterDate + 'T00:00:00').toLocaleDateString('es-CO', {
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {assetsItems.length > 0 && (filterCategory === 'activos' || !filterCategory) && (
-                  <div className="text-sm text-stone-500 mt-1">
-                    Valor activos: <span className="font-semibold">${totalAssetsValue.toLocaleString('es-CO')}</span>
-                    <span className="text-xs ml-2">(no incluido en inventario general)</span>
-                  </div>
-                )}
-                {regulatedItems.length > 0 && (filterCategory === 'productos regulados' || !filterCategory) && (
-                  <div className="text-sm text-stone-500 mt-1">
-                    Valor productos regulados: <span className="font-semibold">${totalRegulatedValue.toLocaleString('es-CO')}</span>
-                    <span className="text-xs ml-2">(control aparte - no incluido en inventario general)</span>
-                  </div>
-                )}
-                {filterLot && (
-                  <div className="text-xs text-stone-600 mt-2 pt-2 border-t border-berry-200">
-                    📦 Mostrando items del lote: <span className="font-semibold">{filterLot}</span>
-                  </div>
-                )}
-                {filterDate && (
-                  <div className="text-xs text-stone-600 mt-1">
-                    📅 Mostrando items comprados el: <span className="font-semibold">
-                      {new Date(filterDate + 'T00:00:00').toLocaleDateString('es-CO', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </span>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -1625,22 +1343,545 @@ export default function InventoryPage() {
         </div>
       </div>
 
+      {/* Modal de Categorías */}
+      {showCategoryModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowCategoryModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-bold text-berry-950">Seleccionar Categoría</h2>
+              <button
+                onClick={() => setShowCategoryModal(false)}
+                className="text-stone-500 hover:text-stone-700 text-2xl leading-none w-8 h-8 flex items-center justify-center"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="space-y-2 mb-5">
+              <button
+                onClick={() => {
+                  setFilterCategory('')
+                  setShowCategoryModal(false)
+                }}
+                className={`w-full px-4 py-3.5 rounded-xl font-medium transition-all text-left text-base ${
+                  !filterCategory
+                    ? 'bg-berry-600 text-white shadow-md active:bg-berry-700'
+                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200 active:bg-stone-300 border-2 border-stone-300'
+                }`}
+              >
+                Todas las categorías
+              </button>
+              
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setFilterCategory(cat)
+                    setShowCategoryModal(false)
+                  }}
+                  className={`w-full px-4 py-3.5 rounded-xl font-medium transition-all text-left text-base ${
+                    filterCategory === cat
+                      ? 'bg-berry-600 text-white shadow-md active:bg-berry-700'
+                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200 active:bg-stone-300 border-2 border-stone-300'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            
+            <button
+              onClick={() => setShowCategoryModal(false)}
+              className="w-full px-4 py-3.5 bg-stone-200 hover:bg-stone-300 active:bg-stone-400 text-stone-700 font-semibold rounded-xl transition-colors text-base"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Lotes */}
+      {showLotModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowLotModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-bold text-berry-950">Seleccionar Lote</h2>
+              <button
+                onClick={() => setShowLotModal(false)}
+                className="text-stone-500 hover:text-stone-700 text-2xl leading-none w-8 h-8 flex items-center justify-center"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="space-y-2 mb-5">
+              <button
+                onClick={() => {
+                  setFilterLot('')
+                  setShowLotModal(false)
+                }}
+                className={`w-full px-4 py-3.5 rounded-xl font-medium transition-all text-left text-base ${
+                  !filterLot
+                    ? 'bg-berry-600 text-white shadow-md active:bg-berry-700'
+                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200 active:bg-stone-300 border-2 border-stone-300'
+                }`}
+              >
+                Todos los lotes
+              </button>
+              
+              {uniqueLotsWithInfo.length > 0 ? (
+                uniqueLotsWithInfo.map(lotInfo => {
+                  const displayText = lotInfo.supplier && lotInfo.formattedDate !== 'Sin fecha'
+                    ? `${lotInfo.lot} - ${lotInfo.supplier} (${lotInfo.formattedDate})`
+                    : lotInfo.supplier
+                    ? `${lotInfo.lot} - ${lotInfo.supplier}`
+                    : lotInfo.formattedDate !== 'Sin fecha'
+                    ? `${lotInfo.lot} (${lotInfo.formattedDate})`
+                    : lotInfo.lot
+                  return (
+                    <button
+                      key={lotInfo.lot}
+                      onClick={() => {
+                        setFilterLot(lotInfo.lot)
+                        setShowLotModal(false)
+                      }}
+                      className={`w-full px-4 py-3.5 rounded-xl font-medium transition-all text-left text-base ${
+                        filterLot === lotInfo.lot
+                          ? 'bg-berry-600 text-white shadow-md active:bg-berry-700'
+                          : 'bg-stone-100 text-stone-700 hover:bg-stone-200 active:bg-stone-300 border-2 border-stone-300'
+                      }`}
+                    >
+                      {displayText}
+                    </button>
+                  )
+                })
+              ) : (
+                <div className="text-center py-4 text-stone-500">No hay lotes registrados</div>
+              )}
+            </div>
+            
+            <button
+              onClick={() => setShowLotModal(false)}
+              className="w-full px-4 py-3.5 bg-stone-200 hover:bg-stone-300 active:bg-stone-400 text-stone-700 font-semibold rounded-xl transition-colors text-base"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Fechas */}
+      {showDateModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowDateModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-bold text-berry-950">Seleccionar Fecha</h2>
+              <button
+                onClick={() => setShowDateModal(false)}
+                className="text-stone-500 hover:text-stone-700 text-2xl leading-none w-8 h-8 flex items-center justify-center"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="space-y-2 mb-5">
+              <button
+                onClick={() => {
+                  setFilterDate('')
+                  setShowDateModal(false)
+                }}
+                className={`w-full px-4 py-3.5 rounded-xl font-medium transition-all text-left text-base ${
+                  !filterDate
+                    ? 'bg-berry-600 text-white shadow-md active:bg-berry-700'
+                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200 active:bg-stone-300 border-2 border-stone-300'
+                }`}
+              >
+                Todas las fechas
+              </button>
+              
+              {uniqueDates.length > 0 ? (
+                uniqueDates.map(date => {
+                  const dateObj = new Date(date + 'T00:00:00')
+                  const formattedDate = dateObj.toLocaleDateString('es-CO', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })
+                  return (
+                    <button
+                      key={date}
+                      onClick={() => {
+                        setFilterDate(date)
+                        setShowDateModal(false)
+                      }}
+                      className={`w-full px-4 py-3.5 rounded-xl font-medium transition-all text-left text-base ${
+                        filterDate === date
+                          ? 'bg-berry-600 text-white shadow-md active:bg-berry-700'
+                          : 'bg-stone-100 text-stone-700 hover:bg-stone-200 active:bg-stone-300 border-2 border-stone-300'
+                      }`}
+                    >
+                      {formattedDate}
+                    </button>
+                  )
+                })
+              ) : (
+                <div className="text-center py-4 text-stone-500">No hay fechas registradas</div>
+              )}
+            </div>
+            
+            <button
+              onClick={() => setShowDateModal(false)}
+              className="w-full px-4 py-3.5 bg-stone-200 hover:bg-stone-300 active:bg-stone-400 text-stone-700 font-semibold rounded-xl transition-colors text-base"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Productos */}
+      {showProductModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowProductModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-bold text-berry-950">Seleccionar Producto</h2>
+              <button
+                onClick={() => setShowProductModal(false)}
+                className="text-stone-500 hover:text-stone-700 text-2xl leading-none w-8 h-8 flex items-center justify-center"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="space-y-2 mb-5">
+              <button
+                onClick={() => {
+                  setFilterProduct('')
+                  setShowProductModal(false)
+                }}
+                className={`w-full px-4 py-3.5 rounded-xl font-medium transition-all text-left text-base ${
+                  !filterProduct
+                    ? 'bg-berry-600 text-white shadow-md active:bg-berry-700'
+                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200 active:bg-stone-300 border-2 border-stone-300'
+                }`}
+              >
+                Todos los productos
+              </button>
+              
+              {uniqueProducts.length > 0 ? (
+                uniqueProducts.map((product) => {
+                  const productKey = `${product.name.toLowerCase().trim()}_${product.unit.toLowerCase().trim()}`
+                  return (
+                    <button
+                      key={productKey}
+                      onClick={() => {
+                        setFilterProduct(productKey)
+                        setShowProductModal(false)
+                      }}
+                      className={`w-full px-4 py-3.5 rounded-xl font-medium transition-all text-left text-base ${
+                        filterProduct === productKey
+                          ? 'bg-berry-600 text-white shadow-md active:bg-berry-700'
+                          : 'bg-stone-100 text-stone-700 hover:bg-stone-200 active:bg-stone-300 border-2 border-stone-300'
+                      }`}
+                    >
+                      {product.name} ({product.unit}) - {product.category}
+                    </button>
+                  )
+                })
+              ) : (
+                <div className="text-center py-4 text-stone-500">No hay productos registrados</div>
+              )}
+            </div>
+            
+            <button
+              onClick={() => setShowProductModal(false)}
+              className="w-full px-4 py-3.5 bg-stone-200 hover:bg-stone-300 active:bg-stone-400 text-stone-700 font-semibold rounded-xl transition-colors text-base"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Configuraciones */}
+      {showConfigModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowConfigModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-4 max-w-lg w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold text-berry-950">Configuraciones</h2>
+              <button
+                onClick={() => setShowConfigModal(false)}
+                className="text-stone-500 hover:text-stone-700 text-xl leading-none w-7 h-7 flex items-center justify-center"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-2.5">
+              {/* Agregar Nuevo Lote */}
+              <button
+                onClick={() => {
+                  setShowConfigModal(false)
+                  setShowAddModal(true)
+                }}
+                className="w-full px-3 py-2.5 rounded-lg font-semibold transition-all text-left bg-berry-600 text-white shadow-md hover:bg-berry-700 active:bg-berry-800 text-sm"
+              >
+                Agregar Nuevo Lote
+              </button>
+
+              {/* Configuración de Vista */}
+              <div className="bg-stone-50 rounded-lg p-2.5 border border-stone-200">
+                <div className="text-xs font-semibold text-stone-700 mb-2">Vista</div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <button
+                    onClick={() => {
+                      setViewMode('lot')
+                      setGroupByProduct(false)
+                    }}
+                    className={`px-2 py-2 rounded-md font-medium transition-all text-xs text-center ${
+                      viewMode === 'lot' && !groupByProduct
+                        ? 'bg-berry-600 text-white shadow-md'
+                        : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-300'
+                    }`}
+                  >
+                    Lotes
+                  </button>
+                  <button
+                    onClick={() => {
+                      setViewMode('date-lot')
+                      setGroupByProduct(false)
+                    }}
+                    className={`px-2 py-2 rounded-md font-medium transition-all text-xs text-center ${
+                      viewMode === 'date-lot'
+                        ? 'bg-berry-600 text-white shadow-md'
+                        : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-300'
+                    }`}
+                  >
+                    Fecha
+                  </button>
+                  <button
+                    onClick={() => {
+                      setViewMode('product')
+                      setGroupByProduct(true)
+                    }}
+                    className={`px-2 py-2 rounded-md font-medium transition-all text-xs text-center ${
+                      viewMode === 'product' && groupByProduct
+                        ? 'bg-berry-600 text-white shadow-md'
+                        : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-300'
+                    }`}
+                  >
+                    Producto
+                  </button>
+                </div>
+              </div>
+
+              {/* Filtros */}
+              <div className="bg-stone-50 rounded-lg p-2.5 border border-stone-200">
+                <div className="text-xs font-semibold text-stone-700 mb-2">Filtros</div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {/* Filtro Categoría */}
+                  <button
+                    onClick={() => {
+                      setShowConfigModal(false)
+                      setShowCategoryModal(true)
+                    }}
+                    className={`px-2 py-2 rounded-md font-medium transition-all text-xs text-center ${
+                      filterCategory
+                        ? 'bg-berry-600 text-white shadow-md'
+                        : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-300'
+                    }`}
+                    title={filterCategory || 'Categoría'}
+                  >
+                    {filterCategory ? (filterCategory.length > 12 ? filterCategory.substring(0, 12) + '...' : filterCategory) : 'Categoría'}
+                  </button>
+
+                  {/* Filtro Lote */}
+                  <button
+                    onClick={() => {
+                      setShowConfigModal(false)
+                      setShowLotModal(true)
+                    }}
+                    disabled={items.length === 0}
+                    className={`px-2 py-2 rounded-md font-medium transition-all text-xs text-center ${
+                      filterLot
+                        ? 'bg-berry-600 text-white shadow-md'
+                        : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-300'
+                    } ${items.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    title={filterLot || 'Lote'}
+                  >
+                    {filterLot ? (filterLot.length > 12 ? filterLot.substring(0, 12) + '...' : filterLot) : 'Lote'}
+                  </button>
+
+                  {/* Filtro Fecha */}
+                  <button
+                    onClick={() => {
+                      setShowConfigModal(false)
+                      setShowDateModal(true)
+                    }}
+                    className={`px-2 py-2 rounded-md font-medium transition-all text-xs text-center ${
+                      filterDate
+                        ? 'bg-berry-600 text-white shadow-md'
+                        : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-300'
+                    }`}
+                    title={filterDate ? new Date(filterDate + 'T00:00:00').toLocaleDateString('es-CO') : 'Fecha'}
+                  >
+                    {filterDate ? new Date(filterDate + 'T00:00:00').toLocaleDateString('es-CO', { month: 'short', day: 'numeric' }) : 'Fecha'}
+                  </button>
+
+                  {/* Filtro Producto */}
+                  <button
+                    onClick={() => {
+                      setShowConfigModal(false)
+                      setShowProductModal(true)
+                    }}
+                    disabled={items.length === 0}
+                    className={`px-2 py-2 rounded-md font-medium transition-all text-xs text-center ${
+                      filterProduct
+                        ? 'bg-berry-600 text-white shadow-md'
+                        : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-300'
+                    } ${items.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    title={filterProduct ? uniqueProducts.find(p => `${p.name.toLowerCase().trim()}_${p.unit.toLowerCase().trim()}` === filterProduct)?.name || 'Producto' : 'Producto'}
+                  >
+                    {filterProduct ? (() => {
+                      const product = uniqueProducts.find(p => `${p.name.toLowerCase().trim()}_${p.unit.toLowerCase().trim()}` === filterProduct)
+                      const name = product?.name || 'Producto'
+                      return name.length > 12 ? name.substring(0, 12) + '...' : name
+                    })() : 'Producto'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Limpiar Filtros y Exportar en una fila */}
+              <div className="grid grid-cols-2 gap-1.5">
+                {(filterCategory || filterLot || filterDate || filterProduct || searchTerm) && (
+                  <button
+                    onClick={() => {
+                      setFilterCategory('')
+                      setFilterLot('')
+                      setFilterDate('')
+                      setFilterProduct('')
+                      setSearchTerm('')
+                      setShowConfigModal(false)
+                      showAlert('success', 'Filtros limpiados')
+                    }}
+                    className="px-2 py-2 rounded-md font-medium transition-all text-xs text-center bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300 border border-red-300"
+                  >
+                    Limpiar
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    const dataStr = JSON.stringify(items, null, 2)
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+                    const url = URL.createObjectURL(dataBlob)
+                    const link = document.createElement('a')
+                    link.href = url
+                    link.download = `inventario-${new Date().toISOString().split('T')[0]}.json`
+                    link.click()
+                    URL.revokeObjectURL(url)
+                    setShowConfigModal(false)
+                    showAlert('success', 'Inventario exportado exitosamente')
+                  }}
+                  className="px-2 py-2 rounded-md font-medium transition-all text-xs text-center bg-stone-100 text-stone-700 hover:bg-stone-200 active:bg-stone-300 border border-stone-300"
+                >
+                  Exportar
+                </button>
+              </div>
+
+              {/* Estadísticas Rápidas - Compactas */}
+              <div className="pt-2 border-t border-stone-200">
+                <div className="text-xs font-semibold text-stone-700 mb-1.5">Estadísticas</div>
+                <div className="grid grid-cols-2 gap-1.5 text-xs bg-stone-50 rounded-md p-2">
+                  <div className="flex justify-between">
+                    <span className="text-stone-600">Items:</span>
+                    <span className="font-semibold text-berry-700">{items.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-stone-600">Filtrados:</span>
+                    <span className="font-semibold text-berry-700">{filteredItems.length}</span>
+                  </div>
+                  <div className="flex justify-between col-span-2">
+                    <span className="text-stone-600">Valor:</span>
+                    <span className="font-semibold text-berry-700">${totalValue.toLocaleString('es-CO')}</span>
+                  </div>
+                  <div className="flex justify-between col-span-2">
+                    <span className="text-stone-600">Lotes:</span>
+                    <span className="font-semibold text-berry-700">{groupedByLot.length}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <button
+              onClick={() => setShowConfigModal(false)}
+              className="w-full px-3 py-2.5 bg-stone-200 hover:bg-stone-300 active:bg-stone-400 text-stone-700 font-semibold rounded-lg transition-colors mt-3 text-sm"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Modal de agregar nuevo lote */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl sm:text-2xl font-bold text-berry-950 mb-4">Agregar Nuevo Lote</h2>
+          <div className="bg-white rounded-2xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-berry-950">Agregar Nuevo Lote</h2>
+              <button
+                onClick={handleCancelAdd}
+                className="text-stone-500 hover:text-stone-700 text-2xl leading-none"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
                   Nombre *
                 </label>
                 <input
                   type="text"
                   value={newItemForm.name || ''}
                   onChange={(e) => setNewItemForm({ ...newItemForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                   placeholder="Ej: Cerveza Poker 330ml"
                   required
                 />
@@ -1648,31 +1889,32 @@ export default function InventoryPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                  <label className="block text-sm font-semibold text-stone-700 mb-2">
                     Categoría *
                   </label>
-                  <select
-                    value={newItemForm.category || ''}
-                    onChange={(e) => setNewItemForm({ ...newItemForm, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent text-sm sm:text-base"
-                    required
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryModalInForm(true)}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-berry-500 text-base text-left flex items-center justify-between ${
+                      newItemForm.category
+                        ? 'border-berry-500 bg-berry-50 text-berry-900'
+                        : 'border-stone-300 bg-white text-stone-700'
+                    }`}
                   >
-                    <option value="">Selecciona una categoría</option>
-                    {CATEGORIES.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                    <span>{newItemForm.category || 'Selecciona una categoría'}</span>
+                    <span className="text-stone-400">▼</span>
+                  </button>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                  <label className="block text-sm font-semibold text-stone-700 mb-2">
                     Unidad *
                   </label>
                   <input
                     type="text"
                     value={newItemForm.unit || ''}
                     onChange={(e) => setNewItemForm({ ...newItemForm, unit: e.target.value })}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent text-sm sm:text-base"
+                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                     placeholder="Ej: Lata, Botella, Unidad, Libra"
                     required
                   />
@@ -1681,7 +1923,7 @@ export default function InventoryPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                  <label className="block text-sm font-semibold text-stone-700 mb-2">
                     Cantidad *
                   </label>
                   <input
@@ -1690,14 +1932,14 @@ export default function InventoryPage() {
                     min="0"
                     value={newItemForm.quantity || ''}
                     onChange={(e) => setNewItemForm({ ...newItemForm, quantity: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent text-sm sm:text-base"
+                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                     placeholder="0"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                  <label className="block text-sm font-semibold text-stone-700 mb-2">
                     Precio Unitario (COP) *
                   </label>
                   <input
@@ -1706,7 +1948,7 @@ export default function InventoryPage() {
                     min="0"
                     value={newItemForm.unitPrice || ''}
                     onChange={(e) => setNewItemForm({ ...newItemForm, unitPrice: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent text-sm sm:text-base"
+                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                     placeholder="0"
                     required
                   />
@@ -1714,66 +1956,66 @@ export default function InventoryPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
                   Código (opcional)
                 </label>
                 <input
                   type="text"
                   value={newItemForm.code || ''}
                   onChange={(e) => setNewItemForm({ ...newItemForm, code: e.target.value })}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                   placeholder="Ej: CE-POK-001"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                  <label className="block text-sm font-semibold text-stone-700 mb-2">
                     Proveedor
                   </label>
                   <input
                     type="text"
                     value={newItemForm.supplier || ''}
                     onChange={(e) => setNewItemForm({ ...newItemForm, supplier: e.target.value })}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent text-sm sm:text-base"
+                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                     placeholder="Ej: Éxito, Patty"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                  <label className="block text-sm font-semibold text-stone-700 mb-2">
                     Lote
                   </label>
                   <input
                     type="text"
                     value={newItemForm.lot || ''}
                     onChange={(e) => setNewItemForm({ ...newItemForm, lot: e.target.value })}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent text-sm sm:text-base"
+                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                     placeholder="Número de lote"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
                   Fecha de Compra
                 </label>
                 <input
                   type="date"
                   value={newItemForm.purchaseDate || ''}
                   onChange={(e) => setNewItemForm({ ...newItemForm, purchaseDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
                   Notas (opcional)
                 </label>
                 <textarea
                   value={newItemForm.notes || ''}
                   onChange={(e) => setNewItemForm({ ...newItemForm, notes: e.target.value })}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                   rows={3}
                   placeholder="Observaciones adicionales sobre este lote"
                 />
@@ -1793,7 +2035,7 @@ export default function InventoryPage() {
             <div className="flex flex-col sm:flex-row gap-3 mt-6">
               <button
                 onClick={handleCancelAdd}
-                className="flex-1 px-4 py-2 border-2 border-stone-300 rounded-lg hover:bg-stone-50 transition-colors font-medium text-sm sm:text-base"
+                className="flex-1 px-4 py-3.5 border-2 border-stone-300 rounded-xl hover:bg-stone-50 transition-colors font-semibold text-base"
                 disabled={saving}
               >
                 Cancelar
@@ -1801,7 +2043,7 @@ export default function InventoryPage() {
               <button
                 onClick={handleAddNewItem}
                 disabled={saving || !newItemForm.name || !newItemForm.category || !newItemForm.quantity || !newItemForm.unitPrice || !newItemForm.unit}
-                className="flex-1 px-4 py-3 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                className="flex-1 px-4 py-3.5 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-lg hover:shadow-xl"
               >
                 {saving ? 'Guardando...' : 'Agregar Lote'}
               </button>
@@ -1810,61 +2052,126 @@ export default function InventoryPage() {
         </div>
       )}
 
+      {/* Modal de Categorías dentro del formulario */}
+      {showCategoryModalInForm && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
+          onClick={() => setShowCategoryModalInForm(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-berry-950">Seleccionar Categoría</h2>
+              <button
+                onClick={() => setShowCategoryModalInForm(false)}
+                className="text-stone-500 hover:text-stone-700 text-2xl leading-none"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="space-y-2">
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    if (editingItem) {
+                      setEditForm({ ...editForm, category: cat })
+                    } else {
+                      setNewItemForm({ ...newItemForm, category: cat })
+                    }
+                    setShowCategoryModalInForm(false)
+                  }}
+                  className={`w-full px-4 py-4 rounded-xl font-medium transition-all text-left ${
+                    (editingItem ? editForm.category === cat : newItemForm.category === cat)
+                      ? 'bg-berry-600 text-white shadow-md'
+                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200 border-2 border-stone-300'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            
+            <button
+              onClick={() => setShowCategoryModalInForm(false)}
+              className="w-full px-4 py-3 bg-stone-200 hover:bg-stone-300 text-stone-700 font-medium rounded-xl transition-colors mt-4"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Modal de edición */}
       {editingItem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-berry-950 mb-4">Editar Item de Inventario</h2>
+          <div className="bg-white rounded-2xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-berry-950">Editar Item de Inventario</h2>
+              <button
+                onClick={handleCancelEdit}
+                className="text-stone-500 hover:text-stone-700 text-2xl leading-none"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
                   Nombre *
                 </label>
                 <input
                   type="text"
                   value={editForm.name || ''}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                  <label className="block text-sm font-semibold text-stone-700 mb-2">
                     Categoría *
                   </label>
-                  <select
-                    value={editForm.category || ''}
-                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
-                    required
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryModalInForm(true)}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-berry-500 text-base text-left flex items-center justify-between ${
+                      editForm.category
+                        ? 'border-berry-500 bg-berry-50 text-berry-900'
+                        : 'border-stone-300 bg-white text-stone-700'
+                    }`}
                   >
-                    {CATEGORIES.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                    <span>{editForm.category || 'Selecciona una categoría'}</span>
+                    <span className="text-stone-400">▼</span>
+                  </button>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                  <label className="block text-sm font-semibold text-stone-700 mb-2">
                     Unidad *
                   </label>
                   <input
                     type="text"
                     value={editForm.unit || ''}
                     onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                     placeholder="Ej: Lata, Botella, Unidad"
                     required
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                  <label className="block text-sm font-semibold text-stone-700 mb-2">
                     Cantidad *
                   </label>
                   <input
@@ -1872,13 +2179,13 @@ export default function InventoryPage() {
                     step="any"
                     value={editForm.quantity || ''}
                     onChange={(e) => setEditForm({ ...editForm, quantity: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                  <label className="block text-sm font-semibold text-stone-700 mb-2">
                     Precio Unitario *
                   </label>
                   <input
@@ -1886,70 +2193,70 @@ export default function InventoryPage() {
                     step="any"
                     value={editForm.unitPrice || ''}
                     onChange={(e) => setEditForm({ ...editForm, unitPrice: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
                   Código
                 </label>
                 <input
                   type="text"
                   value={editForm.code || ''}
                   onChange={(e) => setEditForm({ ...editForm, code: e.target.value })}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                  <label className="block text-sm font-semibold text-stone-700 mb-2">
                     Proveedor
                   </label>
                   <input
                     type="text"
                     value={editForm.supplier || ''}
                     onChange={(e) => setEditForm({ ...editForm, supplier: e.target.value })}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                  <label className="block text-sm font-semibold text-stone-700 mb-2">
                     Lote
                   </label>
                   <input
                     type="text"
                     value={editForm.lot || ''}
                     onChange={(e) => setEditForm({ ...editForm, lot: e.target.value })}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
                   Fecha de Compra
                 </label>
                 <input
                   type="date"
                   value={editForm.purchaseDate ? editForm.purchaseDate.split('T')[0] : ''}
                   onChange={(e) => setEditForm({ ...editForm, purchaseDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
                   Notas
                 </label>
                 <textarea
                   value={editForm.notes || ''}
                   onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                   rows={3}
                 />
               </div>
@@ -1965,10 +2272,10 @@ export default function InventoryPage() {
               )}
             </div>
 
-            <div className="flex gap-3 mt-6">
+            <div className="flex flex-col sm:flex-row gap-3 mt-6">
               <button
                 onClick={handleCancelEdit}
-                className="flex-1 px-4 py-2 border-2 border-stone-300 rounded-lg hover:bg-stone-50 transition-colors font-medium"
+                className="flex-1 px-4 py-3.5 border-2 border-stone-300 rounded-xl hover:bg-stone-50 transition-colors font-semibold text-base"
                 disabled={saving}
               >
                 Cancelar
@@ -1976,7 +2283,7 @@ export default function InventoryPage() {
               <button
                 onClick={handleSaveEdit}
                 disabled={saving || !editForm.name || !editForm.category || !editForm.quantity || !editForm.unitPrice || !editForm.unit}
-                className="flex-1 px-4 py-3 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-3.5 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-lg hover:shadow-xl"
               >
                 {saving ? 'Guardando...' : 'Guardar Cambios'}
               </button>
@@ -1984,6 +2291,18 @@ export default function InventoryPage() {
           </div>
         </div>
       )}
+
+      {/* Botón flotante para volver al panel */}
+      <button
+        onClick={() => router.push('/admin')}
+        className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-14 h-14 bg-berry-600 hover:bg-berry-700 text-white rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center z-40"
+        title="Volver al Panel de Administración"
+        aria-label="Volver al Panel de Administración"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+      </button>
     </div>
   )
 }
