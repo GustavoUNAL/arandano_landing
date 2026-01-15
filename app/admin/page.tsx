@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 interface Product {
   id: string
@@ -1473,8 +1474,14 @@ export default function AdminPage() {
                       placeholder="https://ejemplo.com/imagen.jpg"
                     />
                     {productEditForm.imageUrl && (
-                      <div className="mt-2">
-                        <img src={productEditForm.imageUrl} alt="Vista previa" className="max-w-full h-32 object-contain rounded-lg border border-stone-200" />
+                      <div className="mt-2 relative w-full h-32">
+                        <Image 
+                          src={productEditForm.imageUrl} 
+                          alt="Vista previa" 
+                          fill
+                          className="object-contain rounded-lg border border-stone-200"
+                          sizes="(max-width: 768px) 100vw, 400px"
+                        />
                       </div>
                     )}
                   </div>
@@ -1549,6 +1556,8 @@ export default function AdminPage() {
                 </form>
               ) : (() => {
                 const product = selectedProductDetail
+                if (!product) return null
+                
                 const productSales = sales.filter(sale =>
                   sale.items?.some((item: any) => item.productId === product.id)
                 )
@@ -1568,8 +1577,14 @@ export default function AdminPage() {
                     <div>
                       <h4 className="font-semibold text-berry-950 text-lg mb-2">{product.name}</h4>
                       {product.imageUrl && (
-                        <div className="mb-3">
-                          <img src={product.imageUrl} alt={product.name} className="w-full max-w-xs h-48 object-contain rounded-lg border border-stone-200 mx-auto" />
+                        <div className="mb-3 relative w-full max-w-xs h-48 mx-auto">
+                          <Image 
+                            src={product.imageUrl} 
+                            alt={product.name} 
+                            fill
+                            className="object-contain rounded-lg border border-stone-200"
+                            sizes="(max-width: 768px) 100vw, 400px"
+                          />
                         </div>
                       )}
                       <div className="flex items-center gap-2 mb-2">
