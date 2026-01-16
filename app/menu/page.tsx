@@ -24,6 +24,11 @@ export default function MenuPage() {
       id: 'cervezas',
       name: 'Cervezas',
       link: '/menu/cervezas'
+    },
+    {
+      id: 'shots',
+      name: 'Shots',
+      link: '/menu/shots'
     }
   ]
 

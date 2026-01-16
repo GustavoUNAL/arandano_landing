@@ -509,5 +509,29 @@
     "imageUrl": "",
     "size": "Copa",
     "id": "bebida-1767479680271-wp5qa9j7m"
+  },
+  {
+    "id": "prod-1768498200781-amarillo",
+    "name": "Aguardiente Amarillo",
+    "price": 60000,
+    "description": "Aguardiente Amarillo 750ml",
+    "category": "coctel",
+    "type": "bebida",
+    "stock": 999,
+    "size": "750ml",
+    "imageUrl": "",
+    "minStock": 0
+  },
+  {
+    "id": "prod-1768498200787-narino",
+    "name": "Aguardiente Nariño",
+    "price": 60000,
+    "description": "Aguardiente Nariño 750ml",
+    "category": "coctel",
+    "type": "bebida",
+    "stock": 999,
+    "size": "750ml",
+    "imageUrl": "",
+    "minStock": 0
   }
 ]

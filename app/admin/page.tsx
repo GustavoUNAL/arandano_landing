@@ -52,11 +52,12 @@ export default function AdminPage() {
   const [alert, setAlert] = useState<{ type: 'success' | 'error', message: string } | null>(null)
   const [pendingTasks, setPendingTasks] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<'products' | 'inventory'>('products')
-  const [currentView, setCurrentView] = useState<'dashboard' | 'products' | 'products-for-sale'>('dashboard')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'products' | 'products-for-sale' | 'shop-preview'>('dashboard')
+  const [editingProductInShop, setEditingProductInShop] = useState<Product | null>(null)
   const [sales, setSales] = useState<any[]>([])
   const [editingStock, setEditingStock] = useState<{ id: string; stock: number } | null>(null)
   const [selectedProductDetail, setSelectedProductDetail] = useState<Product | null>(null)
-  const [editingProductForSale, setEditingProductForSale] = useState<Product | null>(null)
+  const [editingProductForSale, setEditingProductForSale] = useState<Product | null | 'new'>(null)
   const [productEditForm, setProductEditForm] = useState({
     name: '',
     price: '',
@@ -87,35 +88,75 @@ export default function AdminPage() {
   }
 
   const handleSaveProductForSale = async () => {
-    if (!editingProductForSale) return
-
     setLoading(true)
     try {
-      const response = await fetch(`/api/products/${editingProductForSale.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: productEditForm.name,
-          price: Number(productEditForm.price),
-          description: productEditForm.description || undefined,
-          category: productEditForm.category,
-          type: productEditForm.type,
-          stock: Number(productEditForm.stock),
-          imageUrl: productEditForm.imageUrl || undefined,
-          size: productEditForm.size || undefined,
-          cost: productEditForm.cost ? Number(productEditForm.cost) : undefined,
-          minStock: productEditForm.minStock ? Number(productEditForm.minStock) : undefined
+      if (editingProductForSale && editingProductForSale !== 'new') {
+        // Actualizar producto existente
+        const response = await fetch(`/api/products/${editingProductForSale.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: productEditForm.name,
+            price: Number(productEditForm.price),
+            description: productEditForm.description || undefined,
+            category: productEditForm.category,
+            type: productEditForm.type,
+            stock: Number(productEditForm.stock),
+            imageUrl: productEditForm.imageUrl || undefined,
+            size: productEditForm.size || undefined,
+            cost: productEditForm.cost ? Number(productEditForm.cost) : undefined,
+            minStock: productEditForm.minStock ? Number(productEditForm.minStock) : undefined
+          })
         })
-      })
 
-      if (response.ok) {
-        await loadProducts()
-        setEditingProductForSale(null)
-        setSelectedProductDetail(null)
-        showAlert('success', 'Producto actualizado exitosamente')
+        if (response.ok) {
+          await loadProducts()
+          setEditingProductForSale(null)
+          setSelectedProductDetail(null)
+          showAlert('success', 'Producto actualizado exitosamente')
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }))
+          showAlert('error', errorData.error || 'Error al actualizar el producto')
+        }
       } else {
-        const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }))
-        showAlert('error', errorData.error || 'Error al actualizar el producto')
+        // Crear nuevo producto
+        const response = await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: productEditForm.name,
+            price: Number(productEditForm.price),
+            description: productEditForm.description || undefined,
+            category: productEditForm.category,
+            type: productEditForm.type,
+            stock: Number(productEditForm.stock),
+            imageUrl: productEditForm.imageUrl || undefined,
+            size: productEditForm.size || undefined,
+            cost: productEditForm.cost ? Number(productEditForm.cost) : undefined,
+            minStock: productEditForm.minStock ? Number(productEditForm.minStock) : undefined
+          })
+        })
+
+        if (response.ok) {
+          await loadProducts()
+          setEditingProductForSale(null)
+          setProductEditForm({
+            name: '',
+            price: '',
+            description: '',
+            category: 'cafe-caliente',
+            type: 'cafeteria',
+            stock: '999',
+            imageUrl: '',
+            size: '',
+            cost: '',
+            minStock: ''
+          })
+          showAlert('success', 'Producto creado exitosamente')
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }))
+          showAlert('error', errorData.error || 'Error al crear el producto')
+        }
       }
     } catch (error: any) {
       console.error('Error saving product:', error)
@@ -1102,10 +1143,47 @@ export default function AdminPage() {
         {/* Vista de Productos a la venta con rentabilidad */}
         {currentView === 'products-for-sale' && (
           <>
-            {/* Título fuera de la tarjeta */}
-            <h2 className="text-xl sm:text-2xl font-bold text-berry-950 mb-4 sm:mb-6 text-center">
-              Productos a la venta - Rentabilidad
-            </h2>
+            {/* Título y botones */}
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-berry-950 text-center sm:text-left">
+                Productos a la venta - Rentabilidad
+              </h2>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setEditingProductForSale('new')
+                    setProductEditForm({
+                      name: '',
+                      price: '',
+                      description: '',
+                      category: 'cafe-caliente',
+                      type: 'cafeteria',
+                      stock: '999',
+                      imageUrl: '',
+                      size: '',
+                      cost: '',
+                      minStock: ''
+                    })
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Nuevo Producto
+                </button>
+                <button
+                  onClick={() => setCurrentView('shop-preview')}
+                  className="flex items-center gap-2 px-4 py-2 bg-berry-600 hover:bg-berry-700 text-white rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  Ver como Tienda
+                </button>
+              </div>
+            </div>
 
             {loading ? (
               <div className="text-center py-8 text-berry-600">Cargando...</div>
@@ -1375,17 +1453,33 @@ export default function AdminPage() {
         )}
 
         {/* Modal de detalle del producto */}
-        {(selectedProductDetail || editingProductForSale) && (
+        {(selectedProductDetail || editingProductForSale !== null) && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
             <div className="bg-white rounded-lg p-4 sm:p-6 max-w-2xl w-full my-4 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl sm:text-2xl font-bold text-berry-950">
-                  {editingProductForSale ? 'Editar Producto' : 'Detalle del Producto'}
+                  {editingProductForSale === 'new' 
+                    ? 'Nuevo Producto'
+                    : editingProductForSale !== null 
+                      ? 'Editar Producto'
+                      : 'Detalle del Producto'}
                 </h3>
                 <button
                   onClick={() => {
                     setSelectedProductDetail(null)
                     setEditingProductForSale(null)
+                    setProductEditForm({
+                      name: '',
+                      price: '',
+                      description: '',
+                      category: 'cafe-caliente',
+                      type: 'cafeteria',
+                      stock: '999',
+                      imageUrl: '',
+                      size: '',
+                      cost: '',
+                      minStock: ''
+                    })
                   }}
                   className="w-8 h-8 flex items-center justify-center text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors text-xl font-bold"
                   aria-label="Cerrar"
@@ -1394,7 +1488,7 @@ export default function AdminPage() {
                 </button>
               </div>
 
-              {editingProductForSale ? (
+              {editingProductForSale !== null ? (
                 <form onSubmit={(e) => { e.preventDefault(); handleSaveProductForSale() }} className="space-y-4">
                   {/* Nombre */}
                   <div>
@@ -1704,8 +1798,120 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* Vista de Tienda (Preview) */}
+        {currentView === 'shop-preview' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-berry-950 text-center sm:text-left">
+                Vista de Tienda
+              </h2>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setEditingProductForSale('new')
+                    setProductEditForm({
+                      name: '',
+                      price: '',
+                      description: '',
+                      category: 'cafe-caliente',
+                      type: 'cafeteria',
+                      stock: '999',
+                      imageUrl: '',
+                      size: '',
+                      cost: '',
+                      minStock: ''
+                    })
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Nuevo Producto
+                </button>
+                <button
+                  onClick={() => setCurrentView('products-for-sale')}
+                  className="flex items-center gap-2 px-4 py-2 bg-stone-600 hover:bg-stone-700 text-white rounded-lg font-semibold transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  Volver a Rentabilidad
+                </button>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-8 text-berry-600">Cargando...</div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {products.map((product) => (
+                  <div
+                    key={product.id}
+                    className="bg-white border-2 border-stone-200 rounded-xl p-4 hover:shadow-lg transition-all hover:border-berry-300 relative group"
+                  >
+                    {/* Botón de edición rápida */}
+                    <button
+                      onClick={() => handleEditProductForSale(product)}
+                      className="absolute top-2 right-2 w-8 h-8 bg-berry-600 hover:bg-berry-700 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg z-10"
+                      title="Editar producto"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+
+                    {/* Imagen del producto */}
+                    {product.imageUrl ? (
+                      <div className="relative w-full h-32 mb-3 rounded-lg overflow-hidden bg-stone-100">
+                        <Image
+                          src={product.imageUrl}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 50vw, 25vw"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full h-32 mb-3 rounded-lg bg-stone-100 flex items-center justify-center">
+                        <span className="text-4xl">☕</span>
+                      </div>
+                    )}
+
+                    {/* Información del producto */}
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-berry-950 text-sm leading-tight line-clamp-2">
+                        {product.name}
+                      </h3>
+                      {product.description && (
+                        <p className="text-xs text-stone-600 line-clamp-2">
+                          {product.description}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between pt-2 border-t border-stone-200">
+                        <span className="text-lg font-bold text-berry-600">
+                          ${product.price.toLocaleString('es-CO')}
+                        </span>
+                        {product.stock > 0 ? (
+                          <span className="text-xs text-green-600 font-medium">
+                            En stock
+                          </span>
+                        ) : (
+                          <span className="text-xs text-red-600 font-medium">
+                            Sin stock
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Botón flotante para volver al panel - Solo cuando no está en dashboard */}
-        {currentView !== 'dashboard' && (
+        {currentView !== 'dashboard' && currentView !== 'shop-preview' && (
           <button
             onClick={() => setCurrentView('dashboard')}
             className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-14 h-14 bg-stone-700 hover:bg-stone-800 text-white rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center z-40"

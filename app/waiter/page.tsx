@@ -43,7 +43,8 @@ const CATEGORIES = [
   { id: 'cafes', name: 'Cafés', filter: (p: Product) => p.type === 'cafeteria' && (p.category === 'cafe-caliente' || p.category === 'cafe-frio') },
   { id: 'cocteles', name: 'Cócteles', filter: (p: Product) => p.type === 'bebida' && p.category === 'coctel' },
   { id: 'acompanantes', name: 'Acompañantes', filter: (p: Product) => p.type === 'cafeteria' && p.category === 'pasteleria' },
-  { id: 'cervezas', name: 'Cervezas', filter: (p: Product) => p.type === 'bebida' && p.category === 'cerveza' }
+  { id: 'cervezas', name: 'Cervezas', filter: (p: Product) => p.type === 'bebida' && p.category === 'cerveza' },
+  { id: 'shots', name: 'Shots', filter: (p: Product) => p.type === 'bebida' && (p.size?.toLowerCase().includes('shot') || p.size?.toLowerCase().includes('30ml') || p.name?.toLowerCase().includes('shot')) }
 ]
 
 export default function WaiterPage() {
