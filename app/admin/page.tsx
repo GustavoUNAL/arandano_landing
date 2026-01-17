@@ -55,8 +55,11 @@ export default function AdminPage() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'products' | 'products-for-sale' | 'shop-preview'>('dashboard')
   const [editingProductInShop, setEditingProductInShop] = useState<Product | null>(null)
   const [sales, setSales] = useState<any[]>([])
+  const [inventory, setInventory] = useState<any[]>([])
   const [editingStock, setEditingStock] = useState<{ id: string; stock: number } | null>(null)
+  const [productsStockInfo, setProductsStockInfo] = useState<any[]>([]) // Información de stock desde Firebase
   const [selectedProductDetail, setSelectedProductDetail] = useState<Product | null>(null)
+  const [searchQuery, setSearchQuery] = useState<string>('') // Búsqueda de productos
   const [editingProductForSale, setEditingProductForSale] = useState<Product | null | 'new'>(null)
   const [productEditForm, setProductEditForm] = useState({
     name: '',
@@ -146,7 +149,7 @@ export default function AdminPage() {
             description: '',
             category: 'cafe-caliente',
             type: 'cafeteria',
-            stock: '999',
+            stock: '0',
             imageUrl: '',
             size: '',
             cost: '',
@@ -194,6 +197,7 @@ export default function AdminPage() {
       if (data.authenticated) {
         loadProducts()
         loadSales()
+        loadInventory()
       }
     } catch (error) {
       setIsAuthenticated(false)
@@ -240,6 +244,33 @@ export default function AdminPage() {
       const response = await fetch('/api/products')
       const data = await response.json()
       setProducts(data)
+      
+      // Cargar información de stock desde Firebase (opcional, no bloqueante)
+      try {
+        const stockResponse = await fetch('/api/products/stock')
+        if (stockResponse.ok) {
+          const stockData = await stockResponse.json()
+          setProductsStockInfo(stockData)
+        } else {
+          console.warn('No se pudo cargar información de stock, usando stock básico')
+          // Usar stock básico del producto si falla
+          setProductsStockInfo(data.map((p: Product) => ({
+            product: p,
+            stock: p.stock || 0,
+            hasDirectStock: true,
+            hasRecipe: false
+          })))
+        }
+      } catch (stockError) {
+        console.error('Error loading stock info:', stockError)
+        // No fallar si el stock no se puede cargar, usar stock básico
+        setProductsStockInfo(data.map((p: Product) => ({
+          product: p,
+          stock: p.stock || 0,
+          hasDirectStock: true,
+          hasRecipe: false
+        })))
+      }
     } catch (error) {
       console.error('Error loading products:', error)
     } finally {
@@ -250,11 +281,148 @@ export default function AdminPage() {
   const loadSales = async () => {
     try {
       const response = await fetch('/api/sales')
+      
+      if (!response.ok) {
+        console.warn('Error loading sales:', response.status, response.statusText)
+        setSales([])
+        return
+      }
+      
       const data = await response.json()
+      
+      // Verificar que data es un array antes de usarlo
+      if (!Array.isArray(data)) {
+        console.warn('Response is not an array:', data)
+        setSales([])
+        return
+      }
+      
       setSales(data)
     } catch (error) {
       console.error('Error loading sales:', error)
+      setSales([]) // Asegurar que se establece un array vacío en caso de error
     }
+  }
+
+  const loadInventory = async () => {
+    try {
+      const response = await fetch('/api/inventory')
+      
+      if (!response.ok) {
+        console.warn('Error loading inventory:', response.status, response.statusText)
+        setInventory([])
+        return
+      }
+      
+      const data = await response.json()
+      
+      // Verificar que data es un array antes de usarlo
+      if (!Array.isArray(data)) {
+        console.warn('Response is not an array:', data)
+        setInventory([])
+        return
+      }
+      
+      setInventory(data)
+    } catch (error) {
+      console.error('Error loading inventory:', error)
+      setInventory([]) // Asegurar que se establece un array vacío en caso de error
+    }
+  }
+
+  // Función para normalizar nombres (comparación flexible)
+  const normalizeName = (name: string): string => {
+    if (!name) return ''
+    return name
+      .toString()
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Quitar acentos
+      .replace(/[^a-z0-9\s]/g, '') // Quitar caracteres especiales
+      .replace(/\s+/g, ' ') // Normalizar espacios
+  }
+
+  // Función para obtener stock real del producto desde Firebase
+  // El stock viene del campo product.stock que se actualiza con las ventas
+  const getProductStock = (product: Product): number | null => {
+    // Para cócteles y cafés, no mostramos stock directo (se usa disponibilidad)
+    const isRecipeProduct = product.category === 'coctel' || 
+                            product.category === 'cafe-caliente' || 
+                            product.category === 'cafe-frio'
+    
+    if (isRecipeProduct) {
+      return null // Los cócteles/cafés no tienen stock propio
+    }
+    
+    // Para productos normales, usar el stock registrado en Firebase (product.stock)
+    // Este es el valor real que se actualiza cuando se hacen ventas
+    return product.stock !== undefined && product.stock !== null ? product.stock : 0
+  }
+  
+  // Función para obtener disponibilidad de cócteles/cafés
+  const getProductAvailability = (product: Product): number | 'no-recipe' | null => {
+    const stockInfo = productsStockInfo.find((info: any) => info.product?.id === product.id)
+    
+    if (stockInfo && stockInfo.availability !== undefined) {
+      if (stockInfo.hasRecipe && stockInfo.availability === null) {
+        return 'no-recipe'
+      }
+      return stockInfo.availability || 0
+    }
+    
+    return null
+  }
+  
+  // Función para obtener botellas completas para licores
+  const getFullBottles = (product: Product): number | undefined => {
+    const stockInfo = productsStockInfo.find((info: any) => info.product?.id === product.id)
+    return stockInfo?.fullBottles
+  }
+
+  // Función para calcular costo real desde inventario
+  const calculateRealCost = (product: Product): number | null => {
+    // Si el producto ya tiene un costo definido y mayor que 0, usarlo
+    if (product.cost && product.cost > 0) {
+      return product.cost
+    }
+
+    // Si no hay inventario, retornar null (sin costo)
+    if (!inventory || inventory.length === 0) {
+      return null
+    }
+
+    const normalizedProductName = normalizeName(product.name)
+    const matchingItems: any[] = []
+
+    // Buscar items en inventario que coincidan con el producto
+    inventory.forEach((item: any) => {
+      const normalizedItemName = normalizeName(item.name || '')
+      
+      // Comparación flexible: coincidencia exacta o que uno contenga al otro
+      if (
+        normalizedItemName === normalizedProductName ||
+        normalizedItemName.includes(normalizedProductName) ||
+        normalizedProductName.includes(normalizedItemName)
+      ) {
+        // Si el item tiene un unitPrice válido, agregarlo a la lista
+        if (item.unitPrice && item.unitPrice > 0) {
+          matchingItems.push(item)
+        }
+      }
+    })
+
+    // Si no se encontraron items, retornar null
+    if (matchingItems.length === 0) {
+      return null
+    }
+
+    // Calcular promedio de unitPrice de los items encontrados
+    const totalUnitPrice = matchingItems.reduce((sum, item) => sum + (item.unitPrice || 0), 0)
+    const averageUnitPrice = totalUnitPrice / matchingItems.length
+
+    // Retornar el costo promedio si es válido
+    return averageUnitPrice > 0 ? averageUnitPrice : null
   }
 
   const updateProductStock = async (productId: string, newStock: number) => {
@@ -282,7 +450,22 @@ export default function AdminPage() {
   const loadPendingTasks = async () => {
     try {
       const response = await fetch('/api/tasks?completed=false')
+      
+      if (!response.ok) {
+        console.warn('Error loading tasks:', response.status, response.statusText)
+        setPendingTasks([])
+        return
+      }
+      
       const data = await response.json()
+      
+      // Verificar que data es un array antes de usar filter
+      if (!Array.isArray(data)) {
+        console.warn('Response is not an array:', data)
+        setPendingTasks([])
+        return
+      }
+      
       // Obtener solo las urgentes y de alta prioridad
       const urgentTasks = data.filter((t: any) => 
         t.priority === 'urgente' || t.priority === 'alta'
@@ -290,6 +473,7 @@ export default function AdminPage() {
       setPendingTasks(urgentTasks)
     } catch (error) {
       console.error('Error loading tasks:', error)
+      setPendingTasks([]) // Asegurar que se establece un array vacío en caso de error
     }
   }
 
@@ -1086,6 +1270,49 @@ export default function AdminPage() {
 
                 {/* Vista Tabla (Desktop) */}
                 <div className="hidden sm:block overflow-x-auto">
+                  {/* Barra de búsqueda */}
+                  <div className="mb-4">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Buscar producto por nombre, tipo o categoría..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full px-4 py-3 pl-12 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent text-base"
+                      />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-stone-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      {searchQuery && (
+                        <button
+                          onClick={() => setSearchQuery('')}
+                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    {searchQuery && (
+                      <div className="mt-2 text-sm text-stone-600">
+                        {products.filter(product => {
+                          const query = searchQuery.toLowerCase()
+                          return product.name.toLowerCase().includes(query) ||
+                                 product.type.toLowerCase().includes(query) ||
+                                 product.category.toLowerCase().includes(query)
+                        }).length} producto(s) encontrado(s)
+                      </div>
+                    )}
+                  </div>
+
                   <table className="w-full border-collapse bg-white rounded-lg overflow-hidden">
                     <thead className="bg-berry-600 text-white">
                       <tr>
@@ -1098,7 +1325,15 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {products.map((product) => (
+                      {products
+                        .filter(product => {
+                          if (!searchQuery) return true
+                          const query = searchQuery.toLowerCase()
+                          return product.name.toLowerCase().includes(query) ||
+                                 product.type.toLowerCase().includes(query) ||
+                                 product.category.toLowerCase().includes(query)
+                        })
+                        .map((product) => (
                         <tr key={product.id} className="border-b border-stone-200 hover:bg-stone-50">
                           <td className="px-4 py-3 text-sm">{product.name}</td>
                           <td className="px-4 py-3 text-sm">
@@ -1112,7 +1347,49 @@ export default function AdminPage() {
                           <td className="px-4 py-3 text-sm font-semibold">
                             ${product.price.toLocaleString('es-CO')}
                           </td>
-                          <td className="px-4 py-3 text-sm">{product.stock}</td>
+                          <td className="px-4 py-3 text-sm">
+                            {(() => {
+                              const productStock = getProductStock(product)
+                              const availability = getProductAvailability(product)
+                              const fullBottles = getFullBottles(product)
+                              const isRecipeProduct = product.category === 'coctel' || 
+                                                      product.category === 'cafe-caliente' || 
+                                                      product.category === 'cafe-frio'
+                              
+                              // Para cócteles/cafés: mostrar solo disponibilidad
+                              if (isRecipeProduct) {
+                                if (availability === 'no-recipe') {
+                                  return <span className="text-amber-600 italic text-xs">Sin receta</span>
+                                }
+                                if (availability !== null && availability !== 'no-recipe') {
+                                  return (
+                                    <div className="font-semibold text-blue-600">
+                                      Disponible: {availability}
+                                    </div>
+                                  )
+                                }
+                                return <span className="text-stone-400 italic text-xs">Sin disponibilidad</span>
+                              }
+                              
+                              // Para productos normales: mostrar stock
+                              if (productStock !== null) {
+                                return (
+                                  <div>
+                                    <div className={`font-semibold ${
+                                      productStock <= (product.minStock || 0) ? 'text-red-600' : 'text-stone-700'
+                                    }`}>
+                                      {productStock}
+                                    </div>
+                                    {fullBottles !== undefined && fullBottles > 0 && (
+                                      <div className="text-xs text-purple-600">Botellas: {fullBottles}</div>
+                                    )}
+                                  </div>
+                                )
+                              }
+                              
+                              return <span className="text-stone-400">-</span>
+                            })()}
+                          </td>
                           <td className="px-4 py-3 text-sm">
                             <div className="flex gap-2">
                               <button
@@ -1158,7 +1435,7 @@ export default function AdminPage() {
                       description: '',
                       category: 'cafe-caliente',
                       type: 'cafeteria',
-                      stock: '999',
+                      stock: '0',
                       imageUrl: '',
                       size: '',
                       cost: '',
@@ -1201,16 +1478,32 @@ export default function AdminPage() {
                         return sum + (item?.quantity || 0)
                       }, 0)
 
-                      const cost = product.cost || 0
+                      const realCost = calculateRealCost(product)
+                      const cost = realCost !== null ? realCost : 0
                       const price = product.price
-                      const margin = price - cost
-                      const marginPercent = price > 0 ? ((margin / price) * 100) : 0
-                      const totalProfit = totalSold * margin
+                      const margin = cost > 0 ? price - cost : 0
+                      const marginPercent = cost > 0 && price > 0 ? ((margin / price) * 100) : 0
+                      const totalProfit = cost > 0 ? totalSold * margin : 0
 
-                      return { product, totalSold, cost, price, margin, marginPercent, totalProfit }
+                      return { product, totalSold, cost, realCost, price, margin, marginPercent, totalProfit }
                     })
-                    .sort((a, b) => b.totalProfit - a.totalProfit)
-                    .map(({ product, totalSold, cost, price, margin, marginPercent, totalProfit }) => (
+                    .sort((a, b) => {
+                      // Ordenar primero por si tienen costo (productos con costo primero)
+                      if ((a.realCost !== null) !== (b.realCost !== null)) {
+                        return (a.realCost !== null ? -1 : 1)
+                      }
+                      // Si ambos tienen costo o ambos no tienen, ordenar por rentabilidad
+                      return b.totalProfit - a.totalProfit
+                    })
+                    .map(({ product, totalSold, cost, realCost, price, margin, marginPercent, totalProfit }) => {
+                      const productStock = getProductStock(product)
+                      const realStock = productStock !== null ? productStock : 0
+                      const availability = getProductAvailability(product)
+                      const fullBottles = getFullBottles(product)
+                      const isRecipeProduct = product.category === 'coctel' || 
+                                              product.category === 'cafe-caliente' || 
+                                              product.category === 'cafe-frio'
+                      return (
                       <div
                         key={product.id}
                         className="bg-gradient-to-br from-white to-stone-50 border-2 border-stone-200 rounded-xl p-5 hover:shadow-xl hover:border-berry-300 transition-all duration-300"
@@ -1235,27 +1528,92 @@ export default function AdminPage() {
                             <div className="text-2xl font-bold text-blue-900">{totalSold}</div>
                             <div className="text-xs text-blue-600 mt-1">unidades</div>
                           </div>
-                          <div className={`rounded-lg p-3 border-2 ${
-                            product.stock <= (product.minStock || 0)
-                              ? 'bg-gradient-to-br from-red-50 to-red-100 border-red-200'
-                              : 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'
-                          }`}>
-                            <div className={`text-xs font-medium mb-1 ${
-                              product.stock <= (product.minStock || 0) ? 'text-red-700' : 'text-green-700'
-                            }`}>
-                              Stock
-                            </div>
-                            <div className={`text-2xl font-bold ${
-                              product.stock <= (product.minStock || 0) ? 'text-red-900' : 'text-green-900'
-                            }`}>
-                              {product.stock}
-                            </div>
-                            <div className={`text-xs mt-1 ${
-                              product.stock <= (product.minStock || 0) ? 'text-red-600' : 'text-green-600'
-                            }`}>
-                              unidades
-                            </div>
-                          </div>
+                          {(() => {
+                            const productStock = getProductStock(product)
+                            const availability = getProductAvailability(product)
+                            const fullBottles = getFullBottles(product)
+                            const isRecipeProduct = product.category === 'coctel' || 
+                                                    product.category === 'cafe-caliente' || 
+                                                    product.category === 'cafe-frio'
+                            
+                            // Para cócteles/cafés: mostrar disponibilidad en lugar de stock
+                            if (isRecipeProduct) {
+                              if (availability === 'no-recipe') {
+                                return (
+                                  <div className="rounded-lg p-3 border-2 bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
+                                    <div className="text-xs font-medium mb-1 text-amber-700">
+                                      Disponibilidad
+                                    </div>
+                                    <div className="text-2xl font-bold text-amber-900">
+                                      -
+                                    </div>
+                                    <div className="text-xs mt-1 text-amber-600">
+                                      Sin receta
+                                    </div>
+                                  </div>
+                                )
+                              }
+                              
+                              if (availability !== null && availability !== 'no-recipe') {
+                                return (
+                                  <div className="rounded-lg p-3 border-2 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+                                    <div className="text-xs font-medium mb-1 text-blue-700">
+                                      Disponible
+                                    </div>
+                                    <div className="text-2xl font-bold text-blue-900">
+                                      {availability}
+                                    </div>
+                                    <div className="text-xs mt-1 text-blue-600">
+                                      preparaciones
+                                    </div>
+                                  </div>
+                                )
+                              }
+                              
+                              return (
+                                <div className="rounded-lg p-3 border-2 bg-gradient-to-br from-stone-50 to-stone-100 border-stone-200">
+                                  <div className="text-xs font-medium mb-1 text-stone-700">
+                                    Disponibilidad
+                                  </div>
+                                  <div className="text-2xl font-bold text-stone-900">
+                                    0
+                                  </div>
+                                  <div className="text-xs mt-1 text-stone-600">
+                                    Sin ingredientes
+                                  </div>
+                                </div>
+                              )
+                            }
+                            
+                            // Para productos normales: mostrar stock
+                            const realStock = productStock !== null ? productStock : 0
+                            return (
+                              <div className={`rounded-lg p-3 border-2 ${
+                                realStock <= (product.minStock || 0)
+                                  ? 'bg-gradient-to-br from-red-50 to-red-100 border-red-200'
+                                  : 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'
+                              }`}>
+                                <div className={`text-xs font-medium mb-1 ${
+                                  realStock <= (product.minStock || 0) ? 'text-red-700' : 'text-green-700'
+                                }`}>
+                                  Stock
+                                </div>
+                                <div className={`text-2xl font-bold ${
+                                  realStock <= (product.minStock || 0) ? 'text-red-900' : 'text-green-900'
+                                }`}>
+                                  {realStock}
+                                </div>
+                                <div className={`text-xs mt-1 ${
+                                  realStock <= (product.minStock || 0) ? 'text-red-600' : 'text-green-600'
+                                }`}>
+                                  {fullBottles !== undefined && fullBottles > 0 
+                                    ? `Botellas: ${fullBottles}`
+                                    : 'unidades'
+                                  }
+                                </div>
+                              </div>
+                            )
+                          })()}
                         </div>
 
                         {/* Información de rentabilidad */}
@@ -1294,7 +1652,8 @@ export default function AdminPage() {
                           Ver Detalles
                         </button>
                       </div>
-                    ))}
+                      )
+                    })}
                 </div>
 
                 {/* Vista Tabla para desktop */}
@@ -1324,16 +1683,32 @@ export default function AdminPage() {
                             return sum + (item?.quantity || 0)
                           }, 0)
 
-                          const cost = product.cost || 0
+                          const realCost = calculateRealCost(product)
+                          const cost = realCost !== null ? realCost : 0
                           const price = product.price
-                          const margin = price - cost
-                          const marginPercent = price > 0 ? ((margin / price) * 100) : 0
-                          const totalProfit = totalSold * margin
+                          const margin = cost > 0 ? price - cost : 0
+                          const marginPercent = cost > 0 && price > 0 ? ((margin / price) * 100) : 0
+                          const totalProfit = cost > 0 ? totalSold * margin : 0
 
-                          return { product, totalSold, cost, price, margin, marginPercent, totalProfit }
+                          return { product, totalSold, cost, realCost, price, margin, marginPercent, totalProfit }
                         })
-                        .sort((a, b) => b.totalProfit - a.totalProfit)
-                        .map(({ product, totalSold, cost, price, margin, marginPercent, totalProfit }) => (
+                        .sort((a, b) => {
+                          // Ordenar primero por si tienen costo (productos con costo primero)
+                          if ((a.realCost !== null) !== (b.realCost !== null)) {
+                            return (a.realCost !== null ? -1 : 1)
+                          }
+                          // Si ambos tienen costo o ambos no tienen, ordenar por rentabilidad
+                          return b.totalProfit - a.totalProfit
+                        })
+                        .map(({ product, totalSold, cost, realCost, price, margin, marginPercent, totalProfit }) => {
+                          const productStock = getProductStock(product)
+                          const realStock = productStock !== null ? productStock : 0
+                          const availability = getProductAvailability(product)
+                          const fullBottles = getFullBottles(product)
+                          const isRecipeProduct = product.category === 'coctel' || 
+                                                  product.category === 'cafe-caliente' || 
+                                                  product.category === 'cafe-frio'
+                          return (
                           <tr key={product.id} className="border-b border-stone-200 hover:bg-stone-50 transition-colors">
                             <td className="px-4 py-3 text-sm font-semibold text-berry-950">
                               {product.name}
@@ -1342,13 +1717,21 @@ export default function AdminPage() {
                               ${price.toLocaleString('es-CO')}
                             </td>
                             <td className="px-4 py-3 text-sm text-center">
-                              {cost > 0 ? `$${cost.toLocaleString('es-CO')}` : '-'}
+                              {realCost !== null && realCost > 0 ? (
+                                `$${realCost.toLocaleString('es-CO')}`
+                              ) : (
+                                <span className="text-stone-400 italic">Sin costo</span>
+                              )}
                             </td>
                             <td className="px-4 py-3 text-sm text-center font-medium">
-                              {cost > 0 ? `$${margin.toLocaleString('es-CO')}` : '-'}
+                              {realCost !== null && realCost > 0 ? (
+                                `$${margin.toLocaleString('es-CO')}`
+                              ) : (
+                                <span className="text-stone-400">-</span>
+                              )}
                             </td>
                             <td className="px-4 py-3 text-sm text-center">
-                              {cost > 0 ? (
+                              {realCost !== null && realCost > 0 ? (
                                 <span className={`font-bold ${
                                   marginPercent >= 50 ? 'text-green-600' :
                                   marginPercent >= 30 ? 'text-blue-600' :
@@ -1356,47 +1739,84 @@ export default function AdminPage() {
                                 }`}>
                                   {marginPercent.toFixed(1)}%
                                 </span>
-                              ) : '-'}
+                              ) : (
+                                <span className="text-stone-400 italic">-</span>
+                              )}
                             </td>
                             <td className="px-4 py-3 text-sm text-center font-semibold">
                               {totalSold}
                             </td>
                             <td className="px-4 py-3 text-sm text-center">
-                              {editingStock?.id === product.id ? (
-                                <input
-                                  type="number"
-                                  value={editingStock.stock}
-                                  onChange={(e) => setEditingStock({ id: product.id, stock: parseInt(e.target.value) || 0 })}
-                                  className="w-20 px-2 py-1 border-2 border-berry-300 rounded-lg text-center text-xs focus:ring-2 focus:ring-berry-500"
-                                  autoFocus
-                                  onBlur={() => {
-                                    if (editingStock) {
-                                      updateProductStock(editingStock.id, editingStock.stock)
-                                      setEditingStock(null)
-                                    }
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && editingStock) {
-                                      updateProductStock(editingStock.id, editingStock.stock)
-                                      setEditingStock(null)
-                                    }
-                                    if (e.key === 'Escape') {
-                                      setEditingStock(null)
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <button
-                                  onClick={() => setEditingStock({ id: product.id, stock: product.stock })}
-                                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
-                                    product.stock <= (product.minStock || 0)
-                                      ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300'
-                                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200 border border-stone-300'
-                                  }`}
-                                >
-                                  {product.stock}
-                                </button>
-                              )}
+                              {(() => {
+                                const productStock = getProductStock(product)
+                                const realStock = productStock !== null ? productStock : 0
+                                const availability = getProductAvailability(product)
+                                const fullBottles = getFullBottles(product)
+                                const isRecipeProduct = product.category === 'coctel' || 
+                                                        product.category === 'cafe-caliente' || 
+                                                        product.category === 'cafe-frio'
+                                
+                                // Para cócteles/cafés: no permitir editar stock (solo disponibilidad)
+                                if (isRecipeProduct) {
+                                  if (availability === 'no-recipe') {
+                                    return <span className="text-amber-600 italic text-xs">Sin receta</span>
+                                  }
+                                  if (availability !== null && availability !== 'no-recipe') {
+                                    return (
+                                      <div className="font-semibold text-blue-600">
+                                        Disponible: {availability}
+                                      </div>
+                                    )
+                                  }
+                                  return <span className="text-stone-400 italic text-xs">Sin disponibilidad</span>
+                                }
+                                
+                                // Para productos normales: permitir editar stock
+                                if (editingStock?.id === product.id) {
+                                  return (
+                                    <input
+                                      type="number"
+                                      value={editingStock.stock}
+                                      onChange={(e) => setEditingStock({ id: product.id, stock: parseInt(e.target.value) || 0 })}
+                                      className="w-20 px-2 py-1 border-2 border-berry-300 rounded-lg text-center text-xs focus:ring-2 focus:ring-berry-500"
+                                      autoFocus
+                                      onBlur={() => {
+                                        if (editingStock) {
+                                          updateProductStock(editingStock.id, editingStock.stock)
+                                          setEditingStock(null)
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && editingStock) {
+                                          updateProductStock(editingStock.id, editingStock.stock)
+                                          setEditingStock(null)
+                                        }
+                                        if (e.key === 'Escape') {
+                                          setEditingStock(null)
+                                        }
+                                      }}
+                                    />
+                                  )
+                                }
+                                
+                                return (
+                                  <div>
+                                    <button
+                                      onClick={() => setEditingStock({ id: product.id, stock: realStock })}
+                                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                                        realStock <= (product.minStock || 0)
+                                          ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300'
+                                          : 'bg-stone-100 text-stone-700 hover:bg-stone-200 border border-stone-300'
+                                      }`}
+                                    >
+                                      {realStock}
+                                    </button>
+                                    {fullBottles !== undefined && fullBottles > 0 && (
+                                      <div className="text-xs text-purple-600 mt-1">Botellas: {fullBottles}</div>
+                                    )}
+                                  </div>
+                                )
+                              })()}
                             </td>
                             <td className="px-4 py-3 text-sm text-center">
                               {cost > 0 ? (
@@ -1435,7 +1855,8 @@ export default function AdminPage() {
                               </div>
                             </td>
                           </tr>
-                        ))}
+                          )
+                        })}
                     </tbody>
                   </table>
                 </div>
@@ -1474,7 +1895,7 @@ export default function AdminPage() {
                       description: '',
                       category: 'cafe-caliente',
                       type: 'cafeteria',
-                      stock: '999',
+                      stock: '0',
                       imageUrl: '',
                       size: '',
                       cost: '',
@@ -1660,11 +2081,12 @@ export default function AdminPage() {
                   return sum + (item?.quantity || 0)
                 }, 0)
 
-                const cost = product.cost || 0
+                const realCost = calculateRealCost(product)
+                const cost = realCost !== null ? realCost : 0
                 const price = product.price
-                const margin = price - cost
-                const marginPercent = price > 0 ? ((margin / price) * 100) : 0
-                const totalProfit = totalSold * margin
+                const margin = cost > 0 ? price - cost : 0
+                const marginPercent = cost > 0 && price > 0 ? ((margin / price) * 100) : 0
+                const totalProfit = cost > 0 ? totalSold * margin : 0
 
                 return (
                   <div className="space-y-4">
@@ -1704,30 +2126,47 @@ export default function AdminPage() {
                         </div>
                         <div>
                           <span className="block text-xs text-stone-600 mb-1">Costo:</span>
-                          <span className="font-semibold text-stone-700 text-base">
-                            {cost > 0 ? `$${cost.toLocaleString('es-CO')}` : 'No definido'}
-                          </span>
+                          {(() => {
+                            const realCost = calculateRealCost(product)
+                            return (
+                              <span className="font-semibold text-stone-700 text-base">
+                                {realCost !== null && realCost > 0 ? (
+                                  `$${realCost.toLocaleString('es-CO')}`
+                                ) : (
+                                  <span className="text-stone-400 italic">No definido</span>
+                                )}
+                              </span>
+                            )
+                          })()}
                         </div>
-                        {cost > 0 && (
-                          <>
-                            <div>
-                              <span className="block text-xs text-stone-600 mb-1">Margen:</span>
-                              <span className="font-semibold text-berry-600 text-base">
-                                ${margin.toLocaleString('es-CO')}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="block text-xs text-stone-600 mb-1">Margen %:</span>
-                              <span className={`font-semibold text-base ${
-                                marginPercent >= 50 ? 'text-green-600' :
-                                marginPercent >= 30 ? 'text-blue-600' :
-                                marginPercent >= 10 ? 'text-amber-600' : 'text-red-600'
-                              }`}>
-                                {marginPercent.toFixed(1)}%
-                              </span>
-                            </div>
-                          </>
-                        )}
+                        {(() => {
+                          const realCost = calculateRealCost(product)
+                          const realCostValue = realCost !== null ? realCost : 0
+                          const realPrice = product.price
+                          const realMargin = realCostValue > 0 ? realPrice - realCostValue : 0
+                          const realMarginPercent = realCostValue > 0 && realPrice > 0 ? ((realMargin / realPrice) * 100) : 0
+                          
+                          return realCost !== null && realCost > 0 && (
+                            <>
+                              <div>
+                                <span className="block text-xs text-stone-600 mb-1">Margen:</span>
+                                <span className="font-semibold text-berry-600 text-base">
+                                  ${realMargin.toLocaleString('es-CO')}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="block text-xs text-stone-600 mb-1">Margen %:</span>
+                                <span className={`font-semibold text-base ${
+                                  realMarginPercent >= 50 ? 'text-green-600' :
+                                  realMarginPercent >= 30 ? 'text-blue-600' :
+                                  realMarginPercent >= 10 ? 'text-amber-600' : 'text-red-600'
+                                }`}>
+                                  {realMarginPercent.toFixed(1)}%
+                                </span>
+                              </div>
+                            </>
+                          )
+                        })()}
                       </div>
                     </div>
 
@@ -1739,11 +2178,32 @@ export default function AdminPage() {
                         </div>
                         <div>
                           <span className="block text-xs text-stone-600 mb-1">Stock actual:</span>
-                          <span className={`font-semibold text-base ${
-                            product.stock <= (product.minStock || 0) ? 'text-red-600' : 'text-berry-600'
-                          }`}>
-                            {product.stock} unidades
-                          </span>
+                          {(() => {
+                            const productStock = getProductStock(product)
+                            const availability = getProductAvailability(product)
+                            const isRecipeProduct = product.category === 'coctel' || 
+                                                    product.category === 'cafe-caliente' || 
+                                                    product.category === 'cafe-frio'
+                            
+                            if (isRecipeProduct) {
+                              if (availability === 'no-recipe') {
+                                return <span className="font-semibold text-base text-amber-600">Sin receta</span>
+                              }
+                              if (availability !== null && availability !== 'no-recipe') {
+                                return <span className="font-semibold text-base text-blue-600">Disponible: {availability} preparaciones</span>
+                              }
+                              return <span className="font-semibold text-base text-stone-400">Sin disponibilidad</span>
+                            }
+                            
+                            const realStock = productStock !== null ? productStock : 0
+                            return (
+                              <span className={`font-semibold text-base ${
+                                realStock <= (product.minStock || 0) ? 'text-red-600' : 'text-berry-600'
+                              }`}>
+                                {realStock} unidades
+                              </span>
+                            )
+                          })()}
                         </div>
                         {cost > 0 && totalSold > 0 && (
                           <div className="col-span-2">
@@ -1776,7 +2236,9 @@ export default function AdminPage() {
                             const item = sale.items?.find((i: any) => i.productId === product.id)
                             return sum + (item?.quantity || 0)
                           }, 0)
-                          const newStock = Math.max(0, product.stock - soldToday)
+                          const productStock = getProductStock(product)
+                          const realStock = productStock !== null ? productStock : 0
+                          const newStock = Math.max(0, realStock - soldToday)
                           updateProductStock(product.id, newStock)
                           setSelectedProductDetail(null)
                         }}
@@ -1815,7 +2277,7 @@ export default function AdminPage() {
                       description: '',
                       category: 'cafe-caliente',
                       type: 'cafeteria',
-                      stock: '999',
+                      stock: '0',
                       imageUrl: '',
                       size: '',
                       cost: '',
