@@ -1,0 +1,17 @@
+{
+  "productId": "cafe-negro",
+  "ingredients": [
+    {
+      "productId": "inv-1767483353925-pg25jxttu",
+      "productName": "Café Sello Rojo",
+      "quantity": 10,
+      "unit": "gr"
+    },
+    {
+      "productId": "inv-1767483353926-6ynvm45dt",
+      "productName": "Café Instantáneo",
+      "quantity": 10,
+      "unit": "gr"
+    }
+  ]
+}

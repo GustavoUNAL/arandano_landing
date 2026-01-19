@@ -27,11 +27,24 @@ function documentToRecipe(doc: FirestoreDocument | FirestoreDocumentSnapshot): R
   }
 }
 
+// Importar funciones SQLite
+import {
+  getRecipes as getRecipesSQLite,
+  getRecipeByProductId as getRecipeByProductIdSQLite,
+  createRecipe as createRecipeSQLite,
+  updateRecipe as updateRecipeSQLite,
+  deleteRecipe as deleteRecipeSQLite
+} from './db-sqlite-recipes'
+
 export async function getRecipes(): Promise<Recipe[]> {
   const mode = getDbMode()
   
+  if (mode === 'sqlite') {
+    return getRecipesSQLite()
+  }
+  
   if (mode === 'json') {
-    // JSON mode not implemented for recipes - always use Firebase
+    // JSON mode not implemented for recipes
     return []
   }
   
@@ -40,8 +53,17 @@ export async function getRecipes(): Promise<Recipe[]> {
   }
   
   try {
+    console.log('[DB] Consultando colección de recetas en Firebase...')
     const snapshot = await db.collection('recipes').get()
-    return snapshot.docs.map((doc: FirestoreDocument) => documentToRecipe(doc))
+    console.log(`[DB] Recetas encontradas en Firebase: ${snapshot.docs.length}`)
+    
+    if (snapshot.empty) {
+      console.warn('[DB] ⚠️  No se encontraron recetas en Firebase. La colección está vacía.')
+    }
+    
+    const recipes = snapshot.docs.map((doc: FirestoreDocument) => documentToRecipe(doc))
+    console.log(`[DB] Recetas procesadas: ${recipes.length}`)
+    return recipes
   } catch (error) {
     console.error('[DB] Error obteniendo recetas de Firebase:', error)
     throw error
@@ -50,6 +72,10 @@ export async function getRecipes(): Promise<Recipe[]> {
 
 export async function getRecipeByProductId(productId: string): Promise<Recipe | null> {
   const mode = getDbMode()
+  
+  if (mode === 'sqlite') {
+    return getRecipeByProductIdSQLite(productId)
+  }
   
   if (mode === 'json') {
     return null
@@ -79,15 +105,12 @@ export async function getRecipeByProductId(productId: string): Promise<Recipe | 
 export async function createRecipe(recipe: Omit<Recipe, 'id'>): Promise<Recipe> {
   const mode = getDbMode()
   
-  const newRecipe: Recipe = {
-    ...recipe,
-    id: `recipe-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+  if (mode === 'sqlite') {
+    return createRecipeSQLite(recipe)
   }
-
+  
   if (mode === 'json') {
-    throw new Error('Recetas solo están disponibles en modo Firebase')
+    throw new Error('Recetas solo están disponibles en modo SQLite o Firebase')
   }
   
   if (!isDbAvailable()) {
@@ -95,6 +118,12 @@ export async function createRecipe(recipe: Omit<Recipe, 'id'>): Promise<Recipe> 
   }
 
   try {
+    const newRecipe: Recipe = {
+      ...recipe,
+      id: `recipe-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
     await db.collection('recipes').doc(newRecipe.id).set(newRecipe)
     return newRecipe
   } catch (error) {
@@ -105,6 +134,10 @@ export async function createRecipe(recipe: Omit<Recipe, 'id'>): Promise<Recipe> 
 
 export async function updateRecipe(id: string, updates: Partial<Recipe>): Promise<Recipe | null> {
   const mode = getDbMode()
+  
+  if (mode === 'sqlite') {
+    return updateRecipeSQLite(id, updates)
+  }
   
   if (mode === 'json') {
     return null
@@ -134,6 +167,10 @@ export async function updateRecipe(id: string, updates: Partial<Recipe>): Promis
 
 export async function deleteRecipe(id: string): Promise<boolean> {
   const mode = getDbMode()
+  
+  if (mode === 'sqlite') {
+    return deleteRecipeSQLite(id)
+  }
   
   if (mode === 'json') {
     return false

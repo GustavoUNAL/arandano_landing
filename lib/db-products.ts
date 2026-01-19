@@ -30,16 +30,29 @@ function documentToProduct(doc: FirestoreDocument | FirestoreDocumentSnapshot): 
 
 // Importar funciones JSON como fallback (solo si DB_MODE === 'json')
 import { getProducts as getProductsJSON, saveProducts as saveProductsJSON } from './products'
+// Importar funciones SQLite
+import {
+  getProducts as getProductsSQLite,
+  getProductById as getProductByIdSQLite,
+  createProduct as createProductSQLite,
+  updateProduct as updateProductSQLite,
+  deleteProduct as deleteProductSQLite
+} from './db-sqlite-products'
 
 export async function getProducts(): Promise<Product[]> {
   const mode = getDbMode()
   
-  // Solo usar JSON si está explícitamente configurado
+  // Usar SQLite si está configurado
+  if (mode === 'sqlite') {
+    return getProductsSQLite()
+  }
+  
+  // Usar JSON si está configurado
   if (mode === 'json') {
     return getProductsJSON()
   }
   
-  // En producción, siempre usar Firebase - NO fallback automático
+  // Firebase (legacy)
   if (!isDbAvailable()) {
     throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
   }
@@ -49,12 +62,16 @@ export async function getProducts(): Promise<Product[]> {
     return snapshot.docs.map((doc: FirestoreDocument) => documentToProduct(doc))
   } catch (error) {
     console.error('[DB] Error obteniendo productos de Firebase:', error)
-    throw error // No hacer fallback automático en producción
+    throw error
   }
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
   const mode = getDbMode()
+  
+  if (mode === 'sqlite') {
+    return getProductByIdSQLite(id)
+  }
   
   if (mode === 'json') {
     const products = getProductsJSON()
@@ -81,12 +98,16 @@ export async function getProductById(id: string): Promise<Product | null> {
 
 export async function createProduct(product: Omit<Product, 'id'>): Promise<Product> {
   const mode = getDbMode()
-  const newProduct: Product = {
-    ...product,
-    id: `prod-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  
+  if (mode === 'sqlite') {
+    return createProductSQLite(product)
   }
-
+  
   if (mode === 'json') {
+    const newProduct: Product = {
+      ...product,
+      id: `prod-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    }
     const products = getProductsJSON()
     products.push(newProduct)
     saveProductsJSON(products)
@@ -98,6 +119,10 @@ export async function createProduct(product: Omit<Product, 'id'>): Promise<Produ
   }
 
   try {
+    const newProduct: Product = {
+      ...product,
+      id: `prod-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    }
     await db.collection('products').doc(newProduct.id).set(newProduct)
     return newProduct
   } catch (error) {
@@ -108,6 +133,10 @@ export async function createProduct(product: Omit<Product, 'id'>): Promise<Produ
 
 export async function updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
   const mode = getDbMode()
+  
+  if (mode === 'sqlite') {
+    return updateProductSQLite(id, updates)
+  }
   
   if (mode === 'json') {
     const products = getProductsJSON()
@@ -139,6 +168,10 @@ export async function updateProduct(id: string, updates: Partial<Product>): Prom
 
 export async function deleteProduct(id: string): Promise<boolean> {
   const mode = getDbMode()
+  
+  if (mode === 'sqlite') {
+    return deleteProductSQLite(id)
+  }
   
   if (mode === 'json') {
     const products = getProductsJSON()

@@ -31,11 +31,28 @@ function documentToExpense(doc: FirestoreDocument | FirestoreDocumentSnapshot): 
 // Importar funciones JSON (solo si DB_MODE === 'json')
 import { getExpenses as getExpensesJSON, saveExpenses as saveExpensesJSON, createExpense as createExpenseJSON, updateExpense as updateExpenseJSON, deleteExpense as deleteExpenseJSON, getExpensesByDateRange as getExpensesByDateRangeJSON, getMonthlyFixedExpenses as getMonthlyFixedExpensesJSON } from './expenses'
 
+// Importar funciones SQLite
+import { getDatabase } from './db-sqlite'
+
 export async function getExpenses(): Promise<Expense[]> {
   const mode = getDbMode()
   
   if (mode === 'json') {
     return getExpensesJSON()
+  }
+  
+  if (mode === 'sqlite') {
+    const db = getDatabase()
+    const rows = db.prepare('SELECT * FROM expenses ORDER BY date DESC').all() as any[]
+    return rows.map(row => ({
+      id: row.id,
+      description: row.description,
+      amount: row.amount,
+      date: row.date,
+      category: row.category as ExpenseCategory,
+      type: row.type as ExpenseType,
+      notes: row.notes || undefined
+    }))
   }
   
   if (!isDbAvailable()) {
@@ -125,6 +142,24 @@ export async function getExpensesByDateRange(startDate: string, endDate: string)
   
   if (mode === 'json') {
     return getExpensesByDateRangeJSON(startDate, endDate)
+  }
+  
+  if (mode === 'sqlite') {
+    const db = getDatabase()
+    const rows = db.prepare(`
+      SELECT * FROM expenses 
+      WHERE date >= ? AND date <= ?
+      ORDER BY date DESC
+    `).all(startDate, endDate) as any[]
+    return rows.map(row => ({
+      id: row.id,
+      description: row.description,
+      amount: row.amount,
+      date: row.date,
+      category: row.category as ExpenseCategory,
+      type: row.type as ExpenseType,
+      notes: row.notes || undefined
+    }))
   }
   
   if (!isDbAvailable()) {

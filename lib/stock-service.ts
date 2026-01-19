@@ -8,6 +8,7 @@
 import { Product } from './products'
 import { InventoryItem, getInventory } from './db-inventory'
 import { Recipe, getRecipeByProductId } from './db-recipes'
+import { getCachedInventory } from './inventory-cache'
 // import { Sale, getSalesByProduct } from './db-sales' // No usado actualmente
 
 export interface ProductStockInfo {
@@ -43,9 +44,9 @@ export async function calculateProductStock(product: Product): Promise<number> {
     return product.stock
   }
 
-  // Si no tiene stock directo, calcular desde inventario
+  // Si no tiene stock directo, calcular desde inventario (con caché)
   try {
-    const inventory = await getInventory()
+    const inventory = await getCachedInventory(getInventory)
     
     // Buscar items de inventario que coincidan con el producto
     const matchingItems = inventory.filter(item => {
@@ -100,7 +101,8 @@ export async function calculateProductAvailability(
   }
 
   try {
-    const inventory = await getInventory()
+    // Usar caché para evitar múltiples consultas
+    const inventory = await getCachedInventory(getInventory)
     
     if (inventory.length === 0) {
       console.warn(`[Stock] No hay inventario disponible para calcular disponibilidad de ${product.name}`)
@@ -159,26 +161,51 @@ export async function calculateProductAvailability(
       
       // Normalizar unidades para comparación
       const recipeUnit = ingredient.unit.toLowerCase()
-      const inventoryUnit = inventoryItem.unit.toLowerCase()
+      const inventoryUnit = (inventoryItem.unit || '').toLowerCase()
       
-      // Si las unidades coinciden, hacer el cálculo directo
-      if (recipeUnit === inventoryUnit) {
-        if (ingredient.quantity > 0) {
-          availableCount = Math.floor(ingredientStock / ingredient.quantity)
-        } else {
-          availableCount = ingredientStock > 0 ? Infinity : 0
-        }
+      let stockConverted = ingredientStock
+      let requiredConverted = ingredient.quantity
+      
+      // Si las unidades coinciden exactamente, hacer el cálculo directo
+      if (recipeUnit === inventoryUnit || 
+          (recipeUnit === 'ml' && inventoryUnit === 'ml') ||
+          (recipeUnit === 'gr' && inventoryUnit === 'gr') ||
+          (recipeUnit === 'unidad' && inventoryUnit === 'unidad')) {
+        // Unidades coinciden
       } else {
-        // Conversión de unidades común (se puede mejorar)
-        // ml <-> l: 1 l = 1000 ml
-        // gr <-> kg: 1 kg = 1000 gr
-        // unidad se mantiene igual
+        // Conversiones específicas según el tipo de producto en inventario
         
-        let stockConverted = ingredientStock
-        let requiredConverted = ingredient.quantity
-        
-        // Convertir stock del inventario a la unidad de la receta
-        if (recipeUnit === 'ml' && (inventoryUnit === 'l' || inventoryUnit === 'litro' || inventoryUnit === 'litros')) {
+        // BOTELLAS -> ml (asumir 750ml por botella para licores)
+        if (inventoryUnit.includes('botella') && recipeUnit === 'ml') {
+          // Convertir botellas a ml: 1 botella = 750ml (estándar para licores)
+          stockConverted = ingredientStock * 750
+        }
+        // PAQUETES -> gr (para café, asumir 500gr por paquete)
+        else if (inventoryUnit.includes('paquete') && recipeUnit === 'gr') {
+          // Convertir paquetes a gr: 1 paquete = 500gr (estándar para café)
+          stockConverted = ingredientStock * 500
+        }
+        // BOLSAS -> ml (para leche, asumir 1L = 1000ml por bolsa)
+        else if (inventoryUnit.includes('bolsa') && recipeUnit === 'ml') {
+          // Convertir bolsas a ml: 1 bolsa = 1000ml (1 litro)
+          stockConverted = ingredientStock * 1000
+        }
+        // BOLSAS -> gr (para hielo, asumir 1kg = 1000gr por bolsa)
+        else if (inventoryUnit.includes('bolsa') && recipeUnit === 'gr') {
+          // Convertir bolsas a gr: 1 bolsa = 1000gr (1 kilogramo)
+          stockConverted = ingredientStock * 1000
+        }
+        // FRASCOS -> ml o gr (depende del producto)
+        else if (inventoryUnit.includes('frasco') && recipeUnit === 'ml') {
+          // Asumir frasco pequeño = 250ml
+          stockConverted = ingredientStock * 250
+        }
+        else if (inventoryUnit.includes('frasco') && recipeUnit === 'gr') {
+          // Asumir frasco pequeño = 250gr
+          stockConverted = ingredientStock * 250
+        }
+        // Conversiones estándar: ml <-> l, gr <-> kg
+        else if (recipeUnit === 'ml' && (inventoryUnit === 'l' || inventoryUnit === 'litro' || inventoryUnit === 'litros')) {
           stockConverted = ingredientStock * 1000
         } else if (recipeUnit === 'l' && (inventoryUnit === 'ml' || inventoryUnit === 'mililitro' || inventoryUnit === 'mililitros')) {
           stockConverted = ingredientStock / 1000
@@ -187,12 +214,23 @@ export async function calculateProductAvailability(
         } else if (recipeUnit === 'kg' && (inventoryUnit === 'gr' || inventoryUnit === 'gramo' || inventoryUnit === 'gramos')) {
           stockConverted = ingredientStock / 1000
         }
-        
-        if (requiredConverted > 0) {
-          availableCount = Math.floor(stockConverted / requiredConverted)
-        } else {
-          availableCount = stockConverted > 0 ? Infinity : 0
+        // Si no hay conversión posible y las unidades no coinciden, intentar usar el stock directamente
+        // (esto puede no ser preciso pero evita errores)
+        else if (recipeUnit !== inventoryUnit) {
+          // Log para debug en desarrollo
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`[Stock] Conversión de unidades no estándar: ${inventoryUnit} -> ${recipeUnit} para ${ingredient.productName}`)
+          }
+          // Intentar usar el stock directamente (puede no ser preciso)
+          stockConverted = ingredientStock
         }
+      }
+      
+      // Calcular disponibilidad
+      if (requiredConverted > 0) {
+        availableCount = Math.floor(stockConverted / requiredConverted)
+      } else {
+        availableCount = stockConverted > 0 ? Infinity : 0
       }
 
       availabilities.push(availableCount)

@@ -1,0 +1,77 @@
+{
+  "success": [
+    {
+      "productName": "Café negro artesanal",
+      "recipeId": "recipe-1768698116396-9cj3nz69t"
+    },
+    {
+      "productName": "Café artesanal con leche",
+      "recipeId": "recipe-1768698117168-1ztr4vf9a"
+    },
+    {
+      "productName": "Café aromatizado artesanal (canela / vainilla)",
+      "recipeId": "recipe-1768698117961-l6cw1o0qi"
+    },
+    {
+      "productName": "Café irlandés",
+      "recipeId": "recipe-1768698118665-ra9nohkty"
+    },
+    {
+      "productName": "Carajillo",
+      "recipeId": "recipe-1768698119376-fmlumi9l6"
+    },
+    {
+      "productName": "Vaso de leche",
+      "recipeId": "recipe-1768698120104-zjebzvac0"
+    },
+    {
+      "productName": "Café frío artesanal",
+      "recipeId": "recipe-1768698120812-4aius5gv8"
+    },
+    {
+      "productName": "Café helado artesanal (affogato)",
+      "recipeId": "recipe-1768698121531-rd76x4buu"
+    },
+    {
+      "productName": "Café artesanal frío con leche",
+      "recipeId": "recipe-1768698122223-bacz3j9zd"
+    },
+    {
+      "productName": "Cóctel Arándano",
+      "recipeId": "recipe-1768698122940-8quqrkvum"
+    },
+    {
+      "productName": "Vino caliente",
+      "recipeId": "recipe-1768698123649-sbkph0fjy"
+    },
+    {
+      "productName": "Cóctel moscowmule",
+      "recipeId": "recipe-1768698124336-2t1399o4b"
+    },
+    {
+      "productName": "Cóctel de campari ",
+      "recipeId": "recipe-1768698125037-csl75mci7"
+    },
+    {
+      "productName": "Coctel de soda sin licor ",
+      "recipeId": "recipe-1768698125728-1ius1aqxg"
+    },
+    {
+      "productName": "Hervido de fruta de temporada ",
+      "recipeId": "recipe-1768698126447-oclwczrcb"
+    },
+    {
+      "productName": "Margaritas",
+      "recipeId": "recipe-1768698127153-fxtl50o9l"
+    },
+    {
+      "productName": "Aguardiente Amarillo",
+      "recipeId": "recipe-1768698127835-97qh13evi"
+    },
+    {
+      "productName": "Aguardiente Nariño",
+      "recipeId": "recipe-1768698128532-u334cvhej"
+    }
+  ],
+  "failed": []
+}

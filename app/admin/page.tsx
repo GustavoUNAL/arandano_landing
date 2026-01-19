@@ -52,7 +52,7 @@ export default function AdminPage() {
   const [alert, setAlert] = useState<{ type: 'success' | 'error', message: string } | null>(null)
   const [pendingTasks, setPendingTasks] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<'products' | 'inventory'>('products')
-  const [currentView, setCurrentView] = useState<'dashboard' | 'products' | 'products-for-sale' | 'shop-preview'>('dashboard')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'products' | 'products-for-sale' | 'shop-preview' | 'recipes'>('dashboard')
   const [editingProductInShop, setEditingProductInShop] = useState<Product | null>(null)
   const [sales, setSales] = useState<any[]>([])
   const [inventory, setInventory] = useState<any[]>([])
@@ -60,7 +60,17 @@ export default function AdminPage() {
   const [productsStockInfo, setProductsStockInfo] = useState<any[]>([]) // Información de stock desde Firebase
   const [selectedProductDetail, setSelectedProductDetail] = useState<Product | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>('') // Búsqueda de productos
+  const [productTypeFilter, setProductTypeFilter] = useState<'all' | 'simple' | 'composite'>('all') // Filtro de tipo de producto
   const [editingProductForSale, setEditingProductForSale] = useState<Product | null | 'new'>(null)
+  // Estados para gestión de recetas
+  const [recipes, setRecipes] = useState<any[]>([])
+  const [editingRecipe, setEditingRecipe] = useState<any | null | 'new'>(null)
+  const [recipeForm, setRecipeForm] = useState({
+    productId: '',
+    productName: '',
+    category: 'coctel' as 'coctel' | 'cafe-caliente' | 'cafe-frio',
+    ingredients: [] as Array<{ productId: string; productName: string; quantity: number; unit: 'ml' | 'gr' | 'unidad' | 'oz' | 'l' | 'kg' }>
+  })
   const [productEditForm, setProductEditForm] = useState({
     name: '',
     price: '',
@@ -195,9 +205,11 @@ export default function AdminPage() {
       const data = await response.json()
       setIsAuthenticated(data.authenticated)
       if (data.authenticated) {
+        // Cargar solo lo esencial al inicio
         loadProducts()
         loadSales()
-        loadInventory()
+        // No cargar inventario hasta que se necesite (lazy loading)
+        // loadInventory() se cargará solo cuando se cambie a la vista de inventario
       }
     } catch (error) {
       setIsAuthenticated(false)
@@ -241,40 +253,67 @@ export default function AdminPage() {
   const loadProducts = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/products')
+      // Timeout aumentado para evitar que se cuelgue
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 segundos timeout
+      
+      const response = await fetch('/api/products', { signal: controller.signal })
+      clearTimeout(timeoutId)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      
       const data = await response.json()
       setProducts(data)
       
-      // Cargar información de stock desde Firebase (opcional, no bloqueante)
-      try {
-        const stockResponse = await fetch('/api/products/stock')
-        if (stockResponse.ok) {
-          const stockData = await stockResponse.json()
-          setProductsStockInfo(stockData)
-        } else {
-          console.warn('No se pudo cargar información de stock, usando stock básico')
-          // Usar stock básico del producto si falla
-          setProductsStockInfo(data.map((p: Product) => ({
-            product: p,
-            stock: p.stock || 0,
-            hasDirectStock: true,
-            hasRecipe: false
-          })))
-        }
-      } catch (stockError) {
-        console.error('Error loading stock info:', stockError)
-        // No fallar si el stock no se puede cargar, usar stock básico
-        setProductsStockInfo(data.map((p: Product) => ({
-          product: p,
-          stock: p.stock || 0,
-          hasDirectStock: true,
-          hasRecipe: false
-        })))
+      // Usar stock básico del producto inicialmente (más rápido)
+      setProductsStockInfo(data.map((p: Product) => ({
+        product: p,
+        stock: p.stock || 0,
+        hasDirectStock: true,
+        hasRecipe: false
+      })))
+      
+      // Cargar información de stock detallada en segundo plano (no bloqueante)
+      // Solo si estamos en la vista de productos a la venta
+      if (currentView === 'products-for-sale') {
+        loadProductsStockInfo()
       }
-    } catch (error) {
-      console.error('Error loading products:', error)
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error('[loadProducts] Timeout cargando productos')
+        showAlert('error', 'Timeout cargando productos. Por favor, intenta recargar la página.')
+      } else {
+        console.error('[loadProducts] Error loading products:', error)
+        showAlert('error', 'Error cargando productos. Por favor, intenta recargar la página.')
+      }
+      // Asegurar que al menos tenemos un array vacío
+      setProducts([])
+      setProductsStockInfo([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Función separada para cargar stock detallado (solo cuando se necesite)
+  const loadProductsStockInfo = async () => {
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 segundos timeout
+      
+      const stockResponse = await fetch('/api/products/stock', { signal: controller.signal })
+      clearTimeout(timeoutId)
+      
+      if (stockResponse.ok) {
+        const stockData = await stockResponse.json()
+        setProductsStockInfo(stockData)
+      }
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.warn('No se pudo cargar información de stock detallada, usando stock básico')
+      }
+      // No fallar, usar stock básico que ya tenemos
     }
   }
 
@@ -306,7 +345,12 @@ export default function AdminPage() {
 
   const loadInventory = async () => {
     try {
-      const response = await fetch('/api/inventory')
+      // Timeout aumentado para evitar que se cuelgue
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 segundos timeout
+      
+      const response = await fetch('/api/inventory', { signal: controller.signal })
+      clearTimeout(timeoutId)
       
       if (!response.ok) {
         console.warn('Error loading inventory:', response.status, response.statusText)
@@ -324,9 +368,216 @@ export default function AdminPage() {
       }
       
       setInventory(data)
-    } catch (error) {
-      console.error('Error loading inventory:', error)
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error('Timeout cargando inventario')
+      } else {
+        console.error('Error loading inventory:', error)
+      }
       setInventory([]) // Asegurar que se establece un array vacío en caso de error
+    }
+  }
+
+  const loadRecipes = async () => {
+    try {
+      console.log('[loadRecipes] Iniciando carga de recetas...')
+      // Timeout aumentado para evitar que se cuelgue
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 segundos timeout
+      
+      const response = await fetch('/api/recipes', { signal: controller.signal })
+      clearTimeout(timeoutId)
+      
+      // Verificar si hay error de cuota en los headers
+      const errorType = response.headers.get('x-error-type')
+      const errorMessage = response.headers.get('x-error-message')
+      
+      if (errorType === 'quota-exceeded') {
+        console.warn('[loadRecipes] ⚠️  Cuota de Firebase excedida')
+        showAlert('error', errorMessage || 'Cuota de Firebase excedida. Las recetas se cargarán cuando se recupere. Por favor, espera unos minutos.')
+        setRecipes([])
+        return
+      }
+      
+      if (!response.ok) {
+        console.warn('[loadRecipes] Error loading recipes:', response.status, response.statusText)
+        const errorData = await response.json().catch(() => ({}))
+        console.warn('[loadRecipes] Error data:', errorData)
+        // Si es un error de cuota, mostrar mensaje pero no romper la UI
+        if (errorData.error && errorData.error.includes('Quota')) {
+          showAlert('error', 'Cuota de Firebase excedida. Las recetas se cargarán cuando esté disponible.')
+        }
+        setRecipes([])
+        return
+      }
+      
+      const data = await response.json()
+      console.log('[loadRecipes] Datos recibidos:', Array.isArray(data) ? `${data.length} recetas` : typeof data)
+      
+      // Verificar que data es un array antes de usarlo
+      if (!Array.isArray(data)) {
+        console.warn('[loadRecipes] Response is not an array:', data)
+        setRecipes([])
+        return
+      }
+      
+      console.log('[loadRecipes] Estableciendo recetas:', data.length)
+      setRecipes(data)
+      
+      if (data.length === 0) {
+        console.warn('[loadRecipes] ⚠️  No se encontraron recetas en Firebase')
+        // No mostrar alerta de error si no hay recetas, solo un mensaje informativo
+        // (las recetas pueden no existir aún o puede ser un problema temporal)
+      } else {
+        // Solo mostrar alerta de éxito si hay recetas y no hay error previo
+        console.log(`[loadRecipes] ✅ ${data.length} receta(s) cargada(s) exitosamente`)
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error('[loadRecipes] Timeout cargando recetas')
+        showAlert('error', 'Timeout cargando recetas. Por favor, intenta de nuevo.')
+      } else {
+        console.error('[loadRecipes] Error loading recipes:', error)
+      }
+      setRecipes([])
+    }
+  }
+
+  const handleSaveRecipe = async () => {
+    if (!recipeForm.productId || !recipeForm.productName || recipeForm.ingredients.length === 0) {
+      setAlert({ type: 'error', message: 'Por favor completa todos los campos requeridos' })
+      return
+    }
+
+    setLoading(true)
+    try {
+      if (editingRecipe && editingRecipe !== 'new') {
+        // Actualizar receta existente
+        const response = await fetch(`/api/recipes/${editingRecipe.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(recipeForm)
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Error al actualizar receta')
+        }
+        
+        setAlert({ type: 'success', message: 'Receta actualizada correctamente' })
+      } else {
+        // Crear nueva receta
+        const response = await fetch('/api/recipes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(recipeForm)
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Error al crear receta')
+        }
+        
+        setAlert({ type: 'success', message: 'Receta creada correctamente' })
+      }
+      
+      setEditingRecipe(null)
+      setRecipeForm({
+        productId: '',
+        productName: '',
+        category: 'coctel',
+        ingredients: []
+      })
+      await loadRecipes()
+      // Recargar productos para actualizar la disponibilidad
+      await loadProducts()
+    } catch (error: any) {
+      console.error('Error saving recipe:', error)
+      setAlert({ type: 'error', message: error.message || 'Error al guardar receta' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteRecipe = async (recipeId: string) => {
+    if (!confirm('¿Estás seguro de eliminar esta receta?')) return
+
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/recipes/${recipeId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar receta')
+      }
+      
+      setAlert({ type: 'success', message: 'Receta eliminada correctamente' })
+      await loadRecipes()
+      // Recargar productos para actualizar la disponibilidad
+      await loadProducts()
+    } catch (error) {
+      console.error('Error deleting recipe:', error)
+      setAlert({ type: 'error', message: 'Error al eliminar receta' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Función para gestionar receta de un producto
+  const handleManageProductRecipe = async (product: Product) => {
+    const isRecipeProduct = product.category === 'coctel' || 
+                            product.category === 'cafe-caliente' || 
+                            product.category === 'cafe-frio'
+    
+    if (!isRecipeProduct) {
+      setAlert({ type: 'error', message: 'Este producto no requiere receta' })
+      return
+    }
+
+    setLoading(true)
+    try {
+      // Buscar receta existente
+      const response = await fetch(`/api/recipes?productId=${product.id}`)
+      let existingRecipe = null
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data && data.id) {
+          existingRecipe = data
+        }
+      }
+
+      if (existingRecipe) {
+        // Cargar receta existente para editar
+        setEditingRecipe(existingRecipe)
+        setRecipeForm({
+          productId: existingRecipe.productId,
+          productName: existingRecipe.productName,
+          category: existingRecipe.category,
+          ingredients: existingRecipe.ingredients
+        })
+      } else {
+        // Crear nueva receta
+        setEditingRecipe('new')
+        setRecipeForm({
+          productId: product.id,
+          productName: product.name,
+          category: product.category === 'coctel' ? 'coctel' :
+                   product.category === 'cafe-caliente' ? 'cafe-caliente' :
+                   product.category === 'cafe-frio' ? 'cafe-frio' : 'coctel',
+          ingredients: []
+        })
+      }
+      
+      // Cambiar a vista de recetas
+      setCurrentView('recipes')
+      // loadRecipes se cargará automáticamente con el useEffect
+    } catch (error) {
+      console.error('Error loading recipe:', error)
+      setAlert({ type: 'error', message: 'Error al cargar receta' })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -486,6 +737,31 @@ export default function AdminPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated])
+
+  // Cargar recetas solo cuando se cambie a la vista de recetas
+  useEffect(() => {
+    if (isAuthenticated && currentView === 'recipes') {
+      console.log('Cargando recetas para vista de recetas...')
+      loadRecipes()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, currentView])
+
+  // Cargar inventario solo cuando se necesite (vista de inventario o productos a la venta)
+  useEffect(() => {
+    if (isAuthenticated && (activeTab === 'inventory' || currentView === 'products-for-sale') && inventory.length === 0) {
+      loadInventory()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, activeTab, currentView])
+
+  // Cargar stock detallado cuando se cambie a productos a la venta
+  useEffect(() => {
+    if (isAuthenticated && currentView === 'products-for-sale' && products.length > 0) {
+      loadProductsStockInfo()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, currentView, products.length])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -776,6 +1052,23 @@ export default function AdminPage() {
               <h2 className="text-base sm:text-lg font-bold text-berry-950 mb-1.5 leading-tight">Tareas</h2>
               <p className="text-stone-600 text-xs sm:text-sm leading-relaxed flex-grow">
                 Organiza y gestiona tareas pendientes
+              </p>
+            </button>
+
+            {/* Tarjeta Recetas */}
+            <button
+              onClick={() => {
+                setCurrentView('recipes')
+                // loadRecipes se cargará automáticamente con el useEffect
+              }}
+              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-orange-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
+            >
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-orange-200 transition-colors">
+                <span className="text-2xl sm:text-3xl">📝</span>
+              </div>
+              <h2 className="text-base sm:text-lg font-bold text-berry-950 mb-1.5 leading-tight">Recetas</h2>
+              <p className="text-stone-600 text-xs sm:text-sm leading-relaxed flex-grow">
+                Gestiona recetas de cócteles y cafés
               </p>
             </button>
 
@@ -1361,7 +1654,7 @@ export default function AdminPage() {
                                 if (availability === 'no-recipe') {
                                   return <span className="text-amber-600 italic text-xs">Sin receta</span>
                                 }
-                                if (availability !== null && availability !== 'no-recipe') {
+                                if (availability !== null && typeof availability === 'number') {
                                   return (
                                     <div className="font-semibold text-blue-600">
                                       Disponible: {availability}
@@ -1466,9 +1759,79 @@ export default function AdminPage() {
               <div className="text-center py-8 text-berry-600">Cargando...</div>
             ) : (
               <>
+                {/* Filtro de tipo de producto */}
+                <div className="mb-6 bg-white rounded-lg p-4 border-2 border-stone-200 shadow-sm">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <label className="text-sm font-semibold text-berry-950 whitespace-nowrap">
+                      Filtrar por tipo:
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setProductTypeFilter('all')}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                          productTypeFilter === 'all'
+                            ? 'bg-berry-600 text-white shadow-md'
+                            : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                        }`}
+                      >
+                        Todos
+                      </button>
+                      <button
+                        onClick={() => setProductTypeFilter('simple')}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                          productTypeFilter === 'simple'
+                            ? 'bg-green-600 text-white shadow-md'
+                            : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Simples (se venden tal cual)
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => setProductTypeFilter('composite')}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                          productTypeFilter === 'composite'
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                          Compuestos (con receta)
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-stone-500 mt-2">
+                    {productTypeFilter === 'simple' && 'Productos que se venden tal cual se compran. Fácil cálculo de rentabilidad.'}
+                    {productTypeFilter === 'composite' && 'Productos preparados con varios componentes (cócteles, cafés). Rentabilidad basada en ingredientes.'}
+                    {productTypeFilter === 'all' && 'Muestra todos los productos del menú.'}
+                  </p>
+                </div>
+
                 {/* Vista Cards para móvil */}
                 <div className="sm:hidden grid grid-cols-1 gap-4">
                   {products
+                    .filter(product => {
+                      // Filtrar por tipo de producto
+                      const isRecipeProduct = product.category === 'coctel' || 
+                                              product.category === 'cafe-caliente' || 
+                                              product.category === 'cafe-frio'
+                      
+                      if (productTypeFilter === 'simple') {
+                        return !isRecipeProduct
+                      }
+                      if (productTypeFilter === 'composite') {
+                        return isRecipeProduct
+                      }
+                      return true // 'all' muestra todos
+                    })
                     .map((product) => {
                       const productSales = sales.filter(sale =>
                         sale.items?.some((item: any) => item.productId === product.id)
@@ -1554,7 +1917,7 @@ export default function AdminPage() {
                                 )
                               }
                               
-                              if (availability !== null && availability !== 'no-recipe') {
+                              if (availability !== null && typeof availability === 'number') {
                                 return (
                                   <div className="rounded-lg p-3 border-2 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
                                     <div className="text-xs font-medium mb-1 text-blue-700">
@@ -1640,17 +2003,30 @@ export default function AdminPage() {
                           </div>
                         )}
 
-                        {/* Botón Ver Detalles */}
-                        <button
-                          onClick={() => setSelectedProductDetail(product)}
-                          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-berry-600 to-berry-700 hover:from-berry-700 hover:to-berry-800 text-white rounded-lg text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                          Ver Detalles
-                        </button>
+                        {/* Botones de acción */}
+                        <div className="flex flex-col gap-2">
+                          {isRecipeProduct && (
+                            <button
+                              onClick={() => handleManageProductRecipe(product)}
+                              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-lg text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              {availability === 'no-recipe' ? 'Crear Receta' : 'Gestionar Receta'}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setSelectedProductDetail(product)}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-berry-600 to-berry-700 hover:from-berry-700 hover:to-berry-800 text-white rounded-lg text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            Ver Detalles
+                          </button>
+                        </div>
                       </div>
                       )
                     })}
@@ -1674,6 +2050,20 @@ export default function AdminPage() {
                     </thead>
                     <tbody>
                       {products
+                        .filter(product => {
+                          // Filtrar por tipo de producto
+                          const isRecipeProduct = product.category === 'coctel' || 
+                                                  product.category === 'cafe-caliente' || 
+                                                  product.category === 'cafe-frio'
+                          
+                          if (productTypeFilter === 'simple') {
+                            return !isRecipeProduct
+                          }
+                          if (productTypeFilter === 'composite') {
+                            return isRecipeProduct
+                          }
+                          return true // 'all' muestra todos
+                        })
                         .map((product) => {
                           const productSales = sales.filter(sale =>
                             sale.items?.some((item: any) => item.productId === product.id)
@@ -1761,7 +2151,7 @@ export default function AdminPage() {
                                   if (availability === 'no-recipe') {
                                     return <span className="text-amber-600 italic text-xs">Sin receta</span>
                                   }
-                                  if (availability !== null && availability !== 'no-recipe') {
+                                  if (availability !== null && typeof availability === 'number') {
                                     return (
                                       <div className="font-semibold text-blue-600">
                                         Disponible: {availability}
@@ -1828,7 +2218,19 @@ export default function AdminPage() {
                               ) : '-'}
                             </td>
                             <td className="px-4 py-3 text-sm text-center">
-                              <div className="flex items-center justify-center gap-2">
+                              <div className="flex items-center justify-center gap-2 flex-wrap">
+                                {isRecipeProduct && (
+                                  <button
+                                    onClick={() => handleManageProductRecipe(product)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-semibold transition-colors"
+                                    title="Gestionar receta"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Receta
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => setSelectedProductDetail(product)}
                                   className="flex items-center gap-1.5 px-3 py-1.5 bg-berry-600 hover:bg-berry-700 text-white rounded-lg text-xs font-semibold transition-colors"
@@ -2189,7 +2591,7 @@ export default function AdminPage() {
                               if (availability === 'no-recipe') {
                                 return <span className="font-semibold text-base text-amber-600">Sin receta</span>
                               }
-                              if (availability !== null && availability !== 'no-recipe') {
+                              if (availability !== null && typeof availability === 'number') {
                                 return <span className="font-semibold text-base text-blue-600">Disponible: {availability} preparaciones</span>
                               }
                               return <span className="font-semibold text-base text-stone-400">Sin disponibilidad</span>
@@ -2384,6 +2786,341 @@ export default function AdminPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
           </button>
+        )}
+
+        {/* Vista de Gestión de Recetas */}
+        {currentView === 'recipes' && (
+          <>
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-berry-950 text-center sm:text-left">
+                Gestión de Recetas
+              </h2>
+              <button
+                onClick={() => {
+                  setEditingRecipe('new')
+                  setRecipeForm({
+                    productId: '',
+                    productName: '',
+                    category: 'coctel',
+                    ingredients: []
+                  })
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Nueva Receta
+              </button>
+            </div>
+
+            {editingRecipe ? (
+              /* Formulario de receta */
+              <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 mb-6">
+                <h3 className="text-lg font-bold text-berry-950 mb-4">
+                  {editingRecipe === 'new' ? 'Nueva Receta' : 'Editar Receta'}
+                </h3>
+                
+                <div className="space-y-4">
+                  {/* Producto final */}
+                  <div>
+                    <label className="block text-sm font-semibold text-berry-950 mb-2">
+                      Producto Final (Cóctel/Café)
+                    </label>
+                    <select
+                      value={recipeForm.productId}
+                      onChange={(e) => {
+                        const product = products.find(p => p.id === e.target.value)
+                        if (product) {
+                          setRecipeForm({
+                            ...recipeForm,
+                            productId: product.id,
+                            productName: product.name,
+                            category: product.category === 'coctel' ? 'coctel' :
+                                      product.category === 'cafe-caliente' ? 'cafe-caliente' :
+                                      product.category === 'cafe-frio' ? 'cafe-frio' : 'coctel'
+                          })
+                        }
+                      }}
+                      className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                    >
+                      <option value="">Seleccionar producto...</option>
+                      {products
+                        .filter(p => p.category === 'coctel' || p.category === 'cafe-caliente' || p.category === 'cafe-frio')
+                        .map(product => (
+                          <option key={product.id} value={product.id}>
+                            {product.name} ({product.category})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  {/* Categoría */}
+                  <div>
+                    <label className="block text-sm font-semibold text-berry-950 mb-2">
+                      Categoría
+                    </label>
+                    <select
+                      value={recipeForm.category}
+                      onChange={(e) => setRecipeForm({ ...recipeForm, category: e.target.value as any })}
+                      className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                    >
+                      <option value="coctel">Cóctel</option>
+                      <option value="cafe-caliente">Café Caliente</option>
+                      <option value="cafe-frio">Café Frío</option>
+                    </select>
+                  </div>
+
+                  {/* Ingredientes */}
+                  <div>
+                    <label className="block text-sm font-semibold text-berry-950 mb-2">
+                      Ingredientes
+                    </label>
+                    <div className="space-y-3">
+                      {recipeForm.ingredients.map((ingredient, index) => (
+                        <div key={index} className="flex gap-2 items-start p-3 bg-stone-50 rounded-lg border border-stone-200">
+                          <div className="flex-1">
+                            <select
+                              value={ingredient.productId}
+                              onChange={(e) => {
+                                const product = inventory.find(p => p.id === e.target.value)
+                                if (product) {
+                                  const newIngredients = [...recipeForm.ingredients]
+                                  newIngredients[index] = {
+                                    ...newIngredients[index],
+                                    productId: product.id,
+                                    productName: product.name
+                                  }
+                                  setRecipeForm({ ...recipeForm, ingredients: newIngredients })
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
+                            >
+                              <option value="">Seleccionar ingrediente...</option>
+                              {inventory.map(item => (
+                                <option key={item.id} value={item.id}>
+                                  {item.name} (Stock: {item.quantity || 0} {item.unit || 'unidad'})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="w-24">
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={ingredient.quantity}
+                              onChange={(e) => {
+                                const newIngredients = [...recipeForm.ingredients]
+                                newIngredients[index].quantity = parseFloat(e.target.value) || 0
+                                setRecipeForm({ ...recipeForm, ingredients: newIngredients })
+                              }}
+                              placeholder="Cantidad"
+                              className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
+                            />
+                          </div>
+                          <div className="w-32">
+                            <select
+                              value={ingredient.unit}
+                              onChange={(e) => {
+                                const newIngredients = [...recipeForm.ingredients]
+                                newIngredients[index].unit = e.target.value as any
+                                setRecipeForm({ ...recipeForm, ingredients: newIngredients })
+                              }}
+                              className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
+                            >
+                              <option value="ml">ml</option>
+                              <option value="gr">gr</option>
+                              <option value="unidad">unidad</option>
+                              <option value="oz">oz</option>
+                              <option value="l">l</option>
+                              <option value="kg">kg</option>
+                            </select>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const newIngredients = recipeForm.ingredients.filter((_, i) => i !== index)
+                              setRecipeForm({ ...recipeForm, ingredients: newIngredients })
+                            }}
+                            className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-semibold"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => {
+                          setRecipeForm({
+                            ...recipeForm,
+                            ingredients: [...recipeForm.ingredients, { productId: '', productName: '', quantity: 0, unit: 'ml' }]
+                          })
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Agregar Ingrediente
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Botones */}
+                  <div className="flex gap-3 pt-4 border-t border-stone-200">
+                    <button
+                      onClick={handleSaveRecipe}
+                      disabled={loading}
+                      className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+                    >
+                      {loading ? 'Guardando...' : 'Guardar Receta'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingRecipe(null)
+                        setRecipeForm({ productId: '', productName: '', category: 'coctel', ingredients: [] })
+                      }}
+                      className="px-4 py-2 bg-stone-500 hover:bg-stone-600 text-white rounded-lg font-semibold transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {/* Lista de recetas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {recipes.length === 0 ? (
+                <div className="col-span-2 text-center py-12 text-stone-500 bg-white rounded-xl border border-stone-200">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p className="text-lg font-medium">No hay recetas registradas</p>
+                  <p className="text-sm mt-1">Crea una nueva receta para comenzar</p>
+                </div>
+              ) : (
+                recipes.map(recipe => {
+                  const product = products.find(p => p.id === recipe.productId)
+                  const availability = getProductAvailability(product || recipe as any)
+                  return (
+                    <div key={recipe.id} className="bg-white rounded-xl shadow-md border border-stone-200 overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col">
+                      {/* Header con imagen */}
+                      <div className="relative">
+                        {product?.imageUrl ? (
+                          <div className="w-full h-48 bg-gradient-to-br from-stone-100 to-stone-200 relative overflow-hidden">
+                            <Image
+                              src={product.imageUrl}
+                              alt={recipe.productName}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 100vw, 50vw"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none'
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-full h-48 bg-gradient-to-br from-berry-100 to-berry-200 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-berry-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                          </div>
+                        )}
+                        {/* Badge de categoría */}
+                        <div className="absolute top-3 left-3">
+                          <span className="px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-semibold text-berry-950 capitalize shadow-sm">
+                            {recipe.category.replace('-', ' ')}
+                          </span>
+                        </div>
+                        {/* Badge de disponibilidad */}
+                        {availability !== null && typeof availability === 'number' && (
+                          <div className="absolute top-3 right-3">
+                            <span className="px-3 py-1 bg-blue-500 text-white rounded-full text-xs font-semibold shadow-md">
+                              {availability} disponibles
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Contenido */}
+                      <div className="p-5 flex-1 flex flex-col">
+                        {/* Título y precio */}
+                        <div className="mb-4">
+                          <h3 className="text-xl font-bold text-berry-950 mb-2 line-clamp-2">{recipe.productName}</h3>
+                          {product?.price && (
+                            <p className="text-2xl font-bold text-berry-700">
+                              ${product.price.toLocaleString('es-CO')}
+                            </p>
+                          )}
+                          {availability === 'no-recipe' && (
+                            <p className="text-sm text-amber-600 mt-2 font-medium">⚠️ Sin receta configurada</p>
+                          )}
+                        </div>
+
+                        {/* Ingredientes */}
+                        <div className="mb-4 flex-1">
+                          <h4 className="font-semibold text-berry-950 mb-3 text-sm uppercase tracking-wide">Ingredientes</h4>
+                          <div className="space-y-2">
+                            {recipe.ingredients.map((ingredient: any, idx: number) => {
+                              const inventoryItem = inventory.find(i => i.id === ingredient.productId)
+                              const stock = inventoryItem?.quantity || 0
+                              const canMake = stock >= ingredient.quantity
+                              return (
+                                <div key={idx} className={`p-3 rounded-lg border ${canMake ? 'bg-green-50/50 border-green-200' : 'bg-red-50/50 border-red-200'}`}>
+                                  <div className="flex justify-between items-start mb-1">
+                                    <span className="font-medium text-berry-950 text-sm flex-1">{ingredient.productName}</span>
+                                    <span className="text-xs font-semibold text-berry-700 bg-white px-2 py-1 rounded ml-2">
+                                      {ingredient.quantity} {ingredient.unit}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-stone-600 flex items-center gap-1">
+                                    <span>Stock: {stock} {inventoryItem?.unit || 'unidad'}</span>
+                                    {!canMake && (
+                                      <span className="text-red-600 font-semibold ml-auto">⚠️ Insuficiente</span>
+                                    )}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Botones de acción */}
+                        <div className="flex gap-2 pt-4 border-t border-stone-200 mt-auto">
+                          <button
+                            onClick={() => {
+                              setEditingRecipe(recipe)
+                              setRecipeForm({
+                                productId: recipe.productId,
+                                productName: recipe.productName,
+                                category: recipe.category,
+                                ingredients: recipe.ingredients
+                              })
+                            }}
+                            className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleDeleteRecipe(recipe.id)}
+                            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>

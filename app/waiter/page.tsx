@@ -11,6 +11,7 @@ interface Product {
   category: string
   type: 'cafeteria' | 'bebida'
   totalSold?: number
+  size?: string
 }
 
 interface CartItem extends Product {

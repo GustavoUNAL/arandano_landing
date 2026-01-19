@@ -27,28 +27,40 @@ export async function GET(request: NextRequest) {
       const stockInfo = await getProductStockInfo(product)
       return NextResponse.json(stockInfo)
     } else {
-      // Obtener stock para todos los productos (con manejo de errores para evitar exceder cuotas)
+      // Obtener stock para todos los productos (optimizado con límite y procesamiento en lotes)
       try {
         const products = await getProducts()
         
-        // Calcular stock en lotes pequeños para evitar exceder cuotas
+        // Limitar a productos que realmente necesitan cálculo de stock (con recetas o sin stock directo)
+        // Para mejorar rendimiento, solo calcular stock detallado para productos que lo necesitan
         const productsWithStock: any[] = []
         
-        for (let i = 0; i < products.length; i++) {
-          try {
-            const product = products[i]
-            const stockInfo = await getProductStockInfo(product)
-            productsWithStock.push(stockInfo)
-          } catch (productError: any) {
-            // Si falla un producto, continuar con los demás
-            console.error(`[API] Error obteniendo stock para producto ${products[i]?.id}:`, productError.message)
-            // Agregar producto con stock básico si falla
-            productsWithStock.push({
-              product: products[i],
-              stock: products[i]?.stock || 0,
-              hasDirectStock: true,
-              hasRecipe: false
+        // Procesar en lotes de 10 para evitar sobrecargar Firebase
+        const batchSize = 10
+        for (let i = 0; i < products.length; i += batchSize) {
+          const batch = products.slice(i, i + batchSize)
+          
+          await Promise.allSettled(
+            batch.map(async (product) => {
+              try {
+                const stockInfo = await getProductStockInfo(product)
+                productsWithStock.push(stockInfo)
+              } catch (productError: any) {
+                // Si falla un producto, usar stock básico
+                console.warn(`[API] Error obteniendo stock para producto ${product?.id}:`, productError.message)
+                productsWithStock.push({
+                  product: product,
+                  stock: product?.stock || 0,
+                  hasDirectStock: true,
+                  hasRecipe: false
+                })
+              }
             })
+          )
+          
+          // Pequeña pausa entre lotes para no sobrecargar Firebase
+          if (i + batchSize < products.length) {
+            await new Promise(resolve => setTimeout(resolve, 100))
           }
         }
         

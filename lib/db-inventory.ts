@@ -30,9 +30,20 @@ function documentToInventoryItem(doc: FirestoreDocument | FirestoreDocumentSnaps
 
 // Importar funciones JSON (solo si DB_MODE === 'json')
 import { getInventory as getInventoryJSON, saveInventory as saveInventoryJSON, createInventoryItem as createInventoryItemJSON, updateInventoryItem as updateInventoryItemJSON, deleteInventoryItem as deleteInventoryItemJSON } from './inventory'
+// Importar funciones SQLite
+import {
+  getInventory as getInventorySQLite,
+  createInventoryItem as createInventoryItemSQLite,
+  updateInventoryItem as updateInventoryItemSQLite,
+  deleteInventoryItem as deleteInventoryItemSQLite
+} from './db-sqlite-inventory'
 
 export async function getInventory(): Promise<InventoryItem[]> {
   const mode = getDbMode()
+  
+  if (mode === 'sqlite') {
+    return getInventorySQLite()
+  }
   
   if (mode === 'json') {
     return getInventoryJSON()
@@ -53,11 +64,11 @@ export async function getInventory(): Promise<InventoryItem[]> {
 
 export async function createInventoryItem(item: Omit<InventoryItem, 'id'>): Promise<InventoryItem> {
   const mode = getDbMode()
-  const newItem: InventoryItem = {
-    ...item,
-    id: `inv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  
+  if (mode === 'sqlite') {
+    return createInventoryItemSQLite(item)
   }
-
+  
   if (mode === 'json') {
     return createInventoryItemJSON(item)
   }
@@ -67,6 +78,10 @@ export async function createInventoryItem(item: Omit<InventoryItem, 'id'>): Prom
   }
 
   try {
+    const newItem: InventoryItem = {
+      ...item,
+      id: `inv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    }
     await db.collection('inventory').doc(newItem.id).set(newItem)
     return newItem
   } catch (error) {
@@ -77,6 +92,10 @@ export async function createInventoryItem(item: Omit<InventoryItem, 'id'>): Prom
 
 export async function updateInventoryItem(id: string, updates: Partial<InventoryItem>): Promise<InventoryItem | null> {
   const mode = getDbMode()
+  
+  if (mode === 'sqlite') {
+    return updateInventoryItemSQLite(id, updates)
+  }
   
   if (mode === 'json') {
     return updateInventoryItemJSON(id, updates)
@@ -102,6 +121,10 @@ export async function updateInventoryItem(id: string, updates: Partial<Inventory
 
 export async function deleteInventoryItem(id: string): Promise<boolean> {
   const mode = getDbMode()
+  
+  if (mode === 'sqlite') {
+    return deleteInventoryItemSQLite(id)
+  }
   
   if (mode === 'json') {
     return deleteInventoryItemJSON(id)

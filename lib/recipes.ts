@@ -7,7 +7,7 @@ export interface RecipeIngredient {
   productId: string // ID del producto ingrediente en inventario
   productName: string // Nombre del producto ingrediente
   quantity: number // Cantidad requerida
-  unit: 'ml' | 'gr' | 'unidad' | 'oz' // Unidad de medida
+  unit: 'ml' | 'gr' | 'unidad' | 'oz' | 'l' | 'kg' // Unidad de medida
 }
 
 export interface Recipe {

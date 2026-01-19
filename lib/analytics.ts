@@ -1,6 +1,6 @@
 import { Product } from './products'
-import { Sale, getSales, getSalesByProduct } from './sales'
-import { Expense, getExpenses, getMonthlyFixedExpenses } from './expenses'
+import { Sale, getSales as getSalesDB, getSalesByDateRange as getSalesByDateRangeDB } from './db-sales'
+import { Expense, getExpenses as getExpensesDB, getExpensesByDateRange as getExpensesByDateRangeDB } from './db-expenses'
 
 // Función para obtener el número de semana del año (ISO 8601)
 export function getWeekOfYear(date: Date): number {
@@ -39,6 +39,20 @@ export function getWeekRange(weekNumber: number, year: number): { start: Date; e
   return { start: weekStart, end: weekEnd }
 }
 
+// Función para obtener todos los días de una semana
+export function getWeekDays(weekNumber: number, year: number): Date[] {
+  const weekRange = getWeekRange(weekNumber, year)
+  const days: Date[] = []
+  const current = new Date(weekRange.start)
+  
+  for (let i = 0; i < 7; i++) {
+    days.push(new Date(current))
+    current.setDate(current.getDate() + 1)
+  }
+  
+  return days
+}
+
 export interface ProductAnalytics {
   product: Product
   totalSold: number
@@ -50,6 +64,25 @@ export interface ProductAnalytics {
   daysInStock: number // Días en inventario
   lastSaleDaysAgo: number // Días desde última venta
   classification: 'estrella' | 'volumen' | 'premium' | 'problema'
+}
+
+export interface DailyKPIs {
+  date: string // Fecha en formato YYYY-MM-DD
+  dayName: string // Nombre del día (Lunes, Martes, etc.)
+  totalRevenue: number
+  totalSales: number
+  averageTicket: number
+  nequi: number
+  efectivo: number
+  daySales: number // Ventas en horario diurno (6am-6pm)
+  nightSales: number // Ventas en horario nocturno (6pm-6am)
+  totalExpenses: number // Gastos/compras del día
+  topProducts: Array<{
+    productId: string
+    productName: string
+    quantity: number
+    revenue: number
+  }>
 }
 
 export interface KPIs {
@@ -86,6 +119,7 @@ export interface WeeklyKPIs extends KPIs {
   year: number
   startDate: string
   endDate: string
+  dailyKPIs: DailyKPIs[] // Análisis detallado por día
 }
 
 export interface MonthlyKPIs extends KPIs {
@@ -111,7 +145,15 @@ export function calculateProductAnalytics(
   
   const totalRevenue = productSales.reduce((sum, sale) => {
     const item = sale.items.find(i => i.productId === product.id)
-    return sum + (item?.totalPrice || 0)
+    if (!item) return sum
+    // PRIORIDAD: Usar totalPrice si existe (precio real vendido)
+    // Luego unitPrice * quantity (precio unitario * cantidad)
+    // Finalmente price * quantity (formato legacy)
+    // IMPORTANTE: Usar siempre los precios de la venta, NO los precios actuales del producto
+    const itemTotal = (item as any).totalPrice || 
+                     ((item as any).unitPrice || 0) * (item.quantity || 0) ||
+                     ((item as any).price || 0) * (item.quantity || 0)
+    return sum + itemTotal
   }, 0)
   
   const cost = product.cost || 0
@@ -163,24 +205,14 @@ export function calculateProductAnalytics(
   }
 }
 
-export function calculateKPIs(
+export async function calculateKPIs(
   products: Product[],
   startDate: string,
   endDate: string
-): KPIs {
-  const sales = getSales().filter(sale => {
-    const saleDate = new Date(sale.date)
-    const start = new Date(startDate)
-    const end = new Date(endDate)
-    return saleDate >= start && saleDate <= end
-  })
-  
-  const expenses = getExpenses().filter(expense => {
-    const expenseDate = new Date(expense.date)
-    const start = new Date(startDate)
-    const end = new Date(endDate)
-    return expenseDate >= start && expenseDate <= end
-  })
+): Promise<KPIs> {
+  // Usar funciones optimizadas que filtran en la base de datos
+  const sales = await getSalesByDateRangeDB(startDate, endDate)
+  const expenses = await getExpensesByDateRangeDB(startDate, endDate)
   
   // Inventario
   const totalInventoryValue = products.reduce((sum, p) => 
@@ -278,58 +310,151 @@ export function calculateKPIs(
   }
 }
 
+// Calcular KPIs diarios para una fecha específica
+export async function calculateDailyKPIs(
+  products: Product[],
+  date: string
+): Promise<DailyKPIs> {
+  // Optimizar: obtener solo ventas y gastos del día desde la BD
+  const daySales = await getSalesByDateRangeDB(date, date)
+  const dayExpenses = await getExpensesByDateRangeDB(date, date)
+  
+  const totalRevenue = daySales.reduce((sum, s) => sum + s.total, 0)
+  const totalSales = daySales.length
+  const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0
+  
+  // Gastos/compras del día
+  const totalExpenses = dayExpenses.reduce((sum, e) => sum + e.amount, 0)
+  
+  // Métodos de pago
+  const nequi = daySales
+    .filter(s => s.paymentMethod === 'nequi')
+    .reduce((sum, s) => sum + s.total, 0)
+  
+  const efectivo = daySales
+    .filter(s => s.paymentMethod === 'efectivo')
+    .reduce((sum, s) => sum + s.total, 0)
+  
+  // Ventas por horario
+  const daySalesAmount = daySales.filter(s => s.hour >= 6 && s.hour < 18)
+    .reduce((sum, s) => sum + s.total, 0)
+  
+  const nightSalesAmount = daySales.filter(s => s.hour >= 18 || s.hour < 6)
+    .reduce((sum, s) => sum + s.total, 0)
+  
+  // Top productos del día
+  const productMap = new Map<string, { productId: string; productName: string; quantity: number; revenue: number }>()
+  
+  daySales.forEach(sale => {
+    sale.items.forEach(item => {
+      const itemTotal = (item as any).totalPrice || 
+                      ((item as any).unitPrice || 0) * (item.quantity || 0) ||
+                      ((item as any).price || 0) * (item.quantity || 0)
+      
+      if (productMap.has(item.productId)) {
+        const existing = productMap.get(item.productId)!
+        existing.quantity += item.quantity || 0
+        existing.revenue += itemTotal
+      } else {
+        productMap.set(item.productId, {
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity || 0,
+          revenue: itemTotal
+        })
+      }
+    })
+  })
+  
+  const topProducts = Array.from(productMap.values())
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5) // Top 5 productos
+  
+  // Nombre del día
+  const dateObj = new Date(date)
+  const dayName = dateObj.toLocaleDateString('es-CO', { weekday: 'long' })
+  
+  return {
+    date,
+    dayName: dayName.charAt(0).toUpperCase() + dayName.slice(1),
+    totalRevenue,
+    totalSales,
+    averageTicket,
+    nequi,
+    efectivo,
+    daySales: daySalesAmount,
+    nightSales: nightSalesAmount,
+    totalExpenses,
+    topProducts
+  }
+}
+
 // Calcular KPIs agrupados por semana
-export function calculateWeeklyKPIs(
+export async function calculateWeeklyKPIs(
   products: Product[],
   year: number
-): WeeklyKPIs[] {
-  const sales = getSales()
-  const expenses = getExpenses()
+): Promise<WeeklyKPIs[]> {
+  // Optimizar: obtener solo ventas y gastos del año desde la BD
+  const startDate = `${year}-01-01`
+  const endDate = `${year}-12-31`
+  const sales = await getSalesByDateRangeDB(startDate, endDate)
+  const expenses = await getExpensesByDateRangeDB(startDate, endDate)
   
   // Obtener todas las semanas del año que tienen datos
   const weeksWithData = new Set<number>()
   
   sales.forEach(sale => {
     const saleDate = new Date(sale.date)
-    if (saleDate.getFullYear() === year) {
-      weeksWithData.add(getWeekOfYear(saleDate))
-    }
+    weeksWithData.add(getWeekOfYear(saleDate))
   })
   
   expenses.forEach(expense => {
     const expenseDate = new Date(expense.date)
-    if (expenseDate.getFullYear() === year) {
-      weeksWithData.add(getWeekOfYear(expenseDate))
-    }
+    weeksWithData.add(getWeekOfYear(expenseDate))
   })
   
   const weeklyKPIs: WeeklyKPIs[] = []
   
-  weeksWithData.forEach(weekNumber => {
+  // Convertir Set a Array para poder iterar con for...of
+  const weeksArray = Array.from(weeksWithData)
+  
+  // Usar for...of en lugar de forEach para poder usar await
+  for (const weekNumber of weeksArray) {
     const weekRange = getWeekRange(weekNumber, year)
     const startDate = weekRange.start.toISOString().split('T')[0]
     const endDate = weekRange.end.toISOString().split('T')[0]
     
-    const kpis = calculateKPIs(products, startDate, endDate)
+    const kpis = await calculateKPIs(products, startDate, endDate)
+    
+    // Calcular KPIs diarios para cada día de la semana
+    const weekDays = getWeekDays(weekNumber, year)
+    const dailyKPIs: DailyKPIs[] = []
+    
+    for (const day of weekDays) {
+      const dayStr = day.toISOString().split('T')[0]
+      const dailyKpi = await calculateDailyKPIs(products, dayStr)
+      dailyKPIs.push(dailyKpi)
+    }
     
     weeklyKPIs.push({
       ...kpis,
       weekNumber,
       year,
       startDate,
-      endDate
+      endDate,
+      dailyKPIs
     })
-  })
+  }
   
   return weeklyKPIs.sort((a, b) => a.weekNumber - b.weekNumber)
 }
 
 // Calcular KPIs agrupados por mes (cuando hay 4 semanas completas)
-export function calculateMonthlyKPIs(
+export async function calculateMonthlyKPIs(
   products: Product[],
   year: number
-): MonthlyKPIs[] {
-  const weeklyKPIs = calculateWeeklyKPIs(products, year)
+): Promise<MonthlyKPIs[]> {
+  const weeklyKPIs = await calculateWeeklyKPIs(products, year)
   const monthlyKPIs: MonthlyKPIs[] = []
   
   // Agrupar semanas por mes
@@ -346,7 +471,11 @@ export function calculateMonthlyKPIs(
   })
   
   // Crear KPIs mensuales solo si hay 4 semanas completas
-  monthGroups.forEach((weeks, month) => {
+  // Convertir Map.entries() a Array para poder iterar con for...of
+  const monthEntries = Array.from(monthGroups.entries())
+  
+  // Usar for...of en lugar de forEach para poder usar await
+  for (const [month, weeks] of monthEntries) {
     if (weeks.length >= 4) {
       // Calcular el rango de fechas del mes
       const firstWeek = weeks[0]
@@ -355,7 +484,7 @@ export function calculateMonthlyKPIs(
       const endDate = lastWeek.endDate
       
       // Calcular KPIs agregados del mes
-      const monthlyKpis = calculateKPIs(products, startDate, endDate)
+      const monthlyKpis = await calculateKPIs(products, startDate, endDate)
       
       monthlyKPIs.push({
         ...monthlyKpis,
@@ -366,8 +495,7 @@ export function calculateMonthlyKPIs(
         weeks: weeks.map(w => w.weekNumber)
       })
     }
-  })
+  }
   
   return monthlyKPIs.sort((a, b) => a.month - b.month)
 }
-

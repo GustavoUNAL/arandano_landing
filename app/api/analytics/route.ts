@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     
     if (groupBy === 'week') {
       // KPIs agrupados por semana
-      const weeklyKPIs = calculateWeeklyKPIs(products, year)
+      const weeklyKPIs = await calculateWeeklyKPIs(products, year)
       
       // Analytics por producto
       const productAnalytics = products.map(product => 
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       })
     } else if (groupBy === 'month') {
       // KPIs agrupados por mes (solo meses con 4 semanas completas)
-      const monthlyKPIs = calculateMonthlyKPIs(products, year)
+      const monthlyKPIs = await calculateMonthlyKPIs(products, year)
       
       // Analytics por producto
       const productAnalytics = products.map(product => 
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       const start = startDate || new Date(new Date().setDate(1)).toISOString()
       const end = endDate || new Date().toISOString()
       
-      const kpis = calculateKPIs(products, start, end)
+      const kpis = await calculateKPIs(products, start, end)
       
       // Analytics por producto
       const productAnalytics = products.map(product => 

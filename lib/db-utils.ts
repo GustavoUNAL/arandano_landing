@@ -6,20 +6,23 @@ import { db } from './firebase-admin'
 
 /**
  * Obtiene el modo de base de datos configurado
- * Por defecto retorna 'firebase' para garantizar uso de Firebase en producción
  * 
- * @returns 'firebase' | 'json'
+ * @returns 'sqlite' | 'firebase' | 'json'
  */
-export function getDbMode(): 'firebase' | 'json' {
+export function getDbMode(): 'sqlite' | 'firebase' | 'json' {
   const mode = process.env.DB_MODE?.toLowerCase().trim()
   
-  // Solo usar JSON si está explícitamente configurado como 'json'
+  // Prioridad: sqlite > json > firebase
+  if (mode === 'sqlite') {
+    return 'sqlite'
+  }
+  
   if (mode === 'json') {
     return 'json'
   }
   
-  // Por defecto: firebase (incluso si está vacío, undefined, o cualquier otro valor)
-  return 'firebase'
+  // Por defecto: sqlite (más rápido y sin cuotas)
+  return 'sqlite'
 }
 
 /**

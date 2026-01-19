@@ -1,0 +1,354 @@
+{
+  "recipes": [
+    {
+      "productId": "cafe-negro",
+      "productName": "Café negro artesanal",
+      "category": "cafe-caliente",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353925-pg25jxttu",
+          "productName": "Café Sello Rojo",
+          "quantity": 10,
+          "unit": "gr"
+        }
+      ]
+    },
+    {
+      "productId": "cafe-leche",
+      "productName": "Café artesanal con leche",
+      "category": "cafe-caliente",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353925-pg25jxttu",
+          "productName": "Café Sello Rojo",
+          "quantity": 10,
+          "unit": "gr"
+        },
+        {
+          "productId": "inv-1767483353917-ser4dw1e8",
+          "productName": "Leche Alquería semidescremada",
+          "quantity": 50,
+          "unit": "ml"
+        }
+      ]
+    },
+    {
+      "productId": "cafe-aromatizado",
+      "productName": "Café aromatizado artesanal (canela / vainilla)",
+      "category": "cafe-caliente",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353925-pg25jxttu",
+          "productName": "Café Sello Rojo",
+          "quantity": 10,
+          "unit": "gr"
+        },
+        {
+          "productId": "inv-1767483353926-wdcg82vjf",
+          "productName": "Aromáticas",
+          "quantity": 1,
+          "unit": "unidad"
+        }
+      ]
+    },
+    {
+      "productId": "cafe-irlandes",
+      "productName": "Café irlandés",
+      "category": "cafe-caliente",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353925-pg25jxttu",
+          "productName": "Café Sello Rojo",
+          "quantity": 10,
+          "unit": "gr"
+        },
+        {
+          "productId": "inv-1767483353908-y3b53io8x",
+          "productName": "Whisky Duggan's Dew",
+          "quantity": 30,
+          "unit": "ml"
+        },
+        {
+          "productId": "inv-1767483353917-ser4dw1e8",
+          "productName": "Leche Alquería semidescremada",
+          "quantity": 30,
+          "unit": "ml"
+        }
+      ]
+    },
+    {
+      "productId": "carajillo",
+      "productName": "Carajillo",
+      "category": "cafe-caliente",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353925-pg25jxttu",
+          "productName": "Café Sello Rojo",
+          "quantity": 10,
+          "unit": "gr"
+        },
+        {
+          "productId": "inv-1767483353908-agu-est",
+          "productName": "Aguardiente",
+          "quantity": 30,
+          "unit": "ml"
+        }
+      ]
+    },
+    {
+      "productId": "vaso-leche",
+      "productName": "Vaso de leche",
+      "category": "cafe-caliente",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353917-ser4dw1e8",
+          "productName": "Leche Alquería semidescremada",
+          "quantity": 250,
+          "unit": "ml"
+        }
+      ]
+    },
+    {
+      "productId": "cafe-frio",
+      "productName": "Café frío artesanal",
+      "category": "cafe-frio",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353925-pg25jxttu",
+          "productName": "Café Sello Rojo",
+          "quantity": 10,
+          "unit": "gr"
+        },
+        {
+          "productId": "inv-1767483353913-1889mnu82",
+          "productName": "Hielo bolsa",
+          "quantity": 100,
+          "unit": "gr"
+        }
+      ]
+    },
+    {
+      "productId": "cafe-helado",
+      "productName": "Café helado artesanal (affogato)",
+      "category": "cafe-frio",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353925-pg25jxttu",
+          "productName": "Café Sello Rojo",
+          "quantity": 10,
+          "unit": "gr"
+        },
+        {
+          "productId": "inv-1767483353913-1889mnu82",
+          "productName": "Hielo bolsa",
+          "quantity": 150,
+          "unit": "gr"
+        }
+      ]
+    },
+    {
+      "productId": "cafe-frio-leche",
+      "productName": "Café artesanal frío con leche",
+      "category": "cafe-frio",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353925-pg25jxttu",
+          "productName": "Café Sello Rojo",
+          "quantity": 10,
+          "unit": "gr"
+        },
+        {
+          "productId": "inv-1767483353917-ser4dw1e8",
+          "productName": "Leche Alquería semidescremada",
+          "quantity": 50,
+          "unit": "ml"
+        },
+        {
+          "productId": "inv-1767483353913-1889mnu82",
+          "productName": "Hielo bolsa",
+          "quantity": 100,
+          "unit": "gr"
+        }
+      ]
+    },
+    {
+      "productId": "coctel-arandano",
+      "productName": "Cóctel Arándano",
+      "category": "coctel",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353913-4i345h1fq",
+          "productName": "Sirope arándanos",
+          "quantity": 30,
+          "unit": "ml"
+        },
+        {
+          "productId": "inv-1767483353913-kkkqg7bwc",
+          "productName": "Bretaña personal x6",
+          "quantity": 200,
+          "unit": "ml"
+        }
+      ]
+    },
+    {
+      "productId": "vino-caliente",
+      "productName": "Vino caliente",
+      "category": "coctel",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353908-yecytqq00",
+          "productName": "Vino tinto Cata Vieja",
+          "quantity": 150,
+          "unit": "ml"
+        },
+        {
+          "productId": "inv-1767483353926-tgjwb0599",
+          "productName": "Azúcar",
+          "quantity": 10,
+          "unit": "gr"
+        }
+      ]
+    },
+    {
+      "productId": "bebida-1767478306369-c8s8nr6nh",
+      "productName": "Cóctel moscowmule",
+      "category": "coctel",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353908-dlloi6yve",
+          "productName": "Vodka Moskovskaya",
+          "quantity": 45,
+          "unit": "ml"
+        },
+        {
+          "productId": "inv-1767483353913-kkkqg7bwc",
+          "productName": "Bretaña personal x6",
+          "quantity": 120,
+          "unit": "ml"
+        },
+        {
+          "productId": "inv-1767483353913-1889mnu82",
+          "productName": "Hielo bolsa",
+          "quantity": 100,
+          "unit": "gr"
+        }
+      ]
+    },
+    {
+      "productId": "bebida-1767478463497-c2aya0ta0",
+      "productName": "Cóctel de campari ",
+      "category": "coctel",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353908-u55v6zs0u",
+          "productName": "Aperitivo Campari Milano",
+          "quantity": 50,
+          "unit": "ml"
+        },
+        {
+          "productId": "inv-1767483353913-kkkqg7bwc",
+          "productName": "Bretaña personal x6",
+          "quantity": 150,
+          "unit": "ml"
+        },
+        {
+          "productId": "inv-1767483353913-1889mnu82",
+          "productName": "Hielo bolsa",
+          "quantity": 100,
+          "unit": "gr"
+        }
+      ]
+    },
+    {
+      "productId": "bebida-1767479422734-8ofoa07j2",
+      "productName": "Coctel de soda sin licor ",
+      "category": "coctel",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353913-kkkqg7bwc",
+          "productName": "Bretaña personal x6",
+          "quantity": 200,
+          "unit": "ml"
+        },
+        {
+          "productId": "inv-1767483353913-1889mnu82",
+          "productName": "Hielo bolsa",
+          "quantity": 100,
+          "unit": "gr"
+        }
+      ]
+    },
+    {
+      "productId": "bebida-1767479537737-5pcmv20sn",
+      "productName": "Hervido de fruta de temporada ",
+      "category": "coctel",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353913-hjd3452mp",
+          "productName": "Base cóctel Brissart granadina",
+          "quantity": 50,
+          "unit": "ml"
+        },
+        {
+          "productId": "inv-1767483353913-kkkqg7bwc",
+          "productName": "Bretaña personal x6",
+          "quantity": 150,
+          "unit": "ml"
+        }
+      ]
+    },
+    {
+      "productId": "bebida-1767479680271-wp5qa9j7m",
+      "productName": "Margaritas",
+      "category": "coctel",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353908-y9q9alloi",
+          "productName": "Tequila Olmeca Blanco",
+          "quantity": 45,
+          "unit": "ml"
+        },
+        {
+          "productId": "inv-1767483353913-jb8887h9r",
+          "productName": "Base cóctel Finest Call Triple Sec",
+          "quantity": 20,
+          "unit": "ml"
+        }
+      ]
+    },
+    {
+      "productId": "prod-1768498200781-amarillo",
+      "productName": "Aguardiente Amarillo",
+      "category": "coctel",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353908-agu-est",
+          "productName": "Aguardiente",
+          "quantity": 60,
+          "unit": "ml"
+        },
+        {
+          "productId": "inv-1767483353913-kkkqg7bwc",
+          "productName": "Bretaña personal x6",
+          "quantity": 140,
+          "unit": "ml"
+        }
+      ]
+    },
+    {
+      "productId": "prod-1768498200787-narino",
+      "productName": "Aguardiente Nariño",
+      "category": "coctel",
+      "ingredients": [
+        {
+          "productId": "inv-1767483353908-agu-est",
+          "productName": "Aguardiente",
+          "quantity": 60,
+          "unit": "ml"
+        }
+      ]
+    }
+  ],
+  "total": 18,
+  "created": "2026-01-18T00:27:25.065Z"
+}

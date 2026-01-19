@@ -30,9 +30,23 @@ function documentToSale(doc: FirestoreDocument | FirestoreDocumentSnapshot): Sal
 
 // Importar funciones JSON (solo si DB_MODE === 'json')
 import { getSales as getSalesJSON, saveSales as saveSalesJSON, getSalesByDateRange as getSalesByDateRangeJSON, getSalesByProduct as getSalesByProductJSON, getSaleById as getSaleByIdJSON, deleteSale as deleteSaleJSON, createSale as createSaleJSON, updateSale as updateSaleJSON } from './sales'
+// Importar funciones SQLite
+import {
+  getSales as getSalesSQLite,
+  getSaleById as getSaleByIdSQLite,
+  createSale as createSaleSQLite,
+  updateSale as updateSaleSQLite,
+  deleteSale as deleteSaleSQLite,
+  getSalesByDateRange as getSalesByDateRangeSQLite,
+  getSalesByYear as getSalesByYearSQLite
+} from './db-sqlite-sales'
 
 export async function getSales(): Promise<Sale[]> {
   const mode = getDbMode()
+  
+  if (mode === 'sqlite') {
+    return getSalesSQLite()
+  }
   
   if (mode === 'json') {
     return getSalesJSON()
@@ -53,6 +67,10 @@ export async function getSales(): Promise<Sale[]> {
 
 export async function getSaleById(id: string): Promise<Sale | undefined> {
   const mode = getDbMode()
+  
+  if (mode === 'sqlite') {
+    return getSaleByIdSQLite(id)
+  }
   
   if (mode === 'json') {
     return getSaleByIdJSON(id)
@@ -89,11 +107,11 @@ function removeUndefinedFields(obj: any): any {
 
 export async function createSale(sale: Omit<Sale, 'id'>): Promise<Sale> {
   const mode = getDbMode()
-  const newSale: Sale = {
-    ...sale,
-    id: `sale-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  
+  if (mode === 'sqlite') {
+    return createSaleSQLite(sale)
   }
-
+  
   if (mode === 'json') {
     return createSaleJSON(sale)
   }
@@ -103,6 +121,10 @@ export async function createSale(sale: Omit<Sale, 'id'>): Promise<Sale> {
   }
 
   try {
+    const newSale: Sale = {
+      ...sale,
+      id: `sale-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    }
     // Eliminar campos undefined antes de guardar en Firestore
     const saleData = removeUndefinedFields(newSale)
     await db.collection('sales').doc(newSale.id).set(saleData)
@@ -115,6 +137,10 @@ export async function createSale(sale: Omit<Sale, 'id'>): Promise<Sale> {
 
 export async function updateSale(id: string, updates: Partial<Sale>): Promise<Sale | null> {
   const mode = getDbMode()
+  
+  if (mode === 'sqlite') {
+    return updateSaleSQLite(id, updates)
+  }
   
   if (mode === 'json') {
     return updateSaleJSON(id, updates)
@@ -149,6 +175,10 @@ export async function updateSale(id: string, updates: Partial<Sale>): Promise<Sa
 export async function deleteSale(id: string): Promise<boolean> {
   const mode = getDbMode()
   
+  if (mode === 'sqlite') {
+    return deleteSaleSQLite(id)
+  }
+  
   if (mode === 'json') {
     return deleteSaleJSON(id)
   }
@@ -168,6 +198,10 @@ export async function deleteSale(id: string): Promise<boolean> {
 
 export async function getSalesByDateRange(startDate: string, endDate: string): Promise<Sale[]> {
   const mode = getDbMode()
+  
+  if (mode === 'sqlite') {
+    return getSalesByDateRangeSQLite(startDate, endDate)
+  }
   
   if (mode === 'json') {
     return getSalesByDateRangeJSON(startDate, endDate)

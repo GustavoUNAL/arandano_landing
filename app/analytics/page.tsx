@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 interface KPIs {
   totalInventoryValue: number
@@ -25,11 +26,31 @@ interface KPIs {
   problemProducts: number
 }
 
+interface DailyKPIs {
+  date: string
+  dayName: string
+  totalRevenue: number
+  totalSales: number
+  averageTicket: number
+  nequi: number
+  efectivo: number
+  daySales: number
+  nightSales: number
+  totalExpenses: number
+  topProducts: Array<{
+    productId: string
+    productName: string
+    quantity: number
+    revenue: number
+  }>
+}
+
 interface WeeklyKPIs extends KPIs {
   weekNumber: number
   year: number
   startDate: string
   endDate: string
+  dailyKPIs?: DailyKPIs[]
 }
 
 interface MonthlyKPIs extends KPIs {
@@ -111,6 +132,57 @@ const BarChart = ({ data, labels, colors, height = 200 }: { data: number[], labe
   )
 }
 
+// Componente de gráfica de barras agrupadas por día usando Recharts
+const GroupedBarChart = ({ days, height = 400 }: { days: DailyKPIs[], height?: number }) => {
+  const data = days.map(day => {
+    const date = new Date(day.date)
+    return {
+      name: `${day.dayName.substring(0, 3)} ${date.getDate()}`,
+      Ventas: day.totalRevenue || 0,
+      Compras: day.totalExpenses || 0
+    }
+  })
+  
+  return (
+    <div className="w-full" style={{ height: `${height}px` }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <RechartsBarChart
+          data={data}
+          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <XAxis 
+            dataKey="name" 
+            tick={{ fill: '#6b7280', fontSize: 12 }}
+            stroke="#9ca3af"
+          />
+          <YAxis 
+            tick={{ fill: '#6b7280', fontSize: 12 }}
+            stroke="#9ca3af"
+            tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+          />
+          <Tooltip 
+            contentStyle={{
+              backgroundColor: '#fff',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              padding: '8px 12px'
+            }}
+            formatter={(value: number | undefined) => value ? `$${value.toLocaleString('es-CO')}` : '$0'}
+            labelStyle={{ color: '#374151', fontWeight: 'bold', marginBottom: '4px' }}
+          />
+          <Legend 
+            wrapperStyle={{ paddingTop: '20px' }}
+            iconType="square"
+          />
+          <Bar dataKey="Ventas" fill="#9333EA" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="Compras" fill="#EF4444" radius={[4, 4, 0, 0]} />
+        </RechartsBarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
 // Componente de gráfica de líneas
 const LineChart = ({ data, labels, color = '#9333EA', height = 200 }: { data: number[], labels: string[], color?: string, height?: number }) => {
   const maxValue = Math.max(...data, 1)
@@ -175,6 +247,7 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [groupBy, setGroupBy] = useState<'range' | 'week' | 'month'>('week')
   const [year, setYear] = useState(new Date().getFullYear())
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(null)
   const [dateRange, setDateRange] = useState({
     startDate: new Date(new Date().setDate(1)).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0]
@@ -212,9 +285,25 @@ export default function AnalyticsPage() {
       const response = await fetch(url)
       const data = await response.json()
       setKpis(data.kpis)
-      setWeeklyKPIs(data.weeklyKPIs || [])
+      const weeks = data.weeklyKPIs || []
+      setWeeklyKPIs(weeks)
       setMonthlyKPIs(data.monthlyKPIs || [])
       setProductAnalytics(data.productAnalytics)
+      
+      // Seleccionar automáticamente la semana actual o la última disponible
+      if (weeks.length > 0 && selectedWeek === null) {
+        const today = new Date()
+        const currentWeek = weeks.find((w: WeeklyKPIs) => {
+          const start = new Date(w.startDate)
+          const end = new Date(w.endDate)
+          return today >= start && today <= end
+        })
+        if (currentWeek) {
+          setSelectedWeek(currentWeek.weekNumber)
+        } else {
+          setSelectedWeek(weeks[weeks.length - 1].weekNumber)
+        }
+      }
     } catch (error) {
       console.error('Error loading analytics:', error)
     } finally {
@@ -282,17 +371,41 @@ export default function AnalyticsPage() {
                 </select>
               </div>
               {groupBy !== 'range' && (
-                <div className="min-w-[120px]">
-                  <label className="block text-sm font-semibold text-berry-700 mb-2">
-                    Año
-                  </label>
-                  <input
-                    type="number"
-                    value={year}
-                    onChange={(e) => setYear(parseInt(e.target.value))}
-                    className="w-full px-4 py-2.5 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
-                  />
-                </div>
+                <>
+                  <div className="min-w-[120px]">
+                    <label className="block text-sm font-semibold text-berry-700 mb-2">
+                      Año
+                    </label>
+                    <input
+                      type="number"
+                      value={year}
+                      onChange={(e) => {
+                        setYear(parseInt(e.target.value))
+                        setSelectedWeek(null) // Reset al cambiar año
+                      }}
+                      className="w-full px-4 py-2.5 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                    />
+                  </div>
+                  {groupBy === 'week' && weeklyKPIs.length > 0 && (
+                    <div className="flex-1 min-w-[200px]">
+                      <label className="block text-sm font-semibold text-berry-700 mb-2">
+                        Seleccionar Semana
+                      </label>
+                      <select
+                        value={selectedWeek || ''}
+                        onChange={(e) => setSelectedWeek(parseInt(e.target.value))}
+                        className="w-full px-4 py-2.5 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-sm"
+                      >
+                        <option value="">Seleccionar...</option>
+                        {weeklyKPIs.map((week) => (
+                          <option key={week.weekNumber} value={week.weekNumber}>
+                            Semana {week.weekNumber} - {new Date(week.startDate).toLocaleDateString('es-CO', { month: 'short', day: 'numeric' })} - {new Date(week.endDate).toLocaleDateString('es-CO', { month: 'short', day: 'numeric' })}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </>
               )}
               {groupBy === 'range' && (
                 <>
@@ -329,42 +442,113 @@ export default function AnalyticsPage() {
             <div className="text-berry-600 text-lg">Cargando análisis...</div>
           </div>
         ) : groupBy === 'week' ? (
-          weeklyKPIs.length > 0 ? (
-          <>
-            {/* Gráfica de tendencias semanales */}
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border-2 border-stone-200">
-              <h2 className="text-xl font-bold text-berry-950 mb-4 text-center">Tendencias Semanales</h2>
-              <LineChart
-                data={weeklyKPIs.map(w => w.totalRevenue)}
-                labels={weeklyKPIs.map(w => `S${w.weekNumber}`)}
-                color="#9333EA"
-                height={250}
-              />
-            </div>
+          weeklyKPIs.length > 0 && selectedWeek ? (() => {
+            const week = weeklyKPIs.find(w => w.weekNumber === selectedWeek)
+            if (!week) return (
+              <div className="text-center py-12 bg-white rounded-xl shadow-lg border-2 border-stone-200">
+                <div className="text-berry-600">Selecciona una semana</div>
+              </div>
+            )
+            
+            const totalExpenses = week.fixedExpenses + week.variableExpenses
+            
+            return (
+              <div className="space-y-6">
+                {/* Header de la semana */}
+                <div className="bg-gradient-to-r from-berry-600 to-berry-700 rounded-xl shadow-xl p-6 text-white">
+                  <h2 className="text-2xl font-bold text-center">
+                    Semana {week.weekNumber} - {week.year}
+                  </h2>
+                  <p className="text-center text-berry-100 text-sm mt-2">
+                    {new Date(week.startDate).toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })} 
+                    {' - '}
+                    {new Date(week.endDate).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
 
-            {/* KPIs por Semana con gráficas */}
-            <div className="space-y-6 mb-6">
-              {weeklyKPIs.map((week) => (
-                <div key={`${week.year}-${week.weekNumber}`} className="bg-white rounded-xl shadow-lg p-6 border-2 border-stone-200">
-                  <div className="mb-4">
-                    <h3 className="text-xl font-bold text-berry-950 text-center">
-                      Semana {week.weekNumber} - {new Date(week.startDate).toLocaleDateString('es-CO', { month: 'short', day: 'numeric' })} 
-                      {' - '}
-                      {new Date(week.endDate).toLocaleDateString('es-CO', { month: 'short', day: 'numeric' })}
-                    </h3>
-                  </div>
-                  
-                  {/* Gráfica de ingresos vs gastos */}
-                  <div className="mb-6">
-                    <h4 className="text-sm font-semibold text-berry-700 mb-3 text-center">Ingresos vs Gastos</h4>
-                    <BarChart
-                      data={[week.totalRevenue, week.fixedExpenses, week.variableExpenses, week.grossMargin]}
-                      labels={['Ingresos', 'Fijos', 'Variables', 'Margen']}
-                      colors={['#9333EA', '#EF4444', '#F97316', '#10B981']}
-                      height={200}
-                    />
-                  </div>
+                {/* Gráfica principal: Compras vs Ventas por día */}
+                <div className="bg-white rounded-xl shadow-xl p-6 border-2 border-stone-200">
+                  <h3 className="text-xl font-bold text-berry-950 mb-6 text-center">
+                    Ventas vs Compras por Día
+                  </h3>
+                  {week.dailyKPIs && week.dailyKPIs.length > 0 ? (() => {
+                    // Asegurar que tenemos exactamente 7 días (llenar si falta alguno)
+                    const dailyKPIs = week.dailyKPIs || []
+                    const allDays = Array.from({ length: 7 }, (_, i) => {
+                      const weekStart = new Date(week.startDate)
+                      const dayDate = new Date(weekStart)
+                      dayDate.setDate(weekStart.getDate() + i)
+                      const dayStr = dayDate.toISOString().split('T')[0]
+                      
+                      // Buscar si existe en dailyKPIs
+                      const existing = dailyKPIs.find(d => d.date === dayStr)
+                      if (existing) return existing
+                      
+                      // Si no existe, crear día vacío
+                      const dayName = dayDate.toLocaleDateString('es-CO', { weekday: 'long' })
+                      return {
+                        date: dayStr,
+                        dayName: dayName.charAt(0).toUpperCase() + dayName.slice(1),
+                        totalRevenue: 0,
+                        totalSales: 0,
+                        averageTicket: 0,
+                        nequi: 0,
+                        efectivo: 0,
+                        daySales: 0,
+                        nightSales: 0,
+                        totalExpenses: 0,
+                        topProducts: []
+                      }
+                    })
+                    
+                    return (
+                      <>
+                        <GroupedBarChart
+                          days={allDays}
+                          height={400}
+                        />
+                        <div className="mt-6 pt-6 border-t border-stone-200 flex justify-center gap-6">
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded bg-purple-600"></div>
+                            <span className="text-sm font-semibold text-stone-700">Ventas</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded bg-red-600"></div>
+                            <span className="text-sm font-semibold text-stone-700">Compras</span>
+                          </div>
+                        </div>
+                        <div className="mt-6 pt-6 border-t border-stone-200 grid grid-cols-2 gap-6">
+                          <div className="text-center">
+                            <div className="text-sm text-stone-600 mb-2">Total Ventas Semana</div>
+                            <div className="text-3xl font-bold text-purple-600">
+                              ${week.totalRevenue.toLocaleString('es-CO')}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm text-stone-600 mb-2">Total Compras Semana</div>
+                            <div className="text-3xl font-bold text-red-600">
+                              ${totalExpenses.toLocaleString('es-CO')}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-6 pt-6 border-t border-stone-200 text-center">
+                          <div className="text-sm text-stone-600 mb-2">Ganancia Neta Semanal</div>
+                          <div className={`text-4xl font-bold ${week.netMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            ${week.netMargin.toLocaleString('es-CO')}
+                          </div>
+                        </div>
+                      </>
+                    )
+                  })() : (
+                    <div className="text-center py-8 text-stone-500">
+                      No hay datos diarios disponibles
+                    </div>
+                  )}
+                </div>
 
+                {/* Resumen de KPIs */}
+                <div className="bg-white rounded-xl shadow-xl p-6 border-2 border-stone-200">
+                  <h3 className="text-lg font-bold text-berry-950 mb-5 text-center">Resumen Semanal</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                     <div className="bg-gradient-to-br from-berry-50 to-berry-100 rounded-lg p-4 border border-berry-200">
                       <div className="text-xs text-berry-700 font-medium mb-1">Ingresos</div>
@@ -404,10 +588,9 @@ export default function AnalyticsPage() {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </>
-          ) : (
+              </div>
+            )
+          })() : (
             <div className="text-center py-12 bg-white rounded-xl shadow-lg border-2 border-stone-200">
               <div className="text-berry-600">No hay datos de semanas para el año {year}</div>
             </div>
