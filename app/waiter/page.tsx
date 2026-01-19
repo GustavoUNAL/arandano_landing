@@ -81,6 +81,10 @@ export default function WaiterPage() {
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
   const [showCategoriesModal, setShowCategoriesModal] = useState(false)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+  const [salesFilterDate, setSalesFilterDate] = useState<string>('')
+  const [salesFilterPaymentMethod, setSalesFilterPaymentMethod] = useState<string>('all')
+  const [salesFilterDate, setSalesFilterDate] = useState<string>('')
+  const [salesFilterPaymentMethod, setSalesFilterPaymentMethod] = useState<string>('all')
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -949,6 +953,8 @@ export default function WaiterPage() {
                   setShowSalesModal(false)
                   setShowSaleDetail(false)
                   setSelectedSale(null)
+                  setSalesFilterDate('')
+                  setSalesFilterPaymentMethod('all')
                 }}
                 className="w-8 h-8 flex items-center justify-center text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors text-xl font-bold"
                 aria-label="Cerrar"
@@ -957,80 +963,222 @@ export default function WaiterPage() {
               </button>
             </div>
 
-            {recentSales.length === 0 ? (
-              <p className="text-center text-stone-500 py-8">No hay ventas registradas</p>
-            ) : (
-              <div className="space-y-3">
-                {recentSales.map((sale) => {
+            {(() => {
+              // Filtrar ventas
+              let filteredSales = recentSales
+              
+              if (salesFilterDate) {
+                const filterDate = new Date(salesFilterDate)
+                filterDate.setHours(0, 0, 0, 0)
+                filteredSales = filteredSales.filter(sale => {
                   const saleDate = new Date(sale.date)
-                  return (
-                    <div
-                      key={sale.id}
-                      className="border border-stone-200 rounded-lg p-3 sm:p-4 hover:bg-stone-50 transition-colors"
-                    >
-                      {/* Header móvil: fecha y total */}
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-3">
-                        <div className="flex-1">
-                          <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <span className="font-semibold text-berry-950 text-sm sm:text-base">
-                              {saleDate.toLocaleDateString('es-CO', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </span>
-                            {sale.paymentMethod && (
-                              <span className="px-2 py-1 bg-berry-100 text-berry-700 rounded text-xs font-medium">
-                                {sale.paymentMethod}
-                              </span>
-                            )}
-                            {!sale.paymentMethod && (
-                              <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-medium">
-                                Sin pago
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-sm text-stone-600">
-                            {sale.items.length} {sale.items.length === 1 ? 'producto' : 'productos'}
-                          </div>
-                          {sale.comment && (
-                            <div className="text-xs text-stone-500 mt-1 italic line-clamp-2">
-                              &quot;{sale.comment}&quot;
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2">
-                          <span className="text-lg sm:text-xl font-bold text-berry-600">
-                            ${formatPrice(sale.total)}
-                          </span>
-                        </div>
+                  saleDate.setHours(0, 0, 0, 0)
+                  return saleDate.getTime() === filterDate.getTime()
+                })
+              }
+              
+              if (salesFilterPaymentMethod !== 'all') {
+                filteredSales = filteredSales.filter(sale => {
+                  if (salesFilterPaymentMethod === 'sin-pago') {
+                    return !sale.paymentMethod
+                  }
+                  return sale.paymentMethod === salesFilterPaymentMethod
+                })
+              }
+              
+              // Agrupar ventas por día
+              const salesByDay: { [key: string]: typeof recentSales } = {}
+              filteredSales.forEach(sale => {
+                const saleDate = new Date(sale.date)
+                const dayKey = saleDate.toLocaleDateString('es-CO', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit'
+                })
+                if (!salesByDay[dayKey]) {
+                  salesByDay[dayKey] = []
+                }
+                salesByDay[dayKey].push(sale)
+              })
+              
+              // Ordenar días (más reciente primero)
+              const sortedDays = Object.keys(salesByDay).sort((a, b) => {
+                const dateA = new Date(a.split('/').reverse().join('-'))
+                const dateB = new Date(b.split('/').reverse().join('-'))
+                return dateB.getTime() - dateA.getTime()
+              })
+              
+              // Calcular totales por día
+              const getDayTotal = (sales: typeof recentSales) => {
+                return sales.reduce((sum, sale) => sum + sale.total, 0)
+              }
+              
+              if (sortedDays.length === 0) {
+                return <p className="text-center text-stone-500 py-8">No hay ventas registradas con los filtros seleccionados</p>
+              }
+              
+              return (
+                <>
+                  {/* Filtros */}
+                  <div className="mb-6 p-4 bg-stone-50 rounded-lg border-2 border-stone-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-stone-700 mb-2">
+                          Filtrar por fecha:
+                        </label>
+                        <input
+                          type="date"
+                          value={salesFilterDate}
+                          onChange={(e) => setSalesFilterDate(e.target.value)}
+                          className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                        />
+                        {salesFilterDate && (
+                          <button
+                            onClick={() => setSalesFilterDate('')}
+                            className="mt-2 text-xs text-berry-600 hover:text-berry-800 font-medium"
+                          >
+                            Limpiar filtro de fecha
+                          </button>
+                        )}
                       </div>
-                      
-                      {/* Botones apilados en móvil, en línea en desktop */}
-                      <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-stone-200">
-                        <button
-                          onClick={() => {
-                            setSelectedSale(sale)
-                            setShowSaleDetail(true)
-                          }}
-                          className="flex-1 px-4 py-2 bg-berry-600 hover:bg-berry-700 text-white rounded-lg text-sm font-medium transition-colors"
+                      <div>
+                        <label className="block text-sm font-semibold text-stone-700 mb-2">
+                          Filtrar por método de pago:
+                        </label>
+                        <select
+                          value={salesFilterPaymentMethod}
+                          onChange={(e) => setSalesFilterPaymentMethod(e.target.value)}
+                          className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
                         >
-                          Ver Detalle
-                        </button>
-                        <button
-                          onClick={() => handleDeleteSale(sale.id)}
-                          className="flex-1 sm:flex-none px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
-                        >
-                          Eliminar
-                        </button>
+                          <option value="all">Todos</option>
+                          <option value="efectivo">Efectivo</option>
+                          <option value="nequi">Nequi</option>
+                          <option value="sin-pago">Sin pago</option>
+                        </select>
                       </div>
                     </div>
-                  )
-                })}
-              </div>
-            )}
+                  </div>
+
+                  <div className="space-y-6">
+                    {sortedDays.map((dayKey) => {
+                      const daySales = salesByDay[dayKey]
+                      const dayTotal = getDayTotal(daySales)
+                      const dayDate = new Date(dayKey.split('/').reverse().join('-'))
+                      const today = new Date()
+                      today.setHours(0, 0, 0, 0)
+                      const isToday = dayDate.getTime() === today.getTime()
+                      const yesterday = new Date(today)
+                      yesterday.setDate(yesterday.getDate() - 1)
+                      const isYesterday = dayDate.getTime() === yesterday.getTime()
+                      
+                      let dayLabel = dayKey
+                      if (isToday) {
+                        dayLabel = 'Hoy'
+                      } else if (isYesterday) {
+                        dayLabel = 'Ayer'
+                      } else {
+                        dayLabel = dayDate.toLocaleDateString('es-CO', {
+                          weekday: 'long',
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })
+                        dayLabel = dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1)
+                      }
+                      
+                      return (
+                        <div key={dayKey} className="border-2 border-stone-200 rounded-lg overflow-hidden">
+                          {/* Encabezado del día */}
+                          <div className="bg-gradient-to-r from-berry-600 to-purple-600 text-white px-4 py-3 flex justify-between items-center">
+                            <div>
+                              <h4 className="font-bold text-lg">{dayLabel}</h4>
+                              <p className="text-sm text-berry-100">
+                                {daySales.length} {daySales.length === 1 ? 'venta' : 'ventas'}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm text-berry-100">Total del día:</p>
+                              <p className="font-bold text-xl">${formatPrice(dayTotal)}</p>
+                            </div>
+                          </div>
+                          
+                          {/* Lista de ventas del día */}
+                          <div className="p-4 space-y-3 bg-white">
+                            {daySales
+                              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                              .map((sale) => {
+                                const saleDate = new Date(sale.date)
+                                return (
+                                  <div
+                                    key={sale.id}
+                                    className="border border-stone-200 rounded-lg p-3 sm:p-4 hover:bg-stone-50 transition-colors"
+                                  >
+                                    {/* Header móvil: fecha y total */}
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-3">
+                                      <div className="flex-1">
+                                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                                          <span className="font-semibold text-berry-950 text-sm sm:text-base">
+                                            {saleDate.toLocaleTimeString('es-CO', {
+                                              hour: '2-digit',
+                                              minute: '2-digit'
+                                            })}
+                                          </span>
+                                          {sale.paymentMethod && (
+                                            <span className="px-2 py-1 bg-berry-100 text-berry-700 rounded text-xs font-medium">
+                                              {sale.paymentMethod}
+                                            </span>
+                                          )}
+                                          {!sale.paymentMethod && (
+                                            <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-medium">
+                                              Sin pago
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="text-sm text-stone-600">
+                                          {sale.items.length} {sale.items.length === 1 ? 'producto' : 'productos'}
+                                        </div>
+                                        {sale.comment && (
+                                          <div className="text-xs text-stone-500 mt-1 italic line-clamp-2">
+                                            &quot;{sale.comment}&quot;
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2">
+                                        <span className="text-lg sm:text-xl font-bold text-berry-600">
+                                          ${formatPrice(sale.total)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Botones apilados en móvil, en línea en desktop */}
+                                    <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-stone-200">
+                                      <button
+                                        onClick={() => {
+                                          setSelectedSale(sale)
+                                          setShowSaleDetail(true)
+                                        }}
+                                        className="flex-1 px-4 py-2 bg-berry-600 hover:bg-berry-700 text-white rounded-lg text-sm font-medium transition-colors"
+                                      >
+                                        Ver Detalle
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteSale(sale.id)}
+                                        className="flex-1 sm:flex-none px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+                                      >
+                                        Eliminar
+                                      </button>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              )
+            })()}
           </div>
         </div>
       )}

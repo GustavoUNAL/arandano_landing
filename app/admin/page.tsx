@@ -83,6 +83,7 @@ export default function AdminPage() {
     cost: '',
     minStock: ''
   })
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
 
   const handleEditProductForSale = (product: Product) => {
     setEditingProductForSale(product)
@@ -2218,42 +2219,73 @@ export default function AdminPage() {
                               ) : '-'}
                             </td>
                             <td className="px-4 py-3 text-sm text-center">
-                              <div className="flex items-center justify-center gap-2 flex-wrap">
-                                {isRecipeProduct && (
-                                  <button
-                                    onClick={() => handleManageProductRecipe(product)}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-semibold transition-colors"
-                                    title="Gestionar receta"
-                                  >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                    Receta
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => setSelectedProductDetail(product)}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-berry-600 hover:bg-berry-700 text-white rounded-lg text-xs font-semibold transition-colors"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                  </svg>
-                                  Detalles
-                                </button>
+                              <div className="relative inline-block">
                                 <button
                                   onClick={(e) => {
-                                    e.preventDefault()
                                     e.stopPropagation()
-                                    handleEditProductForSale(product)
+                                    setOpenMenuId(openMenuId === product.id ? null : product.id)
                                   }}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-600 hover:bg-stone-700 text-white rounded-lg text-xs font-semibold transition-colors"
+                                  className="flex items-center justify-center w-10 h-10 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors"
+                                  title="Opciones"
                                 >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                                   </svg>
-                                  Ajustar
                                 </button>
+                                
+                                {openMenuId === product.id && (
+                                  <>
+                                    <div 
+                                      className="fixed inset-0 z-10" 
+                                      onClick={() => setOpenMenuId(null)}
+                                    ></div>
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border-2 border-stone-200 z-20 py-1">
+                                      {isRecipeProduct && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleManageProductRecipe(product)
+                                            setOpenMenuId(null)
+                                          }}
+                                          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+                                        >
+                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                          </svg>
+                                          Receta
+                                        </button>
+                                      )}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setSelectedProductDetail(product)
+                                          setOpenMenuId(null)
+                                        }}
+                                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 hover:bg-berry-50 hover:text-berry-700 transition-colors"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        Detalles
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.preventDefault()
+                                          e.stopPropagation()
+                                          handleEditProductForSale(product)
+                                          setOpenMenuId(null)
+                                        }}
+                                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-100 transition-colors"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                        Ajustar
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
                               </div>
                             </td>
                           </tr>

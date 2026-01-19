@@ -850,43 +850,85 @@ export default function AnalyticsPage() {
               </div>
 
               {/* Tabla de Productos mejorada */}
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-berry-50 border-2 border-berry-200">
-                      <th className="px-4 py-3 text-left text-sm font-bold text-berry-950">Producto</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-berry-950">Clasificación</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-berry-950">Vendidos</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-berry-950">Ingresos</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-berry-950">Margen %</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-berry-950">Rotación</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-berry-950">Última Venta</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {productAnalytics.map((analytics) => (
-                      <tr key={analytics.product.id} className="border-b-2 border-stone-200 hover:bg-stone-50 transition-colors">
-                        <td className="px-4 py-3 text-sm font-medium">{analytics.product.name}</td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${getClassificationColor(analytics.classification)}`}>
-                            {getClassificationIcon(analytics.classification)} {analytics.classification}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm font-semibold">{analytics.totalSold}</td>
-                        <td className="px-4 py-3 text-sm font-bold text-berry-600">
-                          ${analytics.totalRevenue.toLocaleString('es-CO')}
-                        </td>
-                        <td className={`px-4 py-3 text-sm font-bold ${analytics.grossMarginPercent >= 30 ? 'text-green-600' : analytics.grossMarginPercent >= 0 ? 'text-yellow-600' : 'text-red-600'}`}>
-                          {analytics.grossMarginPercent.toFixed(1)}%
-                        </td>
-                        <td className="px-4 py-3 text-sm">{analytics.rotation.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-sm">
-                          {analytics.lastSaleDaysAgo === 999 ? 'Nunca' : `${analytics.lastSaleDaysAgo} días`}
-                        </td>
+              <div className="mt-6">
+                <h3 className="text-lg font-bold text-berry-950 mb-4 text-center">Productos a la Venta - Rentabilidad</h3>
+                <div className="overflow-x-auto rounded-lg border-2 border-stone-200 shadow-sm">
+                  <table className="w-full border-collapse bg-white">
+                    <thead>
+                      <tr className="bg-gradient-to-r from-berry-600 to-berry-700">
+                        <th className="px-6 py-4 text-left text-sm font-bold text-white sticky left-0 bg-gradient-to-r from-berry-600 to-berry-700 z-10">Producto</th>
+                        <th className="px-6 py-4 text-center text-sm font-bold text-white">Clasificación</th>
+                        <th className="px-6 py-4 text-center text-sm font-bold text-white">Vendidos</th>
+                        <th className="px-6 py-4 text-right text-sm font-bold text-white">Ingresos</th>
+                        <th className="px-6 py-4 text-right text-sm font-bold text-white">Costos</th>
+                        <th className="px-6 py-4 text-right text-sm font-bold text-white">Ganancia</th>
+                        <th className="px-6 py-4 text-center text-sm font-bold text-white">Margen %</th>
+                        <th className="px-6 py-4 text-center text-sm font-bold text-white">Rotación</th>
+                        <th className="px-6 py-4 text-center text-sm font-bold text-white">Última Venta</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {productAnalytics.length > 0 ? (
+                        productAnalytics.map((analytics, index) => (
+                          <tr 
+                            key={analytics.product.id} 
+                            className={`border-b border-stone-200 transition-all ${
+                              index % 2 === 0 ? 'bg-white' : 'bg-stone-50'
+                            } hover:bg-berry-50 hover:shadow-sm`}
+                          >
+                            <td className="px-6 py-4 text-sm font-semibold text-stone-900 sticky left-0 z-10 bg-inherit">
+                              {analytics.product.name}
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold border-2 ${getClassificationColor(analytics.classification)}`}>
+                                {getClassificationIcon(analytics.classification)} {analytics.classification}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-center text-sm font-semibold text-stone-700">
+                              {analytics.totalSold.toLocaleString('es-CO')}
+                            </td>
+                            <td className="px-6 py-4 text-right text-sm font-bold text-berry-600">
+                              ${analytics.totalRevenue.toLocaleString('es-CO')}
+                            </td>
+                            <td className="px-6 py-4 text-right text-sm font-semibold text-red-600">
+                              ${analytics.totalCost.toLocaleString('es-CO')}
+                            </td>
+                            <td className={`px-6 py-4 text-right text-sm font-bold ${
+                              analytics.grossMargin >= 0 ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              ${analytics.grossMargin.toLocaleString('es-CO')}
+                            </td>
+                            <td className={`px-6 py-4 text-center text-sm font-bold ${
+                              analytics.grossMarginPercent >= 30 ? 'text-green-600' : 
+                              analytics.grossMarginPercent >= 15 ? 'text-yellow-600' : 
+                              analytics.grossMarginPercent >= 0 ? 'text-orange-600' : 'text-red-600'
+                            }`}>
+                              {analytics.grossMarginPercent.toFixed(1)}%
+                            </td>
+                            <td className="px-6 py-4 text-center text-sm text-stone-600">
+                              {analytics.rotation.toFixed(2)}x
+                            </td>
+                            <td className="px-6 py-4 text-center text-sm text-stone-600">
+                              {analytics.lastSaleDaysAgo === 999 ? (
+                                <span className="text-red-500 font-semibold">Nunca</span>
+                              ) : analytics.lastSaleDaysAgo === 0 ? (
+                                <span className="text-green-600 font-semibold">Hoy</span>
+                              ) : (
+                                `${analytics.lastSaleDaysAgo} días`
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={9} className="px-6 py-8 text-center text-stone-500">
+                            No hay productos con datos de ventas
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </>
