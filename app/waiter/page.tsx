@@ -83,8 +83,13 @@ export default function WaiterPage() {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const [salesFilterDate, setSalesFilterDate] = useState<string>('')
   const [salesFilterPaymentMethod, setSalesFilterPaymentMethod] = useState<string>('all')
-  const [salesFilterDate, setSalesFilterDate] = useState<string>('')
-  const [salesFilterPaymentMethod, setSalesFilterPaymentMethod] = useState<string>('all')
+  const [editingSale, setEditingSale] = useState<Sale | null>(null)
+  const [editSaleDateTime, setEditSaleDateTime] = useState<string>('')
+  const [editSaleComment, setEditSaleComment] = useState<string>('')
+  const [editSaleItems, setEditSaleItems] = useState<Sale['items']>([])
+  const [availableProducts, setAvailableProducts] = useState<Product[]>([])
+  const [productSearch, setProductSearch] = useState<string>('')
+  const [showProductSelector, setShowProductSelector] = useState(false)
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -92,6 +97,7 @@ export default function WaiterPage() {
         const response = await fetch('/api/products')
         const allProducts = await response.json()
         setProducts(allProducts)
+        setAvailableProducts(allProducts)
       } catch (error) {
         console.error('Error loading products:', error)
       } finally {
@@ -104,12 +110,26 @@ export default function WaiterPage() {
 
   const loadRecentSales = async () => {
     try {
-      const response = await fetch('/api/sales')
+      // Agregar timestamp para evitar caché
+      const response = await fetch(`/api/sales?t=${Date.now()}`)
       const sales = await response.json()
+      console.log('[loadRecentSales] Ventas recibidas:', sales.length)
+      
+      // Log de ventas de interés
+      const importantSales = sales.filter((s: Sale) => 
+        s.total === 108000 || s.total === 56500 || s.total === 24500 || s.total === 10500
+      )
+      console.log('[loadRecentSales] Ventas importantes:', importantSales.length)
+      importantSales.forEach((s: Sale) => {
+        const d = new Date(s.date)
+        console.log(`  - $${s.total} - ${d.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}`)
+      })
+      
       // Ordenar por fecha más reciente y tomar las últimas 20
       const sorted = sales.sort((a: Sale, b: Sale) => 
         new Date(b.date).getTime() - new Date(a.date).getTime()
       ).slice(0, 20)
+      console.log('[loadRecentSales] Ventas ordenadas:', sorted.length)
       setRecentSales(sorted)
     } catch (error) {
       console.error('Error loading sales:', error)
@@ -281,6 +301,122 @@ export default function WaiterPage() {
     } finally {
       setProcessing(false)
     }
+  }
+
+  const handleUpdateSale = async () => {
+    if (!editingSale) return
+
+    try {
+      setProcessing(true)
+      
+      // Crear fecha con la hora especificada desde datetime-local
+      const newDate = new Date(editSaleDateTime)
+      const hour = newDate.getHours()
+      
+      // Calcular el total basado en los items editados
+      const newTotal = editSaleItems.reduce((sum, item) => sum + item.totalPrice, 0)
+      
+      const response = await fetch(`/api/sales/${editingSale.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          date: newDate.toISOString(),
+          hour: hour,
+          items: editSaleItems,
+          total: newTotal,
+          paymentMethod: editingSale.paymentMethod,
+          channel: editingSale.channel,
+          comment: editSaleComment || undefined,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        console.error('[handleUpdateSale] Error del servidor:', error)
+        throw new Error(error.error || error.details || 'Error al actualizar la venta')
+      }
+
+      // Recargar ventas
+      await loadRecentSales()
+      
+      // Cerrar modal de edición
+      setEditingSale(null)
+      setEditSaleDateTime('')
+      setEditSaleComment('')
+      setEditSaleItems([])
+      setShowProductSelector(false)
+      setProductSearch('')
+      
+      alert('Venta actualizada correctamente')
+    } catch (error: any) {
+      console.error('[handleUpdateSale] Error completo:', error)
+      console.error('[handleUpdateSale] Stack:', error.stack)
+      const errorMessage = error.message || 'Error desconocido al actualizar la venta'
+      alert(`Error al actualizar la venta: ${errorMessage}`)
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  const addProductToSale = (product: Product) => {
+    const existingItem = editSaleItems.find(item => item.productId === product.id)
+    
+    if (existingItem) {
+      // Si ya existe, aumentar cantidad
+      setEditSaleItems(editSaleItems.map(item =>
+        item.productId === product.id
+          ? {
+              ...item,
+              quantity: item.quantity + 1,
+              totalPrice: (item.quantity + 1) * item.unitPrice
+            }
+          : item
+      ))
+    } else {
+      // Agregar nuevo producto
+      setEditSaleItems([
+        ...editSaleItems,
+        {
+          productId: product.id,
+          productName: product.name,
+          quantity: 1,
+          unitPrice: product.price,
+          totalPrice: product.price
+        }
+      ])
+    }
+    setProductSearch('')
+  }
+
+  const removeProductFromSale = (productId: string) => {
+    setEditSaleItems(editSaleItems.filter(item => item.productId !== productId))
+  }
+
+  const updateProductQuantity = (productId: string, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      removeProductFromSale(productId)
+      return
+    }
+    
+    setEditSaleItems(editSaleItems.map(item =>
+      item.productId === productId
+        ? {
+            ...item,
+            quantity: newQuantity,
+            totalPrice: newQuantity * item.unitPrice
+          }
+        : item
+    ))
+  }
+
+  const filteredAvailableProducts = availableProducts.filter(product =>
+    product.name.toLowerCase().includes(productSearch.toLowerCase())
+  )
+
+  const getEditTotal = () => {
+    return editSaleItems.reduce((sum, item) => sum + item.totalPrice, 0)
   }
 
   const handleDeleteSale = async (saleId: string) => {
@@ -948,19 +1084,27 @@ export default function WaiterPage() {
           <div className="bg-white rounded-lg p-4 sm:p-6 max-w-4xl w-full my-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4 sm:mb-6">
               <h3 className="text-xl sm:text-2xl font-bold text-berry-950">Ventas Recientes</h3>
-              <button
-                onClick={() => {
-                  setShowSalesModal(false)
-                  setShowSaleDetail(false)
-                  setSelectedSale(null)
-                  setSalesFilterDate('')
-                  setSalesFilterPaymentMethod('all')
-                }}
-                className="w-8 h-8 flex items-center justify-center text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors text-xl font-bold"
-                aria-label="Cerrar"
-              >
-                ×
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => router.push('/sales')}
+                  className="px-3 py-1.5 bg-berry-600 hover:bg-berry-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  Ver Todas
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSalesModal(false)
+                    setShowSaleDetail(false)
+                    setSelectedSale(null)
+                    setSalesFilterDate('')
+                    setSalesFilterPaymentMethod('all')
+                  }}
+                  className="w-8 h-8 flex items-center justify-center text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors text-xl font-bold"
+                  aria-label="Cerrar"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
             {(() => {
@@ -968,12 +1112,19 @@ export default function WaiterPage() {
               let filteredSales = recentSales
               
               if (salesFilterDate) {
-                const filterDate = new Date(salesFilterDate)
-                filterDate.setHours(0, 0, 0, 0)
+                // Filtro de fecha: comparar días usando fecha local
+                const filterYear = parseInt(salesFilterDate.split('-')[0])
+                const filterMonth = parseInt(salesFilterDate.split('-')[1])
+                const filterDay = parseInt(salesFilterDate.split('-')[2])
+                
                 filteredSales = filteredSales.filter(sale => {
                   const saleDate = new Date(sale.date)
-                  saleDate.setHours(0, 0, 0, 0)
-                  return saleDate.getTime() === filterDate.getTime()
+                  // JavaScript automáticamente convierte UTC a hora local
+                  const saleYear = saleDate.getFullYear()
+                  const saleMonth = saleDate.getMonth() + 1
+                  const saleDay = saleDate.getDate()
+                  
+                  return saleYear === filterYear && saleMonth === filterMonth && saleDay === filterDay
                 })
               }
               
@@ -986,15 +1137,22 @@ export default function WaiterPage() {
                 })
               }
               
-              // Agrupar ventas por día
-              const salesByDay: { [key: string]: typeof recentSales } = {}
+              // Agrupar ventas por día - Solución simple y robusta
+              // Usar la fecha local del objeto Date que JavaScript calcula automáticamente
+              const salesByDay: { [key: string]: Sale[] } = {}
               filteredSales.forEach(sale => {
                 const saleDate = new Date(sale.date)
-                const dayKey = saleDate.toLocaleDateString('es-CO', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit'
-                })
+                
+                // JavaScript automáticamente convierte la fecha UTC a hora local
+                // Para 2026-01-18T01:00:00.000Z (UTC) en Colombia (UTC-5):
+                // Se convierte a 2026-01-17 20:00:00 (hora local)
+                // getDate(), getMonth(), getFullYear() ya dan el día local correcto
+                const year = saleDate.getFullYear()
+                const month = saleDate.getMonth() + 1
+                const day = saleDate.getDate()
+                
+                const dayKey = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`
+                
                 if (!salesByDay[dayKey]) {
                   salesByDay[dayKey] = []
                 }
@@ -1009,7 +1167,7 @@ export default function WaiterPage() {
               })
               
               // Calcular totales por día
-              const getDayTotal = (sales: typeof recentSales) => {
+              const getDayTotal = (sales: Sale[]) => {
                 return sales.reduce((sum, sale) => sum + sale.total, 0)
               }
               
@@ -1162,6 +1320,25 @@ export default function WaiterPage() {
                                         Ver Detalle
                                       </button>
                                       <button
+                                        onClick={() => {
+                                          const saleDate = new Date(sale.date)
+                                          const year = saleDate.getFullYear()
+                                          const month = String(saleDate.getMonth() + 1).padStart(2, '0')
+                                          const day = String(saleDate.getDate()).padStart(2, '0')
+                                          const hours = String(sale.hour !== undefined ? sale.hour : saleDate.getHours()).padStart(2, '0')
+                                          const minutes = String(saleDate.getMinutes()).padStart(2, '0')
+                                          setEditingSale(sale)
+                                          setEditSaleDateTime(`${year}-${month}-${day}T${hours}:${minutes}`)
+                                          setEditSaleComment(sale.comment || '')
+                                          setEditSaleItems([...sale.items])
+                                          setShowProductSelector(false)
+                                          setProductSearch('')
+                                        }}
+                                        className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                                      >
+                                        Editar
+                                      </button>
+                                      <button
                                         onClick={() => handleDeleteSale(sale.id)}
                                         className="flex-1 sm:flex-none px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
                                       >
@@ -1179,6 +1356,184 @@ export default function WaiterPage() {
                 </>
               )
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de edición de venta */}
+      {editingSale && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full my-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-berry-950">Editar Venta</h3>
+              <button
+                onClick={() => {
+                  setEditingSale(null)
+                  setEditSaleDateTime('')
+                  setEditSaleComment('')
+                  setEditSaleItems([])
+                  setShowProductSelector(false)
+                  setProductSearch('')
+                }}
+                className="w-8 h-8 flex items-center justify-center text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors text-xl font-bold"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
+                  📅 Fecha y Hora:
+                </label>
+                <input
+                  type="datetime-local"
+                  value={editSaleDateTime}
+                  onChange={(e) => setEditSaleDateTime(e.target.value)}
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-stone-500 mt-1">Selecciona la fecha y hora de la venta</p>
+              </div>
+
+              {/* Productos de la venta */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-semibold text-stone-700">
+                    🛒 Productos:
+                  </label>
+                  <button
+                    onClick={() => setShowProductSelector(!showProductSelector)}
+                    className="px-3 py-1.5 bg-berry-600 hover:bg-berry-700 text-white rounded-lg text-sm font-medium transition-colors"
+                  >
+                    {showProductSelector ? '✕ Cancelar' : '+ Agregar Producto'}
+                  </button>
+                </div>
+
+                {/* Selector de productos */}
+                {showProductSelector && (
+                  <div className="mb-4 p-3 bg-stone-50 rounded-lg border border-stone-200">
+                    <input
+                      type="text"
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      placeholder="Buscar producto..."
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent mb-2"
+                    />
+                    <div className="max-h-48 overflow-y-auto space-y-1">
+                      {filteredAvailableProducts.map((product) => (
+                        <button
+                          key={product.id}
+                          onClick={() => addProductToSale(product)}
+                          className="w-full text-left px-3 py-2 bg-white hover:bg-berry-50 border border-stone-200 rounded-lg transition-colors flex justify-between items-center"
+                        >
+                          <span className="text-sm font-medium text-berry-950">{product.name}</span>
+                          <span className="text-sm text-berry-600 font-semibold">${formatPrice(product.price)}</span>
+                        </button>
+                      ))}
+                      {filteredAvailableProducts.length === 0 && (
+                        <p className="text-sm text-stone-500 text-center py-2">No se encontraron productos</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Lista de productos en la venta */}
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {editSaleItems.map((item, index) => {
+                    const product = availableProducts.find(p => p.id === item.productId)
+                    return (
+                      <div key={index} className="flex items-center gap-2 p-3 bg-stone-50 rounded-lg border border-stone-200">
+                        <div className="flex-1">
+                          <div className="font-medium text-sm text-berry-950">{item.productName}</div>
+                          <div className="text-xs text-stone-600">${formatPrice(item.unitPrice)} c/u</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => updateProductQuantity(item.productId, item.quantity - 1)}
+                            className="w-8 h-8 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded text-sm font-bold"
+                          >
+                            -
+                          </button>
+                          <span className="w-12 text-center font-semibold text-sm">{item.quantity}</span>
+                          <button
+                            onClick={() => updateProductQuantity(item.productId, item.quantity + 1)}
+                            className="w-8 h-8 flex items-center justify-center bg-berry-600 hover:bg-berry-700 text-white rounded text-sm font-bold"
+                          >
+                            +
+                          </button>
+                          <span className="w-20 text-right font-semibold text-berry-600">
+                            ${formatPrice(item.totalPrice)}
+                          </span>
+                          <button
+                            onClick={() => removeProductFromSale(item.productId)}
+                            className="w-8 h-8 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded text-sm font-bold"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {editSaleItems.length === 0 && (
+                    <p className="text-sm text-stone-500 text-center py-4 bg-stone-50 rounded-lg">
+                      No hay productos en esta venta
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
+                  💬 Comentario:
+                </label>
+                <textarea
+                  value={editSaleComment}
+                  onChange={(e) => setEditSaleComment(e.target.value)}
+                  placeholder="Ej: Consumo propio, nota especial, etc."
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={3}
+                />
+                <p className="text-xs text-stone-500 mt-1">Opcional: agrega un comentario a esta venta</p>
+              </div>
+
+              <div className="bg-stone-50 rounded-lg p-3">
+                <p className="text-sm text-stone-600">
+                  <span className="font-semibold">Total:</span> <span className="text-lg font-bold text-berry-600">${formatPrice(getEditTotal())}</span>
+                </p>
+                <p className="text-sm text-stone-600">
+                  <span className="font-semibold">Productos:</span> {editSaleItems.length}
+                </p>
+                {editingSale.paymentMethod && (
+                  <p className="text-sm text-stone-600">
+                    <span className="font-semibold">Método de pago:</span> {editingSale.paymentMethod}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleUpdateSale}
+                  disabled={processing || !editSaleDateTime || editSaleItems.length === 0}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-stone-400 text-white rounded-lg font-medium transition-colors"
+                >
+                  {processing ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingSale(null)
+                    setEditSaleDateTime('')
+                    setEditSaleComment('')
+                    setEditSaleItems([])
+                    setShowProductSelector(false)
+                    setProductSearch('')
+                  }}
+                  className="flex-1 px-4 py-2 bg-stone-300 hover:bg-stone-400 text-stone-700 rounded-lg font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1205,6 +1560,10 @@ export default function WaiterPage() {
               {/* Información de la venta - Mejorado para móvil */}
               <div className="bg-stone-50 rounded-lg p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div>
+                    <span className="block text-xs sm:text-sm font-semibold text-stone-700 mb-1">Código de Venta:</span>
+                    <p className="text-sm sm:text-base text-berry-600 font-mono font-semibold">{selectedSale.id}</p>
+                  </div>
                   <div>
                     <span className="block text-xs sm:text-sm font-semibold text-stone-700 mb-1">Fecha y Hora:</span>
                     <p className="text-sm sm:text-base text-stone-600">
@@ -1302,17 +1661,31 @@ export default function WaiterPage() {
 
               {/* Botones - Apilados en móvil */}
               <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-stone-200">
-                <a
-                  href="/waiter"
-                  className="flex-1 px-4 py-2.5 text-berry-600 hover:text-berry-800 text-sm font-medium text-center"
+                <button
+                  onClick={() => {
+                    const saleDate = new Date(selectedSale.date)
+                    const year = saleDate.getFullYear()
+                    const month = String(saleDate.getMonth() + 1).padStart(2, '0')
+                    const day = String(saleDate.getDate()).padStart(2, '0')
+                    const hours = String(selectedSale.hour !== undefined ? selectedSale.hour : saleDate.getHours()).padStart(2, '0')
+                    const minutes = String(saleDate.getMinutes()).padStart(2, '0')
+                    setEditingSale(selectedSale)
+                    setEditSaleDateTime(`${year}-${month}-${day}T${hours}:${minutes}`)
+                    setEditSaleComment(selectedSale.comment || '')
+                    setEditSaleItems([...selectedSale.items])
+                    setShowProductSelector(false)
+                    setProductSearch('')
+                    setShowSaleDetail(false)
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors text-sm sm:text-base"
                 >
-                  ← Volver
-                </a>
+                  ✏️ Editar Venta
+                </button>
                 <button
                   onClick={() => handleDeleteSale(selectedSale.id)}
                   className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors text-sm sm:text-base"
                 >
-                  Eliminar Venta
+                  🗑️ Eliminar Venta
                 </button>
               </div>
             </div>

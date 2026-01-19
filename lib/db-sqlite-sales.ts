@@ -42,7 +42,8 @@ export async function getSales(): Promise<Sale[]> {
       items: normalizedItems,
       total: row.total,
       paymentMethod: row.paymentMethod || undefined,
-      channel: row.channel || 'presencial'
+      channel: row.channel || 'presencial',
+      comment: row.notes || undefined // Mapear 'notes' a 'comment' para compatibilidad
     }
   })
 }
@@ -53,14 +54,37 @@ export async function getSaleById(id: string): Promise<Sale | undefined> {
   
   if (!row) return undefined
   
+  const items = JSON.parse(row.items)
+  
+  // Normalizar items
+  const normalizedItems = items.map((item: any) => {
+    if (item.price !== undefined && item.unitPrice === undefined) {
+      return {
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity || 1,
+        unitPrice: item.price,
+        totalPrice: (item.price || 0) * (item.quantity || 1)
+      }
+    }
+    if (item.unitPrice !== undefined && item.totalPrice === undefined) {
+      return {
+        ...item,
+        totalPrice: (item.unitPrice || 0) * (item.quantity || 1)
+      }
+    }
+    return item
+  })
+  
   return {
     id: row.id,
     date: row.date,
     hour: row.hour,
-    items: JSON.parse(row.items),
+    items: normalizedItems,
     total: row.total,
     paymentMethod: row.paymentMethod || undefined,
-    channel: row.channel || 'presencial'
+    channel: 'presencial', // Valor por defecto ya que no existe en la tabla
+    comment: row.notes || undefined // Mapear 'notes' a 'comment'
   }
 }
 
@@ -71,7 +95,7 @@ export async function createSale(sale: Omit<Sale, 'id'>): Promise<Sale> {
   
   db.prepare(`
     INSERT INTO sales (
-      id, date, hour, items, total, paymentMethod, channel, createdAt, updatedAt
+      id, date, hour, items, total, paymentMethod, notes, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
@@ -80,7 +104,7 @@ export async function createSale(sale: Omit<Sale, 'id'>): Promise<Sale> {
     JSON.stringify(sale.items),
     sale.total,
     sale.paymentMethod || null,
-    sale.channel || 'presencial',
+    sale.comment || null, // Mapear 'comment' a 'notes'
     now,
     now
   )
@@ -94,22 +118,36 @@ export async function updateSale(id: string, updates: Partial<Sale>): Promise<Sa
   const db = getDatabase()
   const now = new Date().toISOString()
   
+  // Obtener las columnas existentes en la tabla
+  const tableInfo = db.prepare('PRAGMA table_info(sales)').all()
+  const existingColumns = new Set(tableInfo.map((col: any) => col.name))
+  
   const fields: string[] = []
   const values: any[] = []
   
   Object.entries(updates).forEach(([key, value]) => {
-    if (key !== 'id' && value !== undefined) {
+    // Mapear 'comment' a 'notes' para la base de datos
+    const dbKey = key === 'comment' ? 'notes' : key
+    
+    // Solo incluir campos que existen en la tabla y no son 'id'
+    if (key !== 'id' && value !== undefined && existingColumns.has(dbKey)) {
       if (key === 'items') {
         fields.push('items = ?')
         values.push(JSON.stringify(value))
       } else {
-        fields.push(`${key} = ?`)
+        fields.push(`${dbKey} = ?`)
         values.push(value)
+      }
+    } else if (value !== undefined && !existingColumns.has(dbKey) && key !== 'channel') {
+      // Ignorar 'channel' silenciosamente ya que no existe en la tabla
+      if (key !== 'channel') {
+        console.warn(`[updateSaleSQLite] Columna '${dbKey}' no existe en la tabla, omitiendo`)
       }
     }
   })
   
   if (fields.length === 0) {
+    console.log('[updateSaleSQLite] No hay campos válidos para actualizar')
     return await getSaleById(id) || null
   }
   
@@ -117,9 +155,23 @@ export async function updateSale(id: string, updates: Partial<Sale>): Promise<Sa
   values.push(now)
   values.push(id)
   
-  db.prepare(`UPDATE sales SET ${fields.join(', ')} WHERE id = ?`).run(...values)
-  
-  return await getSaleById(id) || null
+  try {
+    const sql = `UPDATE sales SET ${fields.join(', ')} WHERE id = ?`
+    console.log('[updateSaleSQLite] SQL:', sql)
+    console.log('[updateSaleSQLite] Values:', values)
+    
+    const result = db.prepare(sql).run(...values)
+    console.log('[updateSaleSQLite] Resultado:', result)
+    
+    const updated = await getSaleById(id)
+    console.log('[updateSaleSQLite] Venta actualizada:', updated ? 'Sí' : 'No')
+    
+    return updated || null
+  } catch (error: any) {
+    console.error('[updateSaleSQLite] Error:', error)
+    console.error('[updateSaleSQLite] Stack:', error.stack)
+    throw error
+  }
 }
 
 export async function deleteSale(id: string): Promise<boolean> {
@@ -165,7 +217,8 @@ export async function getSalesByDateRange(startDate: string, endDate: string): P
       items: normalizedItems,
       total: row.total,
       paymentMethod: row.paymentMethod || undefined,
-      channel: row.channel || 'presencial'
+      channel: 'presencial', // Valor por defecto ya que no existe en la tabla
+      comment: row.notes || undefined // Mapear 'notes' a 'comment'
     }
   })
 }
