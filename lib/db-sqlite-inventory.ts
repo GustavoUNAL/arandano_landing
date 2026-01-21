@@ -14,7 +14,10 @@ export async function getInventory(): Promise<InventoryItem[]> {
     name: row.name,
     category: row.category,
     quantity: row.quantity,
+    initialQuantity: row.initialQuantity || undefined,
     unit: row.unit,
+    capacity: row.capacity || undefined,
+    capacityUnit: row.capacityUnit || undefined,
     unitPrice: row.unitPrice,
     totalValue: row.totalValue,
     code: row.code || undefined,
@@ -32,15 +35,18 @@ export async function createInventoryItem(item: Omit<InventoryItem, 'id'>): Prom
   
   db.prepare(`
     INSERT INTO inventory (
-      id, name, category, quantity, unit, unitPrice, totalValue,
+      id, name, category, quantity, initialQuantity, unit, capacity, capacityUnit, unitPrice, totalValue,
       code, purchaseDate, lot, supplier, notes, createdAt, updatedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     item.name,
     item.category,
     item.quantity,
+    item.initialQuantity || item.quantity || null, // Si no se especifica, usar quantity como initialQuantity
     item.unit,
+    item.capacity || null,
+    item.capacityUnit || null,
     item.unitPrice,
     item.totalValue,
     item.code || null,
@@ -68,7 +74,10 @@ export async function getInventoryItemById(id: string): Promise<InventoryItem | 
     name: row.name,
     category: row.category,
     quantity: row.quantity,
+    initialQuantity: row.initialQuantity || undefined,
     unit: row.unit,
+    capacity: row.capacity || undefined,
+    capacityUnit: row.capacityUnit || undefined,
     unitPrice: row.unitPrice,
     totalValue: row.totalValue,
     code: row.code || undefined,
@@ -88,10 +97,40 @@ export async function updateInventoryItem(id: string, updates: Partial<Inventory
   
   Object.entries(updates).forEach(([key, value]) => {
     if (key !== 'id' && value !== undefined) {
+      // Si se actualiza quantity o initialQuantity, asegurarse de que totalValue se recalcule
+      if (key === 'quantity' || key === 'unitPrice') {
+        // No agregar totalValue aquí, se calculará después
+      }
       fields.push(`${key} = ?`)
       values.push(value)
     }
   })
+  
+  // Si se actualizó quantity o unitPrice, recalcular totalValue
+  if (updates.quantity !== undefined || updates.unitPrice !== undefined) {
+    const currentItem = await getInventoryItemById(id)
+    if (currentItem) {
+      const newQuantity = updates.quantity !== undefined ? updates.quantity : currentItem.quantity
+      const newUnitPrice = updates.unitPrice !== undefined ? updates.unitPrice : currentItem.unitPrice
+      const newTotalValue = newQuantity * newUnitPrice
+      
+      // Evitar duplicados
+      if (!fields.includes('totalValue = ?')) {
+        fields.push('totalValue = ?')
+        values.push(newTotalValue)
+      } else {
+        // Reemplazar el valor existente
+        const index = fields.indexOf('totalValue = ?')
+        values[index] = newTotalValue
+      }
+    }
+  }
+  
+  // Agregar updatedAt siempre
+  if (!fields.includes('updatedAt = ?')) {
+    fields.push('updatedAt = ?')
+    values.push(now)
+  }
   
   if (fields.length === 0) {
     return await getInventoryItemById(id)

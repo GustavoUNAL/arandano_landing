@@ -65,7 +65,10 @@ function initializeDatabase() {
       name TEXT NOT NULL,
       category TEXT NOT NULL,
       quantity REAL NOT NULL,
+      initialQuantity REAL,
       unit TEXT NOT NULL,
+      capacity REAL,
+      capacityUnit TEXT,
       unitPrice REAL NOT NULL,
       totalValue REAL NOT NULL,
       code TEXT,
@@ -77,6 +80,31 @@ function initializeDatabase() {
       updatedAt TEXT
     )
   `)
+  
+  // Agregar columnas si no existen (para bases de datos existentes)
+  try {
+    db.exec(`ALTER TABLE inventory ADD COLUMN initialQuantity REAL`)
+  } catch (e: any) {
+    if (!e.message?.includes('duplicate column')) {
+      console.warn('Error adding initialQuantity column:', e.message)
+    }
+  }
+  
+  try {
+    db.exec(`ALTER TABLE inventory ADD COLUMN capacity REAL`)
+  } catch (e: any) {
+    if (!e.message?.includes('duplicate column')) {
+      console.warn('Error adding capacity column:', e.message)
+    }
+  }
+  
+  try {
+    db.exec(`ALTER TABLE inventory ADD COLUMN capacityUnit TEXT`)
+  } catch (e: any) {
+    if (!e.message?.includes('duplicate column')) {
+      console.warn('Error adding capacityUnit column:', e.message)
+    }
+  }
 
   // Tabla de ventas
   db.exec(`

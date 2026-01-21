@@ -5,8 +5,11 @@ export interface InventoryItem {
   id: string
   name: string
   category: string
-  quantity: number
-  unit: string
+  quantity: number // Cantidad actual de productos
+  initialQuantity?: number // Cantidad original comprada (productos)
+  unit: string // Unidad de producto (Botella, Lata, etc.)
+  capacity?: number // Capacidad por unidad individual (ej: 750ml por botella)
+  capacityUnit?: string // Unidad de capacidad (ml, cm3, litro, etc.)
   unitPrice: number
   totalValue: number
   code?: string

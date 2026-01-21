@@ -7,8 +7,11 @@ interface InventoryItem {
   id: string
   name: string
   category: string
-  quantity: number
-  unit: string
+  quantity: number // Cantidad actual de productos
+  initialQuantity?: number // Cantidad original comprada (productos)
+  unit: string // Unidad de producto (Botella, Lata, etc.)
+  capacity?: number // Capacidad por unidad individual (ej: 750ml por botella)
+  capacityUnit?: string // Unidad de capacidad (ml, cm3, litro, etc.)
   unitPrice: number
   totalValue: number
   code?: string
@@ -16,6 +19,47 @@ interface InventoryItem {
   supplier?: string
   lot?: string
   notes?: string
+}
+
+interface StockInfo {
+  consumedQuantity: number
+  addedQuantity: number
+  movements: any[]
+}
+
+interface GroupedByLot {
+  lotId: string // ID único del lote
+  lot: string
+  supplier: string | null
+  purchaseDate: string
+  formattedDate: string
+  items: InventoryItem[]
+  totalQuantity: number
+  totalValue: number
+  categories: string[]
+}
+
+interface GroupedByDate {
+  date: string
+  formattedDate: string
+  lots: GroupedByLot[]
+  totalItems: number
+  totalValue: number
+  suppliers: string[]
+}
+
+interface GroupedProduct {
+  key: string
+  name: string
+  category: string
+  unit: string
+  totalQuantity: number
+  items: InventoryItem[]
+  totalValue: number
+  codes: string[]
+  suppliers: string[]
+  lots: string[]
+  purchaseDates: string[]
 }
 
 const CATEGORIES = [
@@ -28,6 +72,37 @@ const CATEGORIES = [
   'acompañantes',
   'activos',
   'productos regulados'
+]
+
+const STANDARD_UNITS = [
+  'Unidad',
+  'Botella',
+  'Lata',
+  'Latón',
+  'Gramo',
+  'Kilogramo',
+  'Libra',
+  'ml',
+  'Litro',
+  'Paquete',
+  'Cajetilla',
+  'Frasco',
+  'Bolsa',
+  'Pack',
+  'Set',
+  'Rollo',
+  'Otro'
+]
+
+const CAPACITY_UNITS = [
+  'ml',
+  'cm3',
+  'Litro',
+  'Gramo',
+  'Kilogramo',
+  'Onza',
+  'Libra',
+  'Otro'
 ]
 
 export default function InventoryPage() {
@@ -56,12 +131,16 @@ export default function InventoryPage() {
   const [deletingLot, setDeletingLot] = useState<GroupedByLot | null>(null)
   const [saving, setSaving] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [stockInfo, setStockInfo] = useState<Record<string, StockInfo>>({})
+  const [loadingStockInfo, setLoadingStockInfo] = useState<Record<string, boolean>>({})
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [showCategoryModalInForm, setShowCategoryModalInForm] = useState(false)
   const [showLotModal, setShowLotModal] = useState(false)
   const [showDateModal, setShowDateModal] = useState(false)
   const [showProductModal, setShowProductModal] = useState(false)
   const [showConfigModal, setShowConfigModal] = useState(false)
+  const [showCustomUnitInput, setShowCustomUnitInput] = useState(false)
+  const [customUnit, setCustomUnit] = useState('')
   const [newItemForm, setNewItemForm] = useState<Partial<InventoryItem>>({
     name: '',
     category: '',
@@ -98,18 +177,45 @@ export default function InventoryPage() {
     }
   }
 
+  const loadStockInfo = async (itemId: string) => {
+    if (stockInfo[itemId] || loadingStockInfo[itemId]) return
+    
+    setLoadingStockInfo(prev => ({ ...prev, [itemId]: true }))
+    try {
+      const response = await fetch(`/api/inventory/${itemId}/stock`)
+      if (response.ok) {
+        const data = await response.json()
+        setStockInfo(prev => ({ ...prev, [itemId]: data }))
+      }
+    } catch (error) {
+      console.error('Error loading stock info:', error)
+    } finally {
+      setLoadingStockInfo(prev => ({ ...prev, [itemId]: false }))
+    }
+  }
+
   const handleEdit = (item: InventoryItem) => {
     setEditingItem(item)
+    loadStockInfo(item.id) // Cargar información de stock al editar
+    const unit = item.unit || 'Unidad'
+    const isCustomUnit = !STANDARD_UNITS.includes(unit)
+    setShowCustomUnitInput(isCustomUnit)
+    if (isCustomUnit) {
+      setCustomUnit(unit)
+    }
     setEditForm({
       name: item.name,
       category: item.category,
       quantity: item.quantity,
-      unit: item.unit,
+      initialQuantity: item.initialQuantity || item.quantity,
+      unit: unit,
+      capacity: item.capacity,
+      capacityUnit: item.capacityUnit,
       unitPrice: item.unitPrice,
       code: item.code || '',
       supplier: item.supplier || '',
       lot: item.lot || '',
-      purchaseDate: item.purchaseDate || '',
+      purchaseDate: item.purchaseDate ? item.purchaseDate.split('T')[0] : '',
       notes: item.notes || ''
     })
   }
@@ -127,6 +233,7 @@ export default function InventoryPage() {
       const updatedData = {
         ...editForm,
         quantity,
+        initialQuantity: editForm.initialQuantity !== undefined ? editForm.initialQuantity : quantity,
         unitPrice,
         totalValue
       }
@@ -141,6 +248,8 @@ export default function InventoryPage() {
         await loadInventory()
         setEditingItem(null)
         setEditForm({})
+        setShowCustomUnitInput(false)
+        setCustomUnit('')
         showAlert('success', 'Item actualizado exitosamente')
       } else {
         showAlert('error', 'Error al actualizar item')
@@ -156,6 +265,8 @@ export default function InventoryPage() {
   const handleCancelEdit = () => {
     setEditingItem(null)
     setEditForm({})
+    setShowCustomUnitInput(false)
+    setCustomUnit('')
   }
 
   const handleEditLot = (lotGroup: GroupedByLot) => {
@@ -278,7 +389,7 @@ export default function InventoryPage() {
 
   const handleAddNewItem = async () => {
     // Validar campos requeridos
-    if (!newItemForm.name || !newItemForm.category || !newItemForm.quantity || !newItemForm.unitPrice) {
+    if (!newItemForm.name || !newItemForm.category || newItemForm.quantity === undefined || newItemForm.quantity === null || !newItemForm.unitPrice) {
       showAlert('error', 'Por favor completa todos los campos requeridos')
       return
     }
@@ -293,7 +404,10 @@ export default function InventoryPage() {
         name: newItemForm.name,
         category: newItemForm.category,
         quantity,
+        initialQuantity: quantity,
         unit: newItemForm.unit || 'Unidad',
+        capacity: newItemForm.capacity || undefined,
+        capacityUnit: newItemForm.capacityUnit || undefined,
         unitPrice,
         totalValue,
         code: newItemForm.code || undefined,
@@ -312,11 +426,15 @@ export default function InventoryPage() {
       if (response.ok) {
         showAlert('success', 'Lote agregado exitosamente')
         setShowAddModal(false)
+        setShowCustomUnitInput(false)
+        setCustomUnit('')
         setNewItemForm({
           name: '',
           category: '',
           quantity: 0,
           unit: 'Unidad',
+          capacity: undefined,
+          capacityUnit: undefined,
           unitPrice: 0,
           code: '',
           supplier: '',
@@ -338,11 +456,15 @@ export default function InventoryPage() {
 
   const handleCancelAdd = () => {
     setShowAddModal(false)
+    setShowCustomUnitInput(false)
+    setCustomUnit('')
     setNewItemForm({
       name: '',
       category: '',
       quantity: 0,
       unit: 'Unidad',
+      capacity: undefined,
+      capacityUnit: undefined,
       unitPrice: 0,
       code: '',
       supplier: '',
@@ -470,20 +592,6 @@ export default function InventoryPage() {
   })
 
   // Agrupar productos por nombre y unidad para consolidar stock
-  interface GroupedProduct {
-    key: string
-    name: string
-    category: string
-    unit: string
-    totalQuantity: number
-    items: InventoryItem[]
-    totalValue: number
-    codes: string[]
-    suppliers: string[]
-    lots: string[]
-    purchaseDates: string[]
-  }
-
   const groupedProducts = filteredItems.reduce((acc, item) => {
     // Crear una clave única por producto (nombre + unidad + categoría)
     const key = `${item.name.toLowerCase().trim()}_${item.unit.toLowerCase().trim()}_${item.category}`
@@ -527,19 +635,6 @@ export default function InventoryPage() {
   const groupedProductsArray = Object.values(groupedProducts).sort((a, b) => 
     a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
   )
-
-  // Agrupar directamente por LOTE (cada lote tiene su proveedor y fecha)
-  interface GroupedByLot {
-    lotId: string // ID único del lote
-    lot: string
-    supplier: string | null
-    purchaseDate: string
-    formattedDate: string
-    items: InventoryItem[]
-    totalQuantity: number
-    totalValue: number
-    categories: string[]
-  }
 
   // Agrupar por lotes directamente - cada lote es único y tiene proveedor y fecha
   const groupedByLot = useMemo(() => {
@@ -616,16 +711,6 @@ export default function InventoryPage() {
       return a.lot.localeCompare(b.lot)
     })
   }, [filteredItems])
-
-  // Agrupar por fecha de compra y luego por lote (vista alternativa)
-  interface GroupedByDate {
-    date: string
-    formattedDate: string
-    lots: GroupedByLot[]
-    totalItems: number
-    totalValue: number
-    suppliers: string[]
-  }
 
   // Agrupar por fecha de compra y luego por lote (vista alternativa)
   const groupedByDateAndLot = useMemo(() => {
@@ -743,17 +828,17 @@ export default function InventoryPage() {
   const totalValue = filteredItems
     .filter(item => item.category !== 'activos' && item.category !== 'productos regulados')
     .reduce((sum, item) => sum + (item.totalValue || 0), 0)
-  
+
   // Total de activos por separado (solo si están filtrados)
   const totalAssetsValue = filteredItems
     .filter(item => item.category === 'activos')
     .reduce((sum, item) => sum + (item.totalValue || 0), 0)
-  
+
   // Total de productos regulados por separado
   const totalRegulatedValue = filteredItems
     .filter(item => item.category === 'productos regulados')
     .reduce((sum, item) => sum + (item.totalValue || 0), 0)
-  
+
   // Items sin activos ni productos regulados para el conteo general
   const operationalItems = filteredItems.filter(item => item.category !== 'activos' && item.category !== 'productos regulados')
   const assetsItems = filteredItems.filter(item => item.category === 'activos')
@@ -1003,6 +1088,16 @@ export default function InventoryPage() {
                                   <div>
                                     <span className="text-stone-600">Cantidad:</span>
                                     <span className="font-semibold ml-1 block">{item.quantity} {item.unit}</span>
+                                    {item.capacity && item.capacityUnit && (
+                                      <>
+                                        <div className="text-xs text-stone-500 mt-1">
+                                          {item.capacity} {item.capacityUnit}/unidad
+                                        </div>
+                                        <div className="text-xs font-semibold text-berry-600 mt-1">
+                                          Total: {(item.quantity * item.capacity).toLocaleString('es-CO', { maximumFractionDigits: 0 })} {item.capacityUnit}
+                                        </div>
+                                      </>
+                                    )}
                                   </div>
                                   <div>
                                     <span className="text-stone-600">Precio unit:</span>
@@ -1198,10 +1293,13 @@ export default function InventoryPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center gap-2 mb-3 flex-wrap">
                         <h3 className="font-semibold text-base sm:text-lg text-berry-950">
                           {group.name}
                         </h3>
+                        <span className="px-2 py-0.5 bg-stone-200 text-stone-700 rounded text-xs font-semibold">
+                          {group.unit || group.items[0]?.unit || 'Unidad'}
+                        </span>
                         <span className="px-2 py-1 bg-berry-100 text-berry-700 rounded text-xs font-medium">
                           {group.category}
                         </span>
@@ -1214,6 +1312,14 @@ export default function InventoryPage() {
                           <span className="font-bold ml-1 text-berry-700 text-base">
                             {group.totalQuantity} {group.unit}
                           </span>
+                          {group.items[0]?.capacity && group.items[0]?.capacityUnit && (
+                            <div className="text-xs text-stone-600 mt-1">
+                              {group.items[0].capacity} {group.items[0].capacityUnit}/unidad
+                              <span className="font-semibold text-berry-600 ml-1">
+                                = {(group.totalQuantity * group.items[0].capacity).toLocaleString('es-CO', { maximumFractionDigits: 0 })} {group.items[0].capacityUnit} total
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div>
                           <span className="text-stone-600">Valor Total:</span>
@@ -1296,6 +1402,16 @@ export default function InventoryPage() {
                                   <div>
                                     <span className="text-stone-600">Cantidad del lote:</span>
                                     <span className="font-semibold ml-1 block">{group.items[0].quantity} {group.items[0].unit}</span>
+                                    {group.items[0].capacity && group.items[0].capacityUnit && (
+                                      <>
+                                        <div className="text-xs text-stone-500 mt-1">
+                                          {group.items[0].capacity} {group.items[0].capacityUnit}/unidad
+                                        </div>
+                                        <div className="text-xs font-semibold text-berry-600 mt-1">
+                                          Total: {(group.items[0].quantity * group.items[0].capacity).toLocaleString('es-CO', { maximumFractionDigits: 0 })} {group.items[0].capacityUnit}
+                                        </div>
+                                      </>
+                                    )}
                                   </div>
                                   <div>
                                     <span className="text-stone-600">Precio unitario:</span>
@@ -1345,6 +1461,16 @@ export default function InventoryPage() {
                                         <div>
                                           <span className="text-stone-600">Cantidad:</span>
                                           <span className="font-semibold ml-1 block text-base">{item.quantity} {item.unit}</span>
+                                          {item.capacity && item.capacityUnit && (
+                                            <>
+                                              <div className="text-xs text-stone-500 mt-1">
+                                                {item.capacity} {item.capacityUnit}/unidad
+                                              </div>
+                                              <div className="text-xs font-semibold text-berry-600 mt-1">
+                                                Total: {(item.quantity * item.capacity).toLocaleString('es-CO', { maximumFractionDigits: 0 })} {item.capacityUnit}
+                                              </div>
+                                            </>
+                                          )}
                                         </div>
                                         <div>
                                           <span className="text-stone-600">Precio unit:</span>
@@ -1462,17 +1588,42 @@ export default function InventoryPage() {
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div className="flex-1 pr-8">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-base sm:text-lg text-berry-950">
-                          {item.name}
-                        </h3>
-                        <span className="px-2 py-1 bg-berry-100 text-berry-700 rounded text-xs font-medium">
-                          {item.category}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold text-base sm:text-lg text-berry-950">
+                            {item.name}
+                          </h3>
+                          <span className="px-2 py-0.5 bg-stone-200 text-stone-700 rounded text-xs font-semibold">
+                            {item.unit}
+                          </span>
+                          <span className="px-2 py-1 bg-berry-100 text-berry-700 rounded text-xs font-medium">
+                            {item.category}
+                          </span>
+                        </div>
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-sm">
                         <div>
-                          <span className="text-stone-600">Cantidad:</span>
+                          <span className="text-stone-600">Cantidad actual:</span>
                           <span className="font-semibold ml-1">{item.quantity} {item.unit}</span>
+                          {item.capacity && item.capacityUnit && (
+                            <div className="text-xs text-stone-500 mt-1">
+                              {item.capacity} {item.capacityUnit}/unidad
+                            </div>
+                          )}
+                          {item.capacity && item.capacityUnit && (
+                            <div className="text-xs font-semibold text-berry-600 mt-1">
+                              Total: {(item.quantity * item.capacity).toLocaleString('es-CO', { maximumFractionDigits: 0 })} {item.capacityUnit}
+                            </div>
+                          )}
+                          {item.initialQuantity !== undefined && item.initialQuantity !== item.quantity && (
+                            <div className="text-xs text-stone-500 mt-1">
+                              <span className="text-stone-600">Comprado:</span> {item.initialQuantity} {item.unit}
+                              {item.capacity && item.capacityUnit && (
+                                <span className="ml-1">
+                                  ({((item.initialQuantity || 0) * item.capacity).toLocaleString('es-CO', { maximumFractionDigits: 0 })} {item.capacityUnit} total)
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <div>
                           <span className="text-stone-600">Precio unit:</span>
@@ -2081,49 +2232,208 @@ export default function InventoryPage() {
                   <label className="block text-sm font-semibold text-stone-700 mb-2">
                     Unidad *
                   </label>
-                  <input
-                    type="text"
-                    value={newItemForm.unit || ''}
-                    onChange={(e) => setNewItemForm({ ...newItemForm, unit: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
-                    placeholder="Ej: Lata, Botella, Unidad, Libra"
+                  <select
+                    value={STANDARD_UNITS.includes(newItemForm.unit || 'Unidad') ? (newItemForm.unit || 'Unidad') : 'Otro'}
+                    onChange={(e) => {
+                      if (e.target.value === 'Otro') {
+                        setShowCustomUnitInput(true)
+                        setNewItemForm({ ...newItemForm, unit: customUnit || '' })
+                      } else {
+                        setShowCustomUnitInput(false)
+                        setCustomUnit('')
+                        setNewItemForm({ ...newItemForm, unit: e.target.value })
+                      }
+                    }}
+                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all bg-white"
                     required
-                  />
+                  >
+                    {STANDARD_UNITS.map(unit => (
+                      <option key={unit} value={unit === 'Otro' ? 'Otro' : unit}>
+                        {unit}
+                      </option>
+                    ))}
+                  </select>
+                  {showCustomUnitInput && (
+                    <input
+                      type="text"
+                      value={customUnit || newItemForm.unit || ''}
+                      onChange={(e) => {
+                        setCustomUnit(e.target.value)
+                        setNewItemForm({ ...newItemForm, unit: e.target.value })
+                      }}
+                      className="w-full px-4 py-3 border-2 border-berry-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all mt-2"
+                      placeholder="Ingresa la unidad personalizada"
+                      required={showCustomUnitInput}
+                      autoFocus
+                    />
+                  )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">
-                    Cantidad *
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    value={newItemForm.quantity || ''}
-                    onChange={(e) => setNewItemForm({ ...newItemForm, quantity: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
-                    placeholder="0"
-                    required
-                  />
+              {/* Sección: Lo que se Compró */}
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-900 mb-4 text-base">📦 Lo que se Compró</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-stone-700 mb-2">
+                      Cantidad de Productos Comprados *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={newItemForm.quantity !== undefined && newItemForm.quantity !== null ? newItemForm.quantity : ''}
+                      onChange={(e) => {
+                        const value = e.target.value === '' ? 0 : parseFloat(e.target.value)
+                        setNewItemForm({ ...newItemForm, quantity: isNaN(value) ? 0 : Math.max(0, value) })
+                      }}
+                      className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                      placeholder="0"
+                      required
+                    />
+                    <p className="text-xs text-stone-500 mt-1">Ej: 2 botellas, 3 latas, 5 unidades</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-stone-700 mb-2">
+                      Capacidad por Unidad Individual (opcional)
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={newItemForm.capacity !== undefined ? newItemForm.capacity : ''}
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? undefined : parseFloat(e.target.value)
+                          setNewItemForm({ ...newItemForm, capacity: value !== undefined && !isNaN(value) ? Math.max(0, value) : undefined })
+                        }}
+                        className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                        placeholder="Ej: 750"
+                      />
+                      <select
+                        value={newItemForm.capacityUnit || ''}
+                        onChange={(e) => setNewItemForm({ ...newItemForm, capacityUnit: e.target.value || undefined })}
+                        className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all bg-white"
+                        disabled={!newItemForm.capacity || newItemForm.capacity === 0}
+                      >
+                        <option value="">Unidad</option>
+                        {CAPACITY_UNITS.filter(u => u !== 'Otro').map(unit => (
+                          <option key={unit} value={unit}>
+                            {unit}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <p className="text-xs text-stone-500 mt-1">Ej: 750 ml por botella, 330 ml por lata</p>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">
-                    Precio Unitario (COP) *
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    value={newItemForm.unitPrice || ''}
-                    onChange={(e) => setNewItemForm({ ...newItemForm, unitPrice: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
-                    placeholder="0"
-                    required
-                  />
+                {/* Cálculo Total Comprado */}
+                {newItemForm.capacity && newItemForm.capacityUnit && (
+                  <div className="mt-3 pt-3 border-t border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-blue-800">Total Comprado:</span>
+                      <span className="text-lg font-bold text-blue-900">
+                        {(newItemForm.quantity || 0) * (newItemForm.capacity || 0)} {newItemForm.capacityUnit}
+                      </span>
+                    </div>
+                    <p className="text-xs text-blue-600 mt-1">
+                      ({(newItemForm.quantity || 0)} productos × {newItemForm.capacity} {newItemForm.capacityUnit}/producto)
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Sección: Lo que Queda Actualmente */}
+              <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                <h3 className="font-semibold text-green-900 mb-4 text-base">📊 Lo que Queda Actualmente</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-stone-700 mb-2">
+                      Cantidad de Productos Actuales *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={newItemForm.quantity !== undefined && newItemForm.quantity !== null ? newItemForm.quantity : ''}
+                      onChange={(e) => {
+                        const value = e.target.value === '' ? 0 : parseFloat(e.target.value)
+                        setNewItemForm({ ...newItemForm, quantity: isNaN(value) ? 0 : Math.max(0, value) })
+                      }}
+                      className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                      placeholder="0"
+                      required
+                    />
+                    <p className="text-xs text-stone-500 mt-1">Ej: 1 botella, 2 latas, 3 unidades (inicialmente igual a comprado)</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-stone-700 mb-2">
+                      Capacidad por Unidad Individual
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={newItemForm.capacity !== undefined ? newItemForm.capacity : ''}
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? undefined : parseFloat(e.target.value)
+                          setNewItemForm({ ...newItemForm, capacity: value !== undefined && !isNaN(value) ? Math.max(0, value) : undefined })
+                        }}
+                        className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                        placeholder="Ej: 750"
+                      />
+                      <select
+                        value={newItemForm.capacityUnit || ''}
+                        onChange={(e) => setNewItemForm({ ...newItemForm, capacityUnit: e.target.value || undefined })}
+                        className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all bg-white"
+                        disabled={!newItemForm.capacity || newItemForm.capacity === 0}
+                      >
+                        <option value="">Unidad</option>
+                        {CAPACITY_UNITS.filter(u => u !== 'Otro').map(unit => (
+                          <option key={unit} value={unit}>
+                            {unit}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <p className="text-xs text-stone-500 mt-1">Misma capacidad por unidad (se puede cambiar si es necesario)</p>
+                  </div>
                 </div>
+
+                {/* Cálculo Total Actual */}
+                {newItemForm.capacity && newItemForm.capacityUnit && (
+                  <div className="mt-3 pt-3 border-t border-green-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-green-800">Total Actual:</span>
+                      <span className="text-lg font-bold text-green-900">
+                        {(newItemForm.quantity || 0) * (newItemForm.capacity || 0)} {newItemForm.capacityUnit}
+                      </span>
+                    </div>
+                    <p className="text-xs text-green-600 mt-1">
+                      ({(newItemForm.quantity || 0)} productos × {newItemForm.capacity} {newItemForm.capacityUnit}/producto)
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
+                  Precio Unitario (COP) *
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  min="0"
+                  value={newItemForm.unitPrice || ''}
+                  onChange={(e) => setNewItemForm({ ...newItemForm, unitPrice: parseFloat(e.target.value) || 0 })}
+                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                  placeholder="0"
+                  required
+                />
               </div>
 
               <div>
@@ -2213,7 +2523,7 @@ export default function InventoryPage() {
               </button>
               <button
                 onClick={handleAddNewItem}
-                disabled={saving || !newItemForm.name || !newItemForm.category || !newItemForm.quantity || !newItemForm.unitPrice || !newItemForm.unit}
+                disabled={saving || !newItemForm.name || !newItemForm.category || newItemForm.quantity === undefined || newItemForm.quantity === null || !newItemForm.unitPrice || !newItemForm.unit}
                 className="flex-1 px-4 py-3.5 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-lg hover:shadow-xl"
               >
                 {saving ? 'Guardando...' : 'Agregar Lote'}
@@ -2306,6 +2616,56 @@ export default function InventoryPage() {
                 />
               </div>
 
+              {/* Información de Stock */}
+              {editingItem && stockInfo[editingItem.id] && (
+                <div className="bg-stone-100 border-2 border-stone-300 rounded-lg p-4">
+                  <h3 className="font-semibold text-stone-900 mb-3">📊 Resumen de Movimientos de Stock</h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="bg-white rounded p-2">
+                      <span className="text-stone-600 text-xs">Comprado:</span>
+                      <span className="font-bold ml-2 text-stone-900 block">
+                        {editForm.initialQuantity !== undefined ? editForm.initialQuantity : editingItem.initialQuantity || editingItem.quantity} {editingItem.unit}
+                      </span>
+                      {editingItem.capacity && editingItem.capacityUnit && (
+                        <span className="text-xs text-stone-500 mt-1 block">
+                          = {((editForm.initialQuantity !== undefined ? editForm.initialQuantity : editingItem.initialQuantity || editingItem.quantity) * (editForm.capacity || editingItem.capacity)).toLocaleString('es-CO', { maximumFractionDigits: 0 })} {editForm.capacityUnit || editingItem.capacityUnit}
+                        </span>
+                      )}
+                    </div>
+                    <div className="bg-white rounded p-2">
+                      <span className="text-stone-600 text-xs">Consumido:</span>
+                      <span className="font-bold ml-2 text-red-600 block">
+                        {stockInfo[editingItem.id].consumedQuantity.toFixed(2)} {editingItem.unit}
+                      </span>
+                    </div>
+                    <div className="bg-white rounded p-2">
+                      <span className="text-stone-600 text-xs">Agregado:</span>
+                      <span className="font-bold ml-2 text-green-600 block">
+                        {stockInfo[editingItem.id].addedQuantity.toFixed(2)} {editingItem.unit}
+                      </span>
+                    </div>
+                    <div className="bg-white rounded p-2">
+                      <span className="text-stone-600 text-xs">Actual:</span>
+                      <span className="font-bold ml-2 text-berry-700 block">
+                        {editForm.quantity !== undefined ? editForm.quantity : editingItem.quantity} {editingItem.unit}
+                      </span>
+                      {editingItem.capacity && editingItem.capacityUnit && (
+                        <span className="text-xs text-stone-500 mt-1 block">
+                          = {((editForm.quantity !== undefined ? editForm.quantity : editingItem.quantity) * (editForm.capacity || editingItem.capacity)).toLocaleString('es-CO', { maximumFractionDigits: 0 })} {editForm.capacityUnit || editingItem.capacityUnit}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {stockInfo[editingItem.id].movements.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-stone-300">
+                      <p className="text-xs text-stone-600">
+                        Total movimientos registrados: {stockInfo[editingItem.id].movements.length}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-stone-700 mb-2">
@@ -2329,31 +2689,189 @@ export default function InventoryPage() {
                   <label className="block text-sm font-semibold text-stone-700 mb-2">
                     Unidad *
                   </label>
-                  <input
-                    type="text"
-                    value={editForm.unit || ''}
-                    onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
-                    placeholder="Ej: Lata, Botella, Unidad"
+                  <select
+                    value={STANDARD_UNITS.includes(editForm.unit || '') ? (editForm.unit || 'Unidad') : 'Otro'}
+                    onChange={(e) => {
+                      if (e.target.value === 'Otro') {
+                        setShowCustomUnitInput(true)
+                        setEditForm({ ...editForm, unit: customUnit || editForm.unit || '' })
+                      } else {
+                        setShowCustomUnitInput(false)
+                        setCustomUnit('')
+                        setEditForm({ ...editForm, unit: e.target.value })
+                      }
+                    }}
+                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all bg-white"
                     required
-                  />
+                  >
+                    {STANDARD_UNITS.map(unit => (
+                      <option key={unit} value={unit === 'Otro' ? 'Otro' : unit}>
+                        {unit === 'Otro' && editForm.unit && !STANDARD_UNITS.includes(editForm.unit) 
+                          ? `Otra: ${editForm.unit}` 
+                          : unit}
+                      </option>
+                    ))}
+                  </select>
+                  {showCustomUnitInput && (
+                    <input
+                      type="text"
+                      value={customUnit || editForm.unit || ''}
+                      onChange={(e) => {
+                        setCustomUnit(e.target.value)
+                        setEditForm({ ...editForm, unit: e.target.value })
+                      }}
+                      className="w-full px-4 py-3 border-2 border-berry-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all mt-2"
+                      placeholder="Ingresa la unidad personalizada"
+                      required={showCustomUnitInput}
+                      autoFocus
+                    />
+                  )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">
-                    Cantidad *
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    value={editForm.quantity || ''}
-                    onChange={(e) => setEditForm({ ...editForm, quantity: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
-                    required
-                  />
+              {/* Sección: Lo que se Compró */}
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-900 mb-4 text-base">📦 Lo que se Compró</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-stone-700 mb-2">
+                      Cantidad de Productos Comprados *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={editForm.initialQuantity !== undefined ? editForm.initialQuantity : editForm.quantity || ''}
+                      onChange={(e) => setEditForm({ ...editForm, initialQuantity: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                      required
+                    />
+                    <p className="text-xs text-stone-500 mt-1">Ej: 2 botellas, 3 latas, 5 unidades</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-stone-700 mb-2">
+                      Capacidad por Unidad Individual (opcional)
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={editForm.capacity !== undefined ? editForm.capacity : ''}
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? undefined : parseFloat(e.target.value)
+                          setEditForm({ ...editForm, capacity: value !== undefined && !isNaN(value) ? Math.max(0, value) : undefined })
+                        }}
+                        className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                        placeholder="Ej: 750"
+                      />
+                      <select
+                        value={editForm.capacityUnit || ''}
+                        onChange={(e) => setEditForm({ ...editForm, capacityUnit: e.target.value || undefined })}
+                        className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all bg-white"
+                        disabled={!editForm.capacity || editForm.capacity === 0}
+                      >
+                        <option value="">Unidad</option>
+                        {CAPACITY_UNITS.filter(u => u !== 'Otro').map(unit => (
+                          <option key={unit} value={unit}>
+                            {unit}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <p className="text-xs text-stone-500 mt-1">Ej: 750 ml por botella, 330 ml por lata</p>
+                  </div>
                 </div>
+                
+                {/* Cálculo Total Comprado */}
+                {editForm.capacity && editForm.capacityUnit && (
+                  <div className="mt-3 pt-3 border-t border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-blue-800">Total Comprado:</span>
+                      <span className="text-lg font-bold text-blue-900">
+                        {(editForm.initialQuantity !== undefined ? editForm.initialQuantity : editingItem?.initialQuantity || editingItem?.quantity || 0) * (editForm.capacity || 0)} {editForm.capacityUnit}
+                      </span>
+                    </div>
+                    <p className="text-xs text-blue-600 mt-1">
+                      ({editForm.initialQuantity !== undefined ? editForm.initialQuantity : editingItem?.initialQuantity || editingItem?.quantity || 0} productos × {editForm.capacity} {editForm.capacityUnit}/producto)
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Sección: Lo que Queda Actualmente */}
+              <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                <h3 className="font-semibold text-green-900 mb-4 text-base">📊 Lo que Queda Actualmente</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-stone-700 mb-2">
+                      Cantidad de Productos Actuales *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={editForm.quantity !== undefined ? editForm.quantity : ''}
+                      onChange={(e) => {
+                        const value = e.target.value === '' ? 0 : parseFloat(e.target.value)
+                        setEditForm({ ...editForm, quantity: isNaN(value) ? 0 : Math.max(0, value) })
+                      }}
+                      className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                      required
+                    />
+                    <p className="text-xs text-stone-500 mt-1">Ej: 1 botella, 2 latas, 3 unidades</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-stone-700 mb-2">
+                      Capacidad por Unidad Individual
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={editForm.capacity !== undefined ? editForm.capacity : ''}
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? undefined : parseFloat(e.target.value)
+                          setEditForm({ ...editForm, capacity: value !== undefined && !isNaN(value) ? Math.max(0, value) : undefined })
+                        }}
+                        className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                        placeholder="Ej: 750"
+                      />
+                      <select
+                        value={editForm.capacityUnit || ''}
+                        onChange={(e) => setEditForm({ ...editForm, capacityUnit: e.target.value || undefined })}
+                        className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all bg-white"
+                        disabled={!editForm.capacity || editForm.capacity === 0}
+                      >
+                        <option value="">Unidad</option>
+                        {CAPACITY_UNITS.filter(u => u !== 'Otro').map(unit => (
+                          <option key={unit} value={unit}>
+                            {unit}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <p className="text-xs text-stone-500 mt-1">Misma capacidad por unidad (se puede cambiar si es necesario)</p>
+                  </div>
+                </div>
+
+                {/* Cálculo Total Actual */}
+                {editForm.capacity && editForm.capacityUnit && (
+                  <div className="mt-3 pt-3 border-t border-green-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-green-800">Total Actual:</span>
+                      <span className="text-lg font-bold text-green-900">
+                        {(editForm.quantity !== undefined ? editForm.quantity : editingItem?.quantity || 0) * (editForm.capacity || 0)} {editForm.capacityUnit}
+                      </span>
+                    </div>
+                    <p className="text-xs text-green-600 mt-1">
+                      ({editForm.quantity !== undefined ? editForm.quantity : editingItem?.quantity || 0} productos × {editForm.capacity} {editForm.capacityUnit}/producto)
+                    </p>
+                  </div>
+                )}
+              </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-stone-700 mb-2">
@@ -2368,7 +2886,7 @@ export default function InventoryPage() {
                     required
                   />
                 </div>
-              </div>
+              
 
               <div>
                 <label className="block text-sm font-semibold text-stone-700 mb-2">
@@ -2453,7 +2971,7 @@ export default function InventoryPage() {
               </button>
               <button
                 onClick={handleSaveEdit}
-                disabled={saving || !editForm.name || !editForm.category || !editForm.quantity || !editForm.unitPrice || !editForm.unit}
+                disabled={saving || !editForm.name || !editForm.category || editForm.quantity === undefined || editForm.quantity === null || !editForm.unitPrice || !editForm.unit}
                 className="flex-1 px-4 py-3.5 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-lg hover:shadow-xl"
               >
                 {saving ? 'Guardando...' : 'Guardar Cambios'}
