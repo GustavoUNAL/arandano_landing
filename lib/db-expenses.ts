@@ -1,38 +1,17 @@
 /**
- * Servicio de gastos usando Firebase Firestore
+ * Servicio de gastos usando SQLite
  * Mantiene compatibilidad con la interfaz existente
  */
 
-import admin from 'firebase-admin'
-import { db } from './firebase-admin'
 import { Expense, ExpenseType, ExpenseCategory } from './expenses'
-import { getDbMode, isDbAvailable } from './db-utils'
+import { getDbMode } from './db-utils'
+import { getDatabase } from './db-sqlite'
 
 // Re-exportar tipos
 export type { Expense, ExpenseType, ExpenseCategory } from './expenses'
 
-// Tipo helper para documentos de Firestore
-type FirestoreExpense = Omit<Expense, 'id'>
-type FirestoreDocument = admin.firestore.QueryDocumentSnapshot<FirestoreExpense>
-type FirestoreDocumentSnapshot = admin.firestore.DocumentSnapshot<FirestoreExpense>
-
-// Función helper para convertir documento a Expense
-function documentToExpense(doc: FirestoreDocument | FirestoreDocumentSnapshot): Expense {
-  const data = doc.data()
-  if (!data) {
-    throw new Error('Document data is undefined')
-  }
-  return {
-    id: doc.id,
-    ...data
-  }
-}
-
 // Importar funciones JSON (solo si DB_MODE === 'json')
 import { getExpenses as getExpensesJSON, saveExpenses as saveExpensesJSON, createExpense as createExpenseJSON, updateExpense as updateExpenseJSON, deleteExpense as deleteExpenseJSON, getExpensesByDateRange as getExpensesByDateRangeJSON, getMonthlyFixedExpenses as getMonthlyFixedExpensesJSON } from './expenses'
-
-// Importar funciones SQLite
-import { getDatabase } from './db-sqlite'
 
 export async function getExpenses(): Promise<Expense[]> {
   const mode = getDbMode()
@@ -55,17 +34,18 @@ export async function getExpenses(): Promise<Expense[]> {
     }))
   }
   
-  if (!isDbAvailable()) {
-    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
-  }
-  
-  try {
-    const snapshot = await db.collection('expenses').orderBy('date', 'desc').get()
-    return snapshot.docs.map((doc: FirestoreDocument) => documentToExpense(doc))
-  } catch (error) {
-    console.error('[DB] Error obteniendo gastos de Firebase:', error)
-    throw error
-  }
+  // Por defecto: SQLite
+  const db = getDatabase()
+  const rows = db.prepare('SELECT * FROM expenses ORDER BY date DESC').all() as any[]
+  return rows.map(row => ({
+    id: row.id,
+    description: row.description,
+    amount: row.amount,
+    date: row.date,
+    category: row.category as ExpenseCategory,
+    type: row.type as ExpenseType,
+    notes: row.notes || undefined
+  }))
 }
 
 export async function createExpense(expense: Omit<Expense, 'id'>): Promise<Expense> {
@@ -79,17 +59,22 @@ export async function createExpense(expense: Omit<Expense, 'id'>): Promise<Expen
     return createExpenseJSON(expense)
   }
   
-  if (!isDbAvailable()) {
-    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
-  }
-
-  try {
-    await db.collection('expenses').doc(newExpense.id).set(newExpense)
-    return newExpense
-  } catch (error) {
-    console.error('[DB] Error creando gasto en Firebase:', error)
-    throw error
-  }
+  const db = getDatabase()
+  db.prepare(`
+    INSERT INTO expenses (id, description, amount, date, category, type, notes, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    newExpense.id,
+    newExpense.description,
+    newExpense.amount,
+    newExpense.date,
+    newExpense.category,
+    newExpense.type,
+    newExpense.notes || null,
+    new Date().toISOString()
+  )
+  
+  return newExpense
 }
 
 export async function updateExpense(id: string, updates: Partial<Expense>): Promise<Expense | null> {
@@ -99,21 +84,45 @@ export async function updateExpense(id: string, updates: Partial<Expense>): Prom
     return updateExpenseJSON(id, updates)
   }
   
-  if (!isDbAvailable()) {
-    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
+  const db = getDatabase()
+  const fields: string[] = []
+  const values: any[] = []
+  
+  Object.entries(updates).forEach(([key, value]) => {
+    if (key !== 'id' && value !== undefined) {
+      fields.push(`${key} = ?`)
+      values.push(value)
+    }
+  })
+  
+  if (fields.length === 0) {
+    const row = db.prepare('SELECT * FROM expenses WHERE id = ?').get(id) as any
+    if (!row) return null
+    return {
+      id: row.id,
+      description: row.description,
+      amount: row.amount,
+      date: row.date,
+      category: row.category as ExpenseCategory,
+      type: row.type as ExpenseType,
+      notes: row.notes || undefined
+    }
   }
-
-  try {
-    const docRef = db.collection('expenses').doc(id)
-    await docRef.update(updates)
-    
-    const updated = await docRef.get() as FirestoreDocumentSnapshot
-    if (!updated.exists) return null
-    
-    return documentToExpense(updated)
-  } catch (error) {
-    console.error('[DB] Error actualizando gasto en Firebase:', error)
-    throw error
+  
+  values.push(id)
+  db.prepare(`UPDATE expenses SET ${fields.join(', ')} WHERE id = ?`).run(...values)
+  
+  const row = db.prepare('SELECT * FROM expenses WHERE id = ?').get(id) as any
+  if (!row) return null
+  
+  return {
+    id: row.id,
+    description: row.description,
+    amount: row.amount,
+    date: row.date,
+    category: row.category as ExpenseCategory,
+    type: row.type as ExpenseType,
+    notes: row.notes || undefined
   }
 }
 
@@ -124,17 +133,9 @@ export async function deleteExpense(id: string): Promise<boolean> {
     return deleteExpenseJSON(id)
   }
   
-  if (!isDbAvailable()) {
-    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
-  }
-
-  try {
-    await db.collection('expenses').doc(id).delete()
-    return true
-  } catch (error) {
-    console.error('[DB] Error eliminando gasto de Firebase:', error)
-    throw error
-  }
+  const db = getDatabase()
+  const result = db.prepare('DELETE FROM expenses WHERE id = ?').run(id)
+  return result.changes > 0
 }
 
 export async function getExpensesByDateRange(startDate: string, endDate: string): Promise<Expense[]> {
@@ -144,39 +145,21 @@ export async function getExpensesByDateRange(startDate: string, endDate: string)
     return getExpensesByDateRangeJSON(startDate, endDate)
   }
   
-  if (mode === 'sqlite') {
-    const db = getDatabase()
-    const rows = db.prepare(`
-      SELECT * FROM expenses 
-      WHERE date >= ? AND date <= ?
-      ORDER BY date DESC
-    `).all(startDate, endDate) as any[]
-    return rows.map(row => ({
-      id: row.id,
-      description: row.description,
-      amount: row.amount,
-      date: row.date,
-      category: row.category as ExpenseCategory,
-      type: row.type as ExpenseType,
-      notes: row.notes || undefined
-    }))
-  }
-  
-  if (!isDbAvailable()) {
-    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
-  }
-
-  try {
-    const snapshot = await db.collection('expenses')
-      .where('date', '>=', startDate)
-      .where('date', '<=', endDate)
-      .orderBy('date', 'desc')
-      .get()
-    return snapshot.docs.map((doc: FirestoreDocument) => documentToExpense(doc))
-  } catch (error) {
-    console.error('[DB] Error obteniendo gastos por rango de Firebase:', error)
-    throw error
-  }
+  const db = getDatabase()
+  const rows = db.prepare(`
+    SELECT * FROM expenses 
+    WHERE date >= ? AND date <= ?
+    ORDER BY date DESC
+  `).all(startDate, endDate) as any[]
+  return rows.map(row => ({
+    id: row.id,
+    description: row.description,
+    amount: row.amount,
+    date: row.date,
+    category: row.category as ExpenseCategory,
+    type: row.type as ExpenseType,
+    notes: row.notes || undefined
+  }))
 }
 
 export async function getMonthlyFixedExpenses(year: number, month: number): Promise<Expense[]> {
@@ -186,23 +169,23 @@ export async function getMonthlyFixedExpenses(year: number, month: number): Prom
     return getMonthlyFixedExpensesJSON(year, month)
   }
   
-  if (!isDbAvailable()) {
-    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
-  }
-
-  try {
-    const startDate = new Date(year, month, 1).toISOString()
-    const endDate = new Date(year, month + 1, 0).toISOString()
-    
-    const snapshot = await db.collection('expenses')
-      .where('type', '==', 'fixed')
-      .where('date', '>=', startDate)
-      .where('date', '<=', endDate)
-      .get()
-    return snapshot.docs.map((doc: FirestoreDocument) => documentToExpense(doc))
-  } catch (error) {
-    console.error('[DB] Error obteniendo gastos fijos mensuales de Firebase:', error)
-    throw error
-  }
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`
+  const endDate = new Date(year, month, 0).toISOString().split('T')[0]
+  
+  const db = getDatabase()
+  const rows = db.prepare(`
+    SELECT * FROM expenses 
+    WHERE type = ? AND date >= ? AND date <= ?
+    ORDER BY date DESC
+  `).all('fixed', startDate, endDate) as any[]
+  
+  return rows.map(row => ({
+    id: row.id,
+    description: row.description,
+    amount: row.amount,
+    date: row.date,
+    category: row.category as ExpenseCategory,
+    type: row.type as ExpenseType,
+    notes: row.notes || undefined
+  }))
 }
-

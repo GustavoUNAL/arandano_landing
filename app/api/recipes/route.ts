@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const productId = searchParams.get('productId')
     
     console.log('[API] Obteniendo recetas...')
-    // Usar caché para reducir consultas a Firebase
+    // Usar caché para reducir consultas
     const recipes = await getCachedRecipes(getRecipes)
     console.log(`[API] Recetas obtenidas: ${recipes.length}`)
     
@@ -30,19 +30,6 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[API] Error obteniendo recetas:', error)
     const errorMessage = error?.message || String(error || 'Error desconocido')
-    
-    // Si es un error de cuota de Firebase, retornar array vacío
-    if (errorMessage.includes('Quota exceeded') || 
-        errorMessage.includes('RESOURCE_EXHAUSTED') ||
-        errorMessage.includes('quota')) {
-      console.warn('[API] ⚠️  Firebase quota exceeded - retornando array vacío')
-      return NextResponse.json([], { 
-        headers: { 
-          'X-Error-Type': 'quota-exceeded',
-          'X-Error-Message': 'Cuota de Firebase excedida. Las recetas estarán disponibles cuando se recupere.'
-        }
-      })
-    }
     
     // Log detallado del error en desarrollo
     if (process.env.NODE_ENV === 'development') {

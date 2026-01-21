@@ -1,6 +1,6 @@
 /**
  * Caché simple en memoria para recetas
- * Reduce consultas repetidas a Firebase
+ * Reduce consultas repetidas a la base de datos
  */
 
 import { Recipe } from './recipes'

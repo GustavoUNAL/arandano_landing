@@ -57,7 +57,7 @@ export default function AdminPage() {
   const [sales, setSales] = useState<any[]>([])
   const [inventory, setInventory] = useState<any[]>([])
   const [editingStock, setEditingStock] = useState<{ id: string; stock: number } | null>(null)
-  const [productsStockInfo, setProductsStockInfo] = useState<any[]>([]) // Información de stock desde Firebase
+  const [productsStockInfo, setProductsStockInfo] = useState<any[]>([]) // Información de stock
   const [selectedProductDetail, setSelectedProductDetail] = useState<Product | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>('') // Búsqueda de productos
   const [productTypeFilter, setProductTypeFilter] = useState<'all' | 'simple' | 'composite'>('all') // Filtro de tipo de producto
@@ -394,8 +394,8 @@ export default function AdminPage() {
       const errorMessage = response.headers.get('x-error-message')
       
       if (errorType === 'quota-exceeded') {
-        console.warn('[loadRecipes] ⚠️  Cuota de Firebase excedida')
-        showAlert('error', errorMessage || 'Cuota de Firebase excedida. Las recetas se cargarán cuando se recupere. Por favor, espera unos minutos.')
+        console.warn('[loadRecipes] ⚠️  Error cargando recetas')
+        showAlert('error', errorMessage || 'Error al cargar las recetas. Por favor, intenta de nuevo.')
         setRecipes([])
         return
       }
@@ -404,10 +404,7 @@ export default function AdminPage() {
         console.warn('[loadRecipes] Error loading recipes:', response.status, response.statusText)
         const errorData = await response.json().catch(() => ({}))
         console.warn('[loadRecipes] Error data:', errorData)
-        // Si es un error de cuota, mostrar mensaje pero no romper la UI
-        if (errorData.error && errorData.error.includes('Quota')) {
-          showAlert('error', 'Cuota de Firebase excedida. Las recetas se cargarán cuando esté disponible.')
-        }
+        showAlert('error', 'Error al cargar las recetas. Por favor, intenta de nuevo.')
         setRecipes([])
         return
       }
@@ -426,7 +423,7 @@ export default function AdminPage() {
       setRecipes(data)
       
       if (data.length === 0) {
-        console.warn('[loadRecipes] ⚠️  No se encontraron recetas en Firebase')
+        console.warn('[loadRecipes] ⚠️  No se encontraron recetas')
         // No mostrar alerta de error si no hay recetas, solo un mensaje informativo
         // (las recetas pueden no existir aún o puede ser un problema temporal)
       } else {
@@ -595,7 +592,7 @@ export default function AdminPage() {
       .replace(/\s+/g, ' ') // Normalizar espacios
   }
 
-  // Función para obtener stock real del producto desde Firebase
+  // Función para obtener stock real del producto
   // El stock viene del campo product.stock que se actualiza con las ventas
   const getProductStock = (product: Product): number | null => {
     // Para cócteles y cafés, no mostramos stock directo (se usa disponibilidad)
@@ -607,7 +604,7 @@ export default function AdminPage() {
       return null // Los cócteles/cafés no tienen stock propio
     }
     
-    // Para productos normales, usar el stock registrado en Firebase (product.stock)
+    // Para productos normales, usar el stock registrado (product.stock)
     // Este es el valor real que se actualiza cuando se hacen ventas
     return product.stock !== undefined && product.stock !== null ? product.stock : 0
   }

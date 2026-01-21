@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
         // Para mejorar rendimiento, solo calcular stock detallado para productos que lo necesitan
         const productsWithStock: any[] = []
         
-        // Procesar en lotes de 10 para evitar sobrecargar Firebase
+        // Procesar en lotes de 10 para mejorar rendimiento
         const batchSize = 10
         for (let i = 0; i < products.length; i += batchSize) {
           const batch = products.slice(i, i + batchSize)
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
             })
           )
           
-          // Pequeña pausa entre lotes para no sobrecargar Firebase
+          // Pequeña pausa entre lotes para evitar sobrecarga
           if (i + batchSize < products.length) {
             await new Promise(resolve => setTimeout(resolve, 100))
           }
@@ -70,31 +70,28 @@ export async function GET(request: NextRequest) {
         console.error('[API] Error calculando stock, intentando fallback:', error.message)
         const errorMessage = error?.message || ''
         
-        // Si es un error de cuota de Firebase, usar JSON como fallback
-        if (errorMessage.includes('Quota exceeded') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
-          console.warn('[API] Firebase quota exceeded - usando fallback JSON')
-          try {
-            const products = getProductsJSON()
-            const productsWithBasicStock = products.map(product => ({
-              product,
-              stock: product.stock || 0,
-              hasDirectStock: true,
-              hasRecipe: false
-            }))
-            return NextResponse.json(productsWithBasicStock)
-          } catch (fallbackError) {
-            // Si también falla el fallback, retornar error
-            return NextResponse.json(
-              { 
-                error: 'Cuota de Firebase excedida. Por favor, espera unos minutos.',
-                details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
-              },
-              { status: 503 }
-            )
-          }
+        // Usar JSON como fallback si hay error con SQLite
+        try {
+          const products = getProductsJSON()
+          const productsWithBasicStock = products.map(product => ({
+            product,
+            stock: product.stock || 0,
+            hasDirectStock: true,
+            hasRecipe: false
+          }))
+          return NextResponse.json(productsWithBasicStock)
+        } catch (fallbackError) {
+          // Si también falla el fallback, retornar error
+          return NextResponse.json(
+            { 
+              error: 'Error al obtener stock',
+              details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+            },
+            { status: 503 }
+          )
         }
         
-        // Para otros errores, retornar productos con stock básico desde Firebase (que ya falló)
+        // Para otros errores, retornar productos con stock básico
         // o intentar JSON como último recurso
         try {
           const products = getProductsJSON()
@@ -120,27 +117,18 @@ export async function GET(request: NextRequest) {
     console.error('[API] Error obteniendo stock:', error)
     const errorMessage = error?.message || ''
     
-    // Si es un error de cuota de Firebase, usar JSON como fallback
-    if (errorMessage.includes('Quota exceeded') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
-      console.warn('[API] Firebase quota exceeded - usando fallback JSON')
-      try {
-        const products = getProductsJSON()
-        const productsWithBasicStock = products.map(product => ({
-          product,
-          stock: product.stock || 0,
-          hasDirectStock: true,
-          hasRecipe: false
-        }))
-        return NextResponse.json(productsWithBasicStock)
-      } catch (fallbackError) {
-        return NextResponse.json(
-          { 
-            error: 'Cuota de Firebase excedida. Por favor, espera unos minutos.',
-            details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
-          },
-          { status: 503 }
-        )
-      }
+    // Usar JSON como fallback si hay error con SQLite
+    try {
+      const products = getProductsJSON()
+      const productsWithBasicStock = products.map(product => ({
+        product,
+        stock: product.stock || 0,
+        hasDirectStock: true,
+        hasRecipe: false
+      }))
+      return NextResponse.json(productsWithBasicStock)
+    } catch (fallbackError) {
+      // Ignorar error de fallback
     }
     
     return NextResponse.json(

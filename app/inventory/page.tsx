@@ -47,6 +47,13 @@ export default function InventoryPage() {
   const [alert, setAlert] = useState<{ type: 'success' | 'error', message: string } | null>(null)
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null)
   const [editForm, setEditForm] = useState<Partial<InventoryItem>>({})
+  const [editingLot, setEditingLot] = useState<GroupedByLot | null>(null)
+  const [lotEditForm, setLotEditForm] = useState<{ lot: string; supplier: string; purchaseDate: string }>({
+    lot: '',
+    supplier: '',
+    purchaseDate: ''
+  })
+  const [deletingLot, setDeletingLot] = useState<GroupedByLot | null>(null)
   const [saving, setSaving] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
@@ -149,6 +156,124 @@ export default function InventoryPage() {
   const handleCancelEdit = () => {
     setEditingItem(null)
     setEditForm({})
+  }
+
+  const handleEditLot = (lotGroup: GroupedByLot) => {
+    setEditingLot(lotGroup)
+    setLotEditForm({
+      lot: lotGroup.lot,
+      supplier: lotGroup.supplier || '',
+      purchaseDate: lotGroup.purchaseDate !== 'sin-fecha' ? lotGroup.purchaseDate : ''
+    })
+  }
+
+  const handleSaveLotEdit = async () => {
+    if (!editingLot) return
+
+    setSaving(true)
+    try {
+      const updates: Partial<InventoryItem> = {}
+      
+      // Si cambió el nombre del lote, actualizar lot
+      if (lotEditForm.lot !== editingLot.lot) {
+        updates.lot = lotEditForm.lot
+      }
+      
+      // Si cambió el proveedor, actualizar supplier
+      if (lotEditForm.supplier !== editingLot.supplier) {
+        updates.supplier = lotEditForm.supplier || undefined
+      }
+      
+      // Si cambió la fecha de compra, actualizar purchaseDate
+      if (lotEditForm.purchaseDate !== editingLot.purchaseDate) {
+        updates.purchaseDate = lotEditForm.purchaseDate || undefined
+      }
+
+      // Si no hay cambios, no hacer nada
+      if (Object.keys(updates).length === 0) {
+        setEditingLot(null)
+        setLotEditForm({ lot: '', supplier: '', purchaseDate: '' })
+        return
+      }
+
+      const response = await fetch('/api/inventory/bulk', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lotName: editingLot.lot,
+          updates
+        })
+      })
+
+      if (response.ok) {
+        await loadInventory()
+        setEditingLot(null)
+        setLotEditForm({ lot: '', supplier: '', purchaseDate: '' })
+        showAlert('success', 'Lote actualizado exitosamente')
+      } else {
+        const errorData = await response.json()
+        showAlert('error', errorData.error || 'Error al actualizar lote')
+      }
+    } catch (error) {
+      console.error('Error updating lot:', error)
+      showAlert('error', 'Error al actualizar lote')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCancelLotEdit = () => {
+    setEditingLot(null)
+    setLotEditForm({ lot: '', supplier: '', purchaseDate: '' })
+  }
+
+  const handleDeleteLot = (lotGroup: GroupedByLot) => {
+    setDeletingLot(lotGroup)
+  }
+
+  const handleConfirmDeleteLot = async () => {
+    if (!deletingLot) return
+
+    setSaving(true)
+    try {
+      // Asegurar que el nombre del lote esté limpio
+      const lotNameToDelete = deletingLot.lot.trim()
+      
+      console.log('Eliminando lote:', lotNameToDelete)
+      console.log('Items en el lote:', deletingLot.items.map(i => ({ id: i.id, name: i.name, lot: i.lot })))
+      
+      const response = await fetch('/api/inventory/bulk', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lotName: lotNameToDelete
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        await loadInventory()
+        setDeletingLot(null)
+        setEditingLot(null) // Cerrar también el modal de edición
+        setLotEditForm({ lot: '', supplier: '', purchaseDate: '' })
+        showAlert('success', `Lote "${lotNameToDelete}" eliminado exitosamente`)
+      } else {
+        console.error('Error response:', data)
+        const errorMsg = data.error || 'Error al eliminar lote'
+        const debugInfo = data.debug ? `\nLotes disponibles: ${data.debug.availableLots?.join(', ') || 'N/A'}` : ''
+        showAlert('error', errorMsg + debugInfo)
+      }
+    } catch (error) {
+      console.error('Error deleting lot:', error)
+      showAlert('error', 'Error al eliminar lote')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCancelDeleteLot = () => {
+    setDeletingLot(null)
   }
 
   const handleAddNewItem = async () => {
@@ -405,6 +530,7 @@ export default function InventoryPage() {
 
   // Agrupar directamente por LOTE (cada lote tiene su proveedor y fecha)
   interface GroupedByLot {
+    lotId: string // ID único del lote
     lot: string
     supplier: string | null
     purchaseDate: string
@@ -430,7 +556,11 @@ export default function InventoryPage() {
       
       if (!lotsMap.has(lotKey)) {
         const dateObj = purchaseDate !== 'sin-fecha' ? new Date(purchaseDate + 'T00:00:00') : null
+        // Generar ID único estable para el lote basado en el nombre del lote
+        // Usar una función hash simple para generar un ID consistente
+        const lotId = `lot-${lot.replace(/\s+/g, '-').toLowerCase().substring(0, 30)}-${Array.from(lot).reduce((acc, char) => acc + char.charCodeAt(0), 0)}`
         lotsMap.set(lotKey, {
+          lotId: lotId,
           lot: lot,
           supplier: supplier,
           purchaseDate: purchaseDate,
@@ -528,7 +658,10 @@ export default function InventoryPage() {
       let lotGroup = dateGroup.lots.find(l => l.lot === lot)
       
       if (!lotGroup) {
+        // Generar ID único estable para el lote basado en el nombre del lote
+        const lotId = `lot-${lot.replace(/\s+/g, '-').toLowerCase().substring(0, 30)}-${Array.from(lot).reduce((acc, char) => acc + char.charCodeAt(0), 0)}`
         lotGroup = {
+          lotId: lotId,
           lot: lot,
           supplier: item.supplier || null,
           purchaseDate: purchaseDate,
@@ -671,6 +804,16 @@ export default function InventoryPage() {
               className="flex-1 px-3 py-2 text-sm border border-stone-300 rounded-lg focus:ring-1 focus:ring-berry-500 focus:border-berry-500 transition-all bg-transparent"
             />
             <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-berry-600 hover:bg-berry-700 text-white text-sm font-semibold rounded-lg transition-all flex items-center gap-2 shadow-md hover:shadow-lg"
+              title="Agregar nuevo producto"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              <span className="hidden sm:inline">Agregar</span>
+            </button>
+            <button
               onClick={() => setShowConfigModal(true)}
               className="p-2 text-berry-600 hover:text-berry-700 hover:bg-berry-50 rounded-lg transition-all flex items-center justify-center"
               title="Configuraciones"
@@ -767,39 +910,53 @@ export default function InventoryPage() {
                     className="bg-stone-50 border-2 border-stone-200 rounded-lg overflow-hidden hover:border-berry-300 transition-colors"
                   >
                     {/* Encabezado del Lote */}
-                    <button
-                      onClick={() => toggleLotExpansion(lotKey)}
-                      className="w-full px-4 sm:px-6 py-4 bg-berry-600 hover:bg-berry-700 text-white text-left transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
-                            <h2 className="text-lg sm:text-xl font-bold">
-                              🏷️ {lotGroup.lot}
-                            </h2>
-                            {lotGroup.supplier && lotGroup.supplier !== 'Sin proveedor' && (
-                              <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium">
-                                🏪 {lotGroup.supplier}
-                              </span>
-                            )}
-                            <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium">
-                              📅 {lotGroup.formattedDate}
-                            </span>
+                    <div className="bg-berry-600 hover:bg-berry-700 transition-colors">
+                      <div className="flex items-center">
+                        <button
+                          onClick={() => toggleLotExpansion(lotKey)}
+                          className="flex-1 px-4 sm:px-6 py-4 text-white text-left"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                                <h2 className="text-lg sm:text-xl font-bold">
+                                  🏷️ {lotGroup.lot}
+                                </h2>
+                                {lotGroup.supplier && lotGroup.supplier !== 'Sin proveedor' && (
+                                  <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium">
+                                    🏪 {lotGroup.supplier}
+                                  </span>
+                                )}
+                                <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium">
+                                  📅 {lotGroup.formattedDate}
+                                </span>
+                              </div>
+                              <div className="text-sm text-berry-100 flex flex-wrap gap-3 sm:gap-4">
+                                <span>{lotGroup.items.length} producto(s)</span>
+                                <span>Stock total: {lotGroup.totalQuantity} unidades</span>
+                                <span className="font-semibold">Valor: ${lotGroup.totalValue.toLocaleString('es-CO')}</span>
+                                {lotGroup.categories.length > 0 && (
+                                  <span>{lotGroup.categories.length} categoría(s)</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-2xl ml-3">
+                              {expandedLots.has(lotKey) ? '▼' : '▶'}
+                            </div>
                           </div>
-                          <div className="text-sm text-berry-100 flex flex-wrap gap-3 sm:gap-4">
-                            <span>{lotGroup.items.length} producto(s)</span>
-                            <span>Stock total: {lotGroup.totalQuantity} unidades</span>
-                            <span className="font-semibold">Valor: ${lotGroup.totalValue.toLocaleString('es-CO')}</span>
-                            {lotGroup.categories.length > 0 && (
-                              <span>{lotGroup.categories.length} categoría(s)</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-2xl ml-3">
-                          {expandedLots.has(lotKey) ? '▼' : '▶'}
-                        </div>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEditLot(lotGroup)
+                          }}
+                          className="px-3 py-4 text-white hover:bg-berry-800 transition-colors"
+                          title="Editar lote"
+                        >
+                          <span className="text-xl">⚙️</span>
+                        </button>
                       </div>
-                    </button>
+                    </div>
 
                     {/* Productos dentro del lote */}
                     {expandedLots.has(lotKey) && (
@@ -925,33 +1082,47 @@ export default function InventoryPage() {
                             className="bg-white border-2 border-stone-300 rounded-lg overflow-hidden"
                           >
                             {/* Encabezado del Lote */}
-                            <button
-                              onClick={() => toggleLotExpansion(lotKey)}
-                              className="w-full px-4 py-3 bg-berry-100 hover:bg-berry-200 text-berry-900 text-left transition-colors"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="font-bold text-base sm:text-lg">
-                                      🏷️ Lote: {lotGroup.lot}
-                                    </h3>
-                                    {lotGroup.supplier && (
-                                      <span className="px-2 py-1 bg-white border border-berry-300 rounded-full text-xs font-medium">
-                                        Proveedor: {lotGroup.supplier}
-                                      </span>
-                                    )}
+                            <div className="bg-berry-100 hover:bg-berry-200 transition-colors">
+                              <div className="flex items-center">
+                                <button
+                                  onClick={() => toggleLotExpansion(lotKey)}
+                                  className="flex-1 px-4 py-3 text-berry-900 text-left"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="font-bold text-base sm:text-lg">
+                                          🏷️ Lote: {lotGroup.lot}
+                                        </h3>
+                                        {lotGroup.supplier && (
+                                          <span className="px-2 py-1 bg-white border border-berry-300 rounded-full text-xs font-medium">
+                                            Proveedor: {lotGroup.supplier}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="text-xs sm:text-sm text-berry-700 flex flex-wrap gap-3">
+                                        <span>{lotGroup.items.length} producto(s)</span>
+                                        <span>Stock total: {lotGroup.totalQuantity} unidades</span>
+                                        <span className="font-semibold">Valor: ${lotGroup.totalValue.toLocaleString('es-CO')}</span>
+                                      </div>
+                                    </div>
+                                    <div className="text-xl ml-2">
+                                      {expandedLots.has(lotKey) ? '▼' : '▶'}
+                                    </div>
                                   </div>
-                                  <div className="text-xs sm:text-sm text-berry-700 flex flex-wrap gap-3">
-                                    <span>{lotGroup.items.length} producto(s)</span>
-                                    <span>Stock total: {lotGroup.totalQuantity} unidades</span>
-                                    <span className="font-semibold">Valor: ${lotGroup.totalValue.toLocaleString('es-CO')}</span>
-                                  </div>
-                                </div>
-                                <div className="text-xl ml-2">
-                                  {expandedLots.has(lotKey) ? '▼' : '▶'}
-                                </div>
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleEditLot(lotGroup)
+                                  }}
+                                  className="px-3 py-3 text-berry-900 hover:bg-berry-300 transition-colors"
+                                  title="Editar lote"
+                                >
+                                  <span className="text-lg">⚙️</span>
+                                </button>
                               </div>
-                            </button>
+                            </div>
 
                             {/* Productos dentro del lote */}
                             {expandedLots.has(lotKey) && (
@@ -2286,6 +2457,179 @@ export default function InventoryPage() {
                 className="flex-1 px-4 py-3.5 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-lg hover:shadow-xl"
               >
                 {saving ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmación de eliminación de lote */}
+      {deletingLot && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-red-600">⚠️ Eliminar Lote</h2>
+              <button
+                onClick={handleCancelDeleteLot}
+                className="text-stone-500 hover:text-stone-700 text-2xl leading-none"
+                aria-label="Cerrar"
+                disabled={saving}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4 mb-4">
+                <div className="text-red-800 font-semibold mb-2">
+                  ⚠️ Esta acción no se puede deshacer
+                </div>
+                <div className="text-sm text-red-700">
+                  Estás a punto de eliminar el lote <strong>"{deletingLot.lot}"</strong>
+                </div>
+              </div>
+              
+              <div className="bg-stone-50 border border-stone-200 rounded-lg p-4 mb-4">
+                <div className="text-sm text-stone-700 space-y-2">
+                  <div>
+                    <strong>Productos afectados:</strong> {deletingLot.items.length} item(s)
+                  </div>
+                  <div>
+                    <strong>Proveedor:</strong> {deletingLot.supplier || 'No especificado'}
+                  </div>
+                  <div>
+                    <strong>Fecha de compra:</strong> {deletingLot.formattedDate}
+                  </div>
+                  <div>
+                    <strong>Valor total:</strong> ${deletingLot.totalValue.toLocaleString('es-CO')}
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-sm text-stone-600">
+                Todos los productos de este lote serán eliminados permanentemente del inventario.
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={handleCancelDeleteLot}
+                className="flex-1 px-4 py-3.5 border-2 border-stone-300 rounded-xl hover:bg-stone-50 transition-colors font-semibold text-base"
+                disabled={saving}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDeleteLot}
+                disabled={saving}
+                className="flex-1 px-4 py-3.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-lg hover:shadow-xl"
+              >
+                {saving ? 'Eliminando...' : 'Sí, Eliminar Lote'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de edición de lote */}
+      {editingLot && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-berry-950">Editar Lote</h2>
+              <button
+                onClick={handleCancelLotEdit}
+                className="text-stone-500 hover:text-stone-700 text-2xl leading-none"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="mb-4 p-4 bg-berry-50 border border-berry-200 rounded-lg">
+              <div className="text-sm text-berry-700">
+                <strong>Este lote contiene {editingLot.items.length} producto(s)</strong>
+                <br />
+                Los cambios se aplicarán a todos los productos de este lote.
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
+                  Nombre del Lote *
+                </label>
+                <input
+                  type="text"
+                  value={lotEditForm.lot}
+                  onChange={(e) => setLotEditForm({ ...lotEditForm, lot: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
+                  Proveedor
+                </label>
+                <input
+                  type="text"
+                  value={lotEditForm.supplier}
+                  onChange={(e) => setLotEditForm({ ...lotEditForm, supplier: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                  placeholder="Nombre del proveedor"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
+                  Fecha de Compra
+                </label>
+                <input
+                  type="date"
+                  value={lotEditForm.purchaseDate}
+                  onChange={(e) => setLotEditForm({ ...lotEditForm, purchaseDate: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-stone-200 pt-4 mt-4">
+              <div className="mb-4">
+                <button
+                  onClick={() => {
+                    if (editingLot) {
+                      const lotToDelete = editingLot
+                      setEditingLot(null)
+                      setLotEditForm({ lot: '', supplier: '', purchaseDate: '' })
+                      handleDeleteLot(lotToDelete)
+                    }
+                  }}
+                  disabled={saving}
+                  className="w-full px-4 py-3 bg-red-50 hover:bg-red-100 border-2 border-red-300 text-red-700 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Eliminar Lote
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 mt-6">
+              <button
+                onClick={handleCancelLotEdit}
+                className="flex-1 px-4 py-3.5 border-2 border-stone-300 rounded-xl hover:bg-stone-50 transition-colors font-semibold text-base"
+                disabled={saving}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveLotEdit}
+                disabled={saving || !lotEditForm.lot}
+                className="flex-1 px-4 py-3.5 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-lg hover:shadow-xl"
+              >
+                {saving ? 'Guardando...' : 'Guardar Cambios del Lote'}
               </button>
             </div>
           </div>

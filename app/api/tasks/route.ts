@@ -49,43 +49,33 @@ export async function GET(request: NextRequest) {
     console.error('[API] Stack trace:', error?.stack)
     const errorMessage = error?.message || 'Error desconocido al obtener tareas'
     
-    // Si es un error de cuota de Firebase, retornar un mensaje más claro
-    if (errorMessage.includes('Quota exceeded') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
-      console.warn('[API] Firebase quota exceeded - usando fallback')
-      // Intentar usar JSON como fallback si está disponible
-      try {
-        const jsonTasks = getTasksJSON()
-        
-        // Aplicar los mismos filtros que se harían normalmente
-        let tasks = jsonTasks
-        const { searchParams } = new URL(request.url)
-        const category = searchParams.get('category')
-        const priority = searchParams.get('priority')
-        const completed = searchParams.get('completed')
-        
-        if (category) {
-          tasks = tasks.filter(t => t.category === category)
-        }
-        
-        if (priority) {
-          tasks = tasks.filter(t => t.priority === priority)
-        }
-        
-        if (completed !== null) {
-          const isCompleted = completed === 'true'
-          tasks = tasks.filter(t => t.completed === isCompleted)
-        }
-        
-        return NextResponse.json(tasks)
-      } catch (fallbackError) {
-        return NextResponse.json(
-          { 
-            error: 'Cuota de Firebase excedida. Por favor, espera unos minutos o verifica tu plan de Firebase.',
-            details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
-          },
-          { status: 503 }
-        )
+    // Intentar usar JSON como fallback si hay error con SQLite
+    try {
+      const jsonTasks = getTasksJSON()
+      
+      // Aplicar los mismos filtros que se harían normalmente
+      let tasks = jsonTasks
+      const { searchParams } = new URL(request.url)
+      const category = searchParams.get('category')
+      const priority = searchParams.get('priority')
+      const completed = searchParams.get('completed')
+      
+      if (category) {
+        tasks = tasks.filter(t => t.category === category)
       }
+      
+      if (priority) {
+        tasks = tasks.filter(t => t.priority === priority)
+      }
+      
+      if (completed !== null) {
+        const isCompleted = completed === 'true'
+        tasks = tasks.filter(t => t.completed === isCompleted)
+      }
+      
+      return NextResponse.json(tasks)
+    } catch (fallbackError) {
+      // Ignorar error de fallback
     }
     
     return NextResponse.json(

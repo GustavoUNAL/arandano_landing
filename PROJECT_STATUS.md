@@ -4,7 +4,7 @@
 
 **Fecha de verificación:** 8 de enero de 2026
 
-### 📦 Base de Datos Firebase
+### 📦 Base de Datos SQLite
 
 **Inventario:**
 - ✅ Total items: 165
@@ -63,36 +63,20 @@
 
 ### 🔧 Scripts Disponibles
 
-**Verificación y Reportes:**
-- `scripts/verify-database-consistency.js` - Verificar consistencia
+**Scripts de Producción (usados en npm scripts):**
+- `scripts/migrate-to-sqlite.js` - Migrar a SQLite (npm run migrate:sqlite)
+- `scripts/export-json-to-backup.js` - Backup a JSON (npm run backup:json)
+- `scripts/configure-server-env.sh` - Configuración de entorno (npm run configure:env)
+- `scripts/test-api-functions.js` - Tests de API (npm run test:api)
+- `scripts/pre-deploy-check.js` - Verificación pre-despliegue (npm run pre-deploy)
+
+**Scripts de Utilidad:**
 - `scripts/database-organization-report.js` - Reporte de organización
 - `scripts/report-inventory-lots.js` - Reporte de lotes
 - `scripts/report-sales.js` - Reporte de ventas
+- `scripts/import-inventory.js` - Importación de inventario (usado por API)
 
-**Gestión de Datos:**
-- `scripts/backup-firebase.js` - Backup de Firebase
-- `scripts/migrate-to-firebase.js` - Migrar a Firebase
-- `scripts/restore-backup-to-firebase.js` - Restaurar backup
-
-**Agregar Lotes:**
-- `scripts/add-alkosto-lot.js` - Agregar lote de Alkosto
-- `scripts/add-exito-lot.js` - Agregar lote de Éxito
-- `scripts/add-a2sas-lot.js` - Agregar lote de A2 SAS
-- `scripts/add-jumbo-complete-lot.js` - Agregar lote de Jumbo
-- `scripts/add-tienda-esquina-lot.js` - Agregar lote de tienda esquina
-- `scripts/add-paty-missing-lot.js` - Agregar items faltantes de Paty
-- `scripts/add-la-merced-5enero.js` - Agregar lote de La Merced
-- `scripts/add-ferreteria-maridiaz-expense.js` - Agregar gasto de Ferretería
-
-**Verificación:**
-- `scripts/check-marlboro.js` - Verificar cigarrillos Marlboro
-- `scripts/check-paty-lot.js` - Verificar lote de Paty
-- `scripts/check-jumbo-lot.js` - Verificar lote de Jumbo
-- `scripts/check-add-a2sas-5enero.js` - Verificar y agregar lote A2 SAS
-- `scripts/verify-alkosto-lot.js` - Verificar lote de Alkosto
-
-**Corrección:**
-- `scripts/fix-missing-suppliers.js` - Corregir proveedores faltantes
+**Nota:** Scripts históricos y tareas puntuales completadas se han movido a `scripts/deprecated/`
 
 ### 🚀 Despliegue
 
@@ -105,16 +89,13 @@
 **Configuración:**
 - `ecosystem.config.js` - Configuración PM2 (standalone)
 - `next.config.js` - Configuración Next.js (standalone)
-- `firestore.rules` - Reglas de seguridad Firebase
 
 ### 📚 Documentación Principal
 
 - `README.md` - Documentación principal
 - `DEPLOY_EC2_COMPLETE.md` - Guía completa de despliegue EC2
 - `DEPLOY_SERVER.md` - Guía de despliegue en servidor
-- `README_DEPLOY_EC2.md` - Guía rápida EC2
-- `FIREBASE_SETUP.md` - Configuración de Firebase
-- `README_DATABASE.md` - Información sobre base de datos
+- `MIGRACION_SQLITE.md` - Información sobre la migración a SQLite
 
 ### ✅ Estado Final
 

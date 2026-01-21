@@ -1,35 +1,31 @@
 /**
- * Servicio de tareas usando Firebase Firestore
+ * Servicio de tareas usando SQLite
  * Mantiene compatibilidad con la interfaz existente
  */
 
-import admin from 'firebase-admin'
-import { db } from './firebase-admin'
 import { Task, TaskCategory, TaskPriority } from './tasks'
-import { getDbMode, isDbAvailable } from './db-utils'
+import { getDbMode } from './db-utils'
+import { getDatabase } from './db-sqlite'
 
 // Re-exportar tipos
 export type { Task, TaskCategory, TaskPriority } from './tasks'
 
-// Tipo helper para documentos de Firestore
-type FirestoreTask = Omit<Task, 'id'>
-type FirestoreDocument = admin.firestore.QueryDocumentSnapshot<FirestoreTask>
-type FirestoreDocumentSnapshot = admin.firestore.DocumentSnapshot<FirestoreTask>
-
-// Función helper para convertir documento a Task
-function documentToTask(doc: FirestoreDocument | FirestoreDocumentSnapshot): Task {
-  const data = doc.data()
-  if (!data) {
-    throw new Error('Document data is undefined')
-  }
-  return {
-    id: doc.id,
-    ...data
-  }
-}
-
 // Importar funciones JSON (solo si DB_MODE === 'json')
 import { getTasks as getTasksJSON, saveTasks as saveTasksJSON, createTask as createTaskJSON, updateTask as updateTaskJSON, deleteTask as deleteTaskJSON, getTasksByCategory as getTasksByCategoryJSON, getTasksByPriority as getTasksByPriorityJSON, getOverdueTasks as getOverdueTasksJSON } from './tasks'
+
+function rowToTask(row: any): Task {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description || undefined,
+    category: row.category as TaskCategory,
+    priority: row.priority as TaskPriority,
+    completed: Boolean(row.completed),
+    createdAt: row.createdAt,
+    completedAt: row.completedAt || undefined,
+    dueDate: row.dueDate || undefined
+  }
+}
 
 export async function getTasks(): Promise<Task[]> {
   const mode = getDbMode()
@@ -38,17 +34,9 @@ export async function getTasks(): Promise<Task[]> {
     return getTasksJSON()
   }
   
-  if (!isDbAvailable()) {
-    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
-  }
-  
-  try {
-    const snapshot = await db.collection('tasks').orderBy('createdAt', 'desc').get()
-    return snapshot.docs.map((doc: FirestoreDocument) => documentToTask(doc))
-  } catch (error) {
-    console.error('[DB] Error obteniendo tareas de Firebase:', error)
-    throw error
-  }
+  const db = getDatabase()
+  const rows = db.prepare('SELECT * FROM tasks ORDER BY createdAt DESC').all() as any[]
+  return rows.map(rowToTask)
 }
 
 export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'completed'>): Promise<Task> {
@@ -64,17 +52,22 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'complete
     return createTaskJSON(task)
   }
   
-  if (!isDbAvailable()) {
-    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
-  }
-
-  try {
-    await db.collection('tasks').doc(newTask.id).set(newTask)
-    return newTask
-  } catch (error) {
-    console.error('[DB] Error creando tarea en Firebase:', error)
-    throw error
-  }
+  const db = getDatabase()
+  db.prepare(`
+    INSERT INTO tasks (id, title, description, category, priority, completed, createdAt, dueDate)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    newTask.id,
+    newTask.title,
+    newTask.description || null,
+    newTask.category,
+    newTask.priority,
+    0, // completed as integer
+    newTask.createdAt,
+    newTask.dueDate || null
+  )
+  
+  return newTask
 }
 
 export async function updateTask(id: string, updates: Partial<Task>): Promise<Task | null> {
@@ -84,31 +77,44 @@ export async function updateTask(id: string, updates: Partial<Task>): Promise<Ta
     return updateTaskJSON(id, updates)
   }
   
-  if (!isDbAvailable()) {
-    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
+  const db = getDatabase()
+  const fields: string[] = []
+  const values: any[] = []
+  
+  // Si se marca como completada, agregar fecha de completado
+  if (updates.completed === true) {
+    updates.completedAt = new Date().toISOString()
   }
-
-  try {
-    // Si se marca como completada, agregar fecha de completado
-    if (updates.completed === true) {
-      updates.completedAt = new Date().toISOString()
-    }
-    // Si se desmarca como completada, quitar fecha de completado
-    if (updates.completed === false) {
-      updates.completedAt = undefined
-    }
-
-    const docRef = db.collection('tasks').doc(id)
-    await docRef.update(updates)
-    
-    const updated = await docRef.get() as FirestoreDocumentSnapshot
-    if (!updated.exists) return null
-    
-    return documentToTask(updated)
-  } catch (error) {
-    console.error('[DB] Error actualizando tarea en Firebase:', error)
-    throw error
+  // Si se desmarca como completada, quitar fecha de completado
+  if (updates.completed === false) {
+    updates.completedAt = undefined
   }
+  
+  Object.entries(updates).forEach(([key, value]) => {
+    if (key !== 'id' && value !== undefined) {
+      if (key === 'completed') {
+        fields.push('completed = ?')
+        values.push(value ? 1 : 0) // Convertir boolean a integer
+      } else {
+        fields.push(`${key} = ?`)
+        values.push(value)
+      }
+    }
+  })
+  
+  if (fields.length === 0) {
+    const row = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as any
+    if (!row) return null
+    return rowToTask(row)
+  }
+  
+  values.push(id)
+  db.prepare(`UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`).run(...values)
+  
+  const row = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as any
+  if (!row) return null
+  
+  return rowToTask(row)
 }
 
 export async function deleteTask(id: string): Promise<boolean> {
@@ -118,17 +124,9 @@ export async function deleteTask(id: string): Promise<boolean> {
     return deleteTaskJSON(id)
   }
   
-  if (!isDbAvailable()) {
-    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
-  }
-
-  try {
-    await db.collection('tasks').doc(id).delete()
-    return true
-  } catch (error) {
-    console.error('[DB] Error eliminando tarea de Firebase:', error)
-    throw error
-  }
+  const db = getDatabase()
+  const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(id)
+  return result.changes > 0
 }
 
 export async function getTasksByCategory(category: TaskCategory): Promise<Task[]> {
@@ -138,20 +136,9 @@ export async function getTasksByCategory(category: TaskCategory): Promise<Task[]
     return getTasksByCategoryJSON(category)
   }
   
-  if (!isDbAvailable()) {
-    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
-  }
-
-  try {
-    const snapshot = await db.collection('tasks')
-      .where('category', '==', category)
-      .orderBy('createdAt', 'desc')
-      .get()
-    return snapshot.docs.map((doc: FirestoreDocument) => documentToTask(doc))
-  } catch (error) {
-    console.error('[DB] Error obteniendo tareas por categoría de Firebase:', error)
-    throw error
-  }
+  const db = getDatabase()
+  const rows = db.prepare('SELECT * FROM tasks WHERE category = ? ORDER BY createdAt DESC').all(category) as any[]
+  return rows.map(rowToTask)
 }
 
 export async function getTasksByPriority(priority: TaskPriority): Promise<Task[]> {
@@ -161,20 +148,9 @@ export async function getTasksByPriority(priority: TaskPriority): Promise<Task[]
     return getTasksByPriorityJSON(priority)
   }
   
-  if (!isDbAvailable()) {
-    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
-  }
-
-  try {
-    const snapshot = await db.collection('tasks')
-      .where('priority', '==', priority)
-      .orderBy('createdAt', 'desc')
-      .get()
-    return snapshot.docs.map((doc: FirestoreDocument) => documentToTask(doc))
-  } catch (error) {
-    console.error('[DB] Error obteniendo tareas por prioridad de Firebase:', error)
-    throw error
-  }
+  const db = getDatabase()
+  const rows = db.prepare('SELECT * FROM tasks WHERE priority = ? ORDER BY createdAt DESC').all(priority) as any[]
+  return rows.map(rowToTask)
 }
 
 export async function getOverdueTasks(): Promise<Task[]> {
@@ -184,20 +160,13 @@ export async function getOverdueTasks(): Promise<Task[]> {
     return getOverdueTasksJSON()
   }
   
-  if (!isDbAvailable()) {
-    throw new Error('[DB] Firebase no disponible pero DB_MODE es firebase. Verifica configuración de Firebase.')
-  }
-
-  try {
-    const now = new Date().toISOString()
-    const snapshot = await db.collection('tasks')
-      .where('completed', '==', false)
-      .where('dueDate', '<', now)
-      .get()
-    return snapshot.docs.map((doc: FirestoreDocument) => documentToTask(doc))
-  } catch (error) {
-    console.error('[DB] Error obteniendo tareas vencidas de Firebase:', error)
-    throw error
-  }
+  const now = new Date().toISOString()
+  const db = getDatabase()
+  const rows = db.prepare(`
+    SELECT * FROM tasks 
+    WHERE completed = 0 AND dueDate IS NOT NULL AND dueDate < ?
+    ORDER BY dueDate ASC
+  `).all(now) as any[]
+  
+  return rows.map(rowToTask)
 }
-

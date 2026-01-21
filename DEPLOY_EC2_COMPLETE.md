@@ -40,8 +40,8 @@ Desde tu máquina local, sube los archivos necesarios:
 # Subir .env.local
 scp -i tu-clave.pem .env.local ubuntu@tu-ip-ec2:~/projects/arandano_landing/
 
-# Subir firebase-service-account.json
-scp -i tu-clave.pem firebase-service-account.json ubuntu@tu-ip-ec2:~/projects/arandano_landing/
+# Subir base de datos SQLite (opcional, si quieres migrar datos)
+scp -i tu-clave.pem data/arandano.db ubuntu@tu-ip-ec2:~/projects/arandano_landing/data/
 ```
 
 ### 4. Ejecutar el Script de Despliegue
@@ -169,16 +169,16 @@ Este error ya está resuelto. El script usa `ecosystem.config.js` que está conf
    sudo systemctl reload nginx
    ```
 
-### Problemas con Firebase
+### Problemas con la Base de Datos
 
-1. Verificar que firebase-service-account.json existe:
+1. Verificar que la base de datos SQLite existe:
    ```bash
-   ls -la firebase-service-account.json
+   ls -la data/arandano.db
    ```
 
-2. Verificar que está copiado en el build standalone:
+2. Verificar que tiene permisos de escritura:
    ```bash
-   ls -la .next/standalone/firebase-service-account.json
+   chmod 664 data/arandano.db
    ```
 
 3. Verificar variables de entorno:
@@ -267,8 +267,8 @@ Si encuentras problemas:
 - [ ] Node.js instalado (v18 o superior)
 - [ ] PM2 instalado y configurado
 - [ ] Nginx instalado y configurado
-- [ ] `.env.local` configurado con DB_MODE=firebase
-- [ ] `firebase-service-account.json` presente
+- [ ] `.env.local` configurado con DB_MODE=sqlite
+- [ ] Base de datos SQLite presente en `data/arandano.db`
 - [ ] Build creado exitosamente
 - [ ] PM2 corriendo la aplicación
 - [ ] Nginx configurado con dominio arandanocafe.com

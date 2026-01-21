@@ -1,6 +1,6 @@
 /**
  * Servicio centralizado para cálculo de stock y disponibilidad
- * - Stock real de productos desde Firebase
+ * - Stock real de productos desde la base de datos
  * - Disponibilidad de cócteles/cafés basada en recetas
  * - Botellas completas para licores
  */
@@ -33,7 +33,7 @@ export interface ProductAvailability {
 }
 
 /**
- * Calcula el stock real de un producto desde Firebase
+ * Calcula el stock real de un producto desde la base de datos
  * - Si tiene stock directo -> usar ese
  * - Si el stock se calcula por movimientos -> calcular: stock = entradas - salidas
  */

@@ -21,7 +21,7 @@
 - **Endpoint:** `POST /api/sales`
 - **Función:** `createSale()` en `lib/db-sales.ts`
 - **Características:**
-  - Crea la venta en Firebase
+  - Crea la venta en la base de datos (SQLite)
   - Actualiza automáticamente el stock de los productos vendidos
   - Actualiza `lastSaleDate` y `totalSold` de los productos
   - Maneja errores sin fallar toda la venta
@@ -45,7 +45,7 @@
 - **Características:**
   - Restaura automáticamente el stock de los productos
   - Actualiza `totalSold` de los productos
-  - Elimina la venta de Firebase
+  - Elimina la venta de la base de datos
 - **Verificación:** Eliminación de venta probada exitosamente
 
 ## 📊 Resumen de Pruebas
@@ -115,7 +115,7 @@ Detalles:
      - ✅ Reduce stock de productos vendidos
      - ✅ Actualiza `lastSaleDate` de productos
      - ✅ Incrementa `totalSold` de productos
-     - ✅ Crea registro de venta en Firebase
+     - ✅ Crea registro de venta en la base de datos
 
 2. **Editar venta**
    - Endpoint: `PUT /api/sales/[id]`
@@ -140,7 +140,7 @@ Detalles:
    - Los errores de actualización de stock no fallan la operación de venta
 
 2. **Integridad de Datos:**
-   - Las operaciones son transaccionales en Firebase
+   - Las operaciones son transaccionales en SQLite
    - Los cambios se reflejan inmediatamente en la base de datos
    - Los scripts de verificación restauran los datos originales después de las pruebas
 

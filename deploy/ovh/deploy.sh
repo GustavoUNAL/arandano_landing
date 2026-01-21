@@ -78,20 +78,26 @@ fi
 
 # Configurar DB_MODE si no existe
 if ! grep -q "^DB_MODE=" "$ENV_FILE"; then
-    echo "DB_MODE=firebase" >> "$ENV_FILE"
-    echo -e "${GREEN}   ✅ DB_MODE=firebase agregado${NC}"
+    echo "DB_MODE=sqlite" >> "$ENV_FILE"
+    echo -e "${GREEN}   ✅ DB_MODE=sqlite agregado${NC}"
 else
-    # Asegurar que DB_MODE es firebase
-    sed -i 's/^DB_MODE=.*/DB_MODE=firebase/' "$ENV_FILE"
+    # Asegurar que DB_MODE es sqlite
+    sed -i 's/^DB_MODE=.*/DB_MODE=sqlite/' "$ENV_FILE"
     echo -e "${GREEN}   ✅ DB_MODE configurado correctamente${NC}"
 fi
 
-# Verificar que firebase-service-account.json existe
-if [ ! -f "firebase-service-account.json" ]; then
-    echo -e "${YELLOW}   ⚠️  firebase-service-account.json no encontrado${NC}"
-    echo -e "${YELLOW}      Asegúrate de que el archivo existe o configura FIREBASE_SERVICE_ACCOUNT${NC}"
+# Crear directorio data si no existe
+if [ ! -d "data" ]; then
+    mkdir -p data
+    echo -e "${GREEN}   ✅ Directorio data creado${NC}"
+fi
+
+# Verificar que la base de datos SQLite existe o se creará
+if [ ! -f "data/arandano.db" ]; then
+    echo -e "${YELLOW}   ⚠️  Base de datos SQLite no encontrada en data/arandano.db${NC}"
+    echo -e "${YELLOW}      Se creará automáticamente al iniciar la aplicación${NC}"
 else
-    echo -e "${GREEN}   ✅ firebase-service-account.json encontrado${NC}"
+    echo -e "${GREEN}   ✅ Base de datos SQLite encontrada${NC}"
 fi
 
 echo ""
@@ -112,14 +118,15 @@ fi
 
 echo ""
 
-# 4. Verificar configuración de Firebase
-echo -e "${CYAN}4️⃣  Verificando configuración de Firebase...${NC}"
+# 4. Verificar base de datos SQLite
+echo -e "${CYAN}4️⃣  Verificando base de datos SQLite...${NC}"
 
-if npm run diagnose:firebase > /tmp/firebase-check.log 2>&1; then
-    echo -e "${GREEN}   ✅ Firebase configurado correctamente${NC}"
+if [ -f "data/arandano.db" ]; then
+    echo -e "${GREEN}   ✅ Base de datos SQLite encontrada${NC}"
+    echo -e "${GREEN}   ✅ Listo para desplegar${NC}"
 else
-    echo -e "${YELLOW}   ⚠️  Advertencias en configuración de Firebase${NC}"
-    echo -e "${YELLOW}      Ver logs: cat /tmp/firebase-check.log${NC}"
+    echo -e "${YELLOW}   ⚠️  Base de datos SQLite no existe${NC}"
+    echo -e "${YELLOW}      Se creará automáticamente al iniciar la aplicación${NC}"
 fi
 
 echo ""
@@ -142,10 +149,10 @@ if npm run build; then
     if [ -f ".next/standalone/server.js" ]; then
         echo -e "${GREEN}   ✅ Servidor standalone generado correctamente${NC}"
         
-        # Copiar firebase-service-account.json al directorio standalone si existe
-        if [ -f "firebase-service-account.json" ]; then
-            cp firebase-service-account.json .next/standalone/ 2>/dev/null || true
-            echo -e "${GREEN}   ✅ Archivo de Firebase copiado al build standalone${NC}"
+        # Copiar directorio data al standalone si existe
+        if [ -d "data" ]; then
+            cp -r data .next/standalone/ 2>/dev/null || true
+            echo -e "${GREEN}   ✅ Directorio data copiado al build standalone${NC}"
         fi
         
         # Asegurar que .env.local esté disponible (se carga desde el directorio raíz)
@@ -283,7 +290,7 @@ if command -v nginx &> /dev/null; then
 fi
 echo ""
 echo -e "${CYAN}🔧 Diagnóstico:${NC}"
-echo "   - Firebase:        ${GREEN}npm run diagnose:firebase${NC}"
+echo "   - Verificar BD:     ${GREEN}ls -la data/arandano.db${NC}"
 echo "   - Test API:        ${GREEN}npm run test:api${NC}"
 echo ""
 

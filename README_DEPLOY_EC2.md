@@ -22,7 +22,7 @@ Este script hace todo automáticamente:
    ```bash
    # Desde tu máquina local
    scp -i tu-clave.pem .env.local ubuntu@tu-ip-ec2:~/projects/arandano_landing/
-   scp -i tu-clave.pem firebase-service-account.json ubuntu@tu-ip-ec2:~/projects/arandano_landing/
+   scp -i tu-clave.pem data/arandano.db ubuntu@tu-ip-ec2:~/projects/arandano_landing/data/ 2>/dev/null || true
    ```
 
 2. **Conectarse al servidor:**

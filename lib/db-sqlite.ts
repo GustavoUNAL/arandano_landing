@@ -117,6 +117,7 @@ function initializeDatabase() {
       unit TEXT NOT NULL,
       reason TEXT,
       notes TEXT,
+      date TEXT NOT NULL,
       createdAt TEXT
     )
   `)
@@ -131,7 +132,8 @@ function initializeDatabase() {
       priority TEXT NOT NULL,
       completed INTEGER DEFAULT 0,
       createdAt TEXT,
-      completedAt TEXT
+      completedAt TEXT,
+      dueDate TEXT
     )
   `)
 

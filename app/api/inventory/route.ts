@@ -13,22 +13,12 @@ export async function GET(request: NextRequest) {
     console.error('[API] Stack trace:', error?.stack)
     const errorMessage = error?.message || 'Error desconocido al obtener inventario'
     
-    // Si es un error de cuota de Firebase, retornar un mensaje más claro
-    if (errorMessage.includes('Quota exceeded') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
-      console.warn('[API] Firebase quota exceeded - usando fallback')
-      // Intentar usar JSON como fallback si está disponible
-      try {
-        const jsonInventory = getInventoryJSON()
-        return NextResponse.json(jsonInventory)
-      } catch (fallbackError) {
-        return NextResponse.json(
-          { 
-            error: 'Cuota de Firebase excedida. Por favor, espera unos minutos o verifica tu plan de Firebase.',
-            details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
-          },
-          { status: 503 }
-        )
-      }
+    // Intentar usar JSON como fallback si hay error con SQLite
+    try {
+      const jsonInventory = getInventoryJSON()
+      return NextResponse.json(jsonInventory)
+    } catch (fallbackError) {
+      // Ignorar error de fallback
     }
     
     return NextResponse.json(
