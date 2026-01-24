@@ -69,6 +69,11 @@ function initializeDatabase() {
       unit TEXT NOT NULL,
       capacity REAL,
       capacityUnit TEXT,
+      currentCapacity REAL,
+      currentCapacityUnit TEXT,
+      unitsPerPackage REAL,
+      unitsPerPackageUnit TEXT,
+      productType TEXT,
       unitPrice REAL NOT NULL,
       totalValue REAL NOT NULL,
       code TEXT,
@@ -103,6 +108,46 @@ function initializeDatabase() {
   } catch (e: any) {
     if (!e.message?.includes('duplicate column')) {
       console.warn('Error adding capacityUnit column:', e.message)
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE inventory ADD COLUMN currentCapacity REAL`)
+  } catch (e: any) {
+    if (!e.message?.includes('duplicate column')) {
+      console.warn('Error adding currentCapacity column:', e.message)
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE inventory ADD COLUMN currentCapacityUnit TEXT`)
+  } catch (e: any) {
+    if (!e.message?.includes('duplicate column')) {
+      console.warn('Error adding currentCapacityUnit column:', e.message)
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE inventory ADD COLUMN unitsPerPackage REAL`)
+  } catch (e: any) {
+    if (!e.message?.includes('duplicate column')) {
+      console.warn('Error adding unitsPerPackage column:', e.message)
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE inventory ADD COLUMN unitsPerPackageUnit TEXT`)
+  } catch (e: any) {
+    if (!e.message?.includes('duplicate column')) {
+      console.warn('Error adding unitsPerPackageUnit column:', e.message)
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE inventory ADD COLUMN productType TEXT`)
+  } catch (e: any) {
+    if (!e.message?.includes('duplicate column')) {
+      console.warn('Error adding productType column:', e.message)
     }
   }
 

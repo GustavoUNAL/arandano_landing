@@ -18,6 +18,11 @@ export async function getInventory(): Promise<InventoryItem[]> {
     unit: row.unit,
     capacity: row.capacity || undefined,
     capacityUnit: row.capacityUnit || undefined,
+    currentCapacity: row.currentCapacity ?? row.capacity ?? undefined,
+    currentCapacityUnit: row.currentCapacityUnit ?? row.capacityUnit ?? undefined,
+    unitsPerPackage: row.unitsPerPackage || undefined,
+    unitsPerPackageUnit: row.unitsPerPackageUnit || undefined,
+    productType: row.productType || undefined,
     unitPrice: row.unitPrice,
     totalValue: row.totalValue,
     code: row.code || undefined,
@@ -35,9 +40,9 @@ export async function createInventoryItem(item: Omit<InventoryItem, 'id'>): Prom
   
   db.prepare(`
     INSERT INTO inventory (
-      id, name, category, quantity, initialQuantity, unit, capacity, capacityUnit, unitPrice, totalValue,
+      id, name, category, quantity, initialQuantity, unit, capacity, capacityUnit, currentCapacity, currentCapacityUnit, unitsPerPackage, unitsPerPackageUnit, productType, unitPrice, totalValue,
       code, purchaseDate, lot, supplier, notes, createdAt, updatedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     item.name,
@@ -47,6 +52,11 @@ export async function createInventoryItem(item: Omit<InventoryItem, 'id'>): Prom
     item.unit,
     item.capacity || null,
     item.capacityUnit || null,
+    item.currentCapacity ?? item.capacity ?? null,
+    item.currentCapacityUnit ?? item.capacityUnit ?? null,
+    item.unitsPerPackage || null,
+    item.unitsPerPackageUnit || null,
+    item.productType || null,
     item.unitPrice,
     item.totalValue,
     item.code || null,
@@ -78,6 +88,8 @@ export async function getInventoryItemById(id: string): Promise<InventoryItem | 
     unit: row.unit,
     capacity: row.capacity || undefined,
     capacityUnit: row.capacityUnit || undefined,
+    currentCapacity: row.currentCapacity ?? row.capacity ?? undefined,
+    currentCapacityUnit: row.currentCapacityUnit ?? row.capacityUnit ?? undefined,
     unitPrice: row.unitPrice,
     totalValue: row.totalValue,
     code: row.code || undefined,

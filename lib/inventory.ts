@@ -10,6 +10,11 @@ export interface InventoryItem {
   unit: string // Unidad de producto (Botella, Lata, etc.)
   capacity?: number // Capacidad por unidad individual (ej: 750ml por botella)
   capacityUnit?: string // Unidad de capacidad (ml, cm3, litro, etc.)
+  currentCapacity?: number // Capacidad actual por unidad (puede ser menor a la inicial)
+  currentCapacityUnit?: string // Unidad de capacidad actual
+  unitsPerPackage?: number // Cantidad de unidades individuales por paquete (ej: 6 botellas por paquete)
+  unitsPerPackageUnit?: string // Unidad de las unidades individuales dentro del paquete (ej: Botella, Lata)
+  productType?: string // Tipo de producto según categoría específica (inventory-permanent, food-edible, disposables, etc.)
   unitPrice: number
   totalValue: number
   code?: string

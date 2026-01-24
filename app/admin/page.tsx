@@ -1990,11 +1990,11 @@ export default function AdminPage() {
                                 {marginPercent.toFixed(1)}%
                               </span>
                             </div>
-                            {totalProfit > 0 && (
+                            {margin > 0 && (
                               <div className="flex justify-between items-center pt-2 border-t-2 border-berry-200">
-                                <span className="text-xs font-semibold text-stone-700">Rentabilidad Total:</span>
+                                <span className="text-xs font-semibold text-stone-700">Rentabilidad por unidad:</span>
                                 <span className="font-bold text-lg text-green-600">
-                                  ${totalProfit.toLocaleString('es-CO')}
+                                  ${margin.toLocaleString('es-CO')}
                                 </span>
                               </div>
                             )}
@@ -2209,9 +2209,9 @@ export default function AdminPage() {
                             <td className="px-4 py-3 text-sm text-center">
                               {cost > 0 ? (
                                 <span className={`font-bold ${
-                                  totalProfit > 0 ? 'text-green-600' : 'text-red-600'
+                                  margin > 0 ? 'text-green-600' : 'text-red-600'
                                 }`}>
-                                  ${totalProfit.toLocaleString('es-CO')}
+                                  ${margin.toLocaleString('es-CO')}
                                 </span>
                               ) : '-'}
                             </td>
@@ -2636,13 +2636,13 @@ export default function AdminPage() {
                             )
                           })()}
                         </div>
-                        {cost > 0 && totalSold > 0 && (
+                        {cost > 0 && (
                           <div className="col-span-2">
-                            <span className="block text-xs text-stone-600 mb-1">Rentabilidad total:</span>
+                            <span className="block text-xs text-stone-600 mb-1">Rentabilidad por unidad:</span>
                             <span className={`font-semibold text-lg ${
-                              totalProfit > 0 ? 'text-green-600' : 'text-red-600'
+                              margin > 0 ? 'text-green-600' : 'text-red-600'
                             }`}>
-                              ${totalProfit.toLocaleString('es-CO')}
+                              ${margin.toLocaleString('es-CO')}
                             </span>
                           </div>
                         )}
