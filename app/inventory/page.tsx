@@ -3654,7 +3654,7 @@ export default function InventoryPage() {
                   ⚠️ Esta acción no se puede deshacer
                 </div>
                 <div className="text-sm text-red-700">
-                  Estás a punto de eliminar el lote <strong>"{deletingLot.lot}"</strong>
+                  Estás a punto de eliminar el lote <strong>&quot;{deletingLot.lot}&quot;</strong>
                 </div>
               </div>
               

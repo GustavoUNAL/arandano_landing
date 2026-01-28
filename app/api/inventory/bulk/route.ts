@@ -114,18 +114,32 @@ export async function DELETE(request: NextRequest) {
       console.log('[DELETE] Primeros items a eliminar:', itemsToDelete.slice(0, 3).map(i => ({ id: i.id, name: i.name, lot: i.lot })))
     } else {
       // Debug: mostrar todos los lotes únicos disponibles
-      const uniqueLots = [...new Set(inventory.filter(i => i.lot).map(i => i.lot?.trim()).filter(Boolean))]
+      const lots = inventory
+        .map(i => (typeof i.lot === 'string' ? i.lot.trim() : i.lot ? String(i.lot).trim() : ''))
+        .filter((l): l is string => Boolean(l))
+
+      const uniqueLotsMap: Record<string, true> = {}
+      for (const l of lots) uniqueLotsMap[l] = true
+      const uniqueLots = Object.keys(uniqueLotsMap)
       console.log('[DELETE] Lotes disponibles en inventario:', uniqueLots.slice(0, 10))
     }
 
     if (itemsToDelete.length === 0) {
+      const lots = inventory
+        .map(i => (typeof i.lot === 'string' ? i.lot.trim() : i.lot ? String(i.lot).trim() : ''))
+        .filter((l): l is string => Boolean(l))
+
+      const uniqueLotsMap: Record<string, true> = {}
+      for (const l of lots) uniqueLotsMap[l] = true
+      const availableLots = Object.keys(uniqueLotsMap)
+
       return NextResponse.json(
         { 
           error: 'No se encontraron items para este lote',
           debug: {
             searchedLot: normalizedLotName,
             totalItems: inventory.length,
-            availableLots: [...new Set(inventory.filter(i => i.lot).map(i => i.lot?.trim()).filter(Boolean))].slice(0, 10)
+            availableLots: availableLots.slice(0, 10)
           }
         },
         { status: 404 }
