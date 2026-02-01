@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { DaySalesBlock } from '@/components/sales/DaySalesBlock'
 
 interface Sale {
   id: string
@@ -54,11 +55,28 @@ export default function SalesPage() {
   const [processing, setProcessing] = useState(false)
   const [page, setPage] = useState(1)
   const itemsPerPage = 50
+  const [searchQuery, setSearchQuery] = useState('')
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
+  const [hasExpandedInitial, setHasExpandedInitial] = useState(false)
 
   useEffect(() => {
     loadSales()
     loadProducts()
   }, [])
+
+  // Expandir el primer día (hoy o el más reciente) por defecto al cargar (solo una vez)
+  useEffect(() => {
+    if (!hasExpandedInitial) {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const y = today.getFullYear()
+      const m = today.getMonth() + 1
+      const d = today.getDate()
+      const firstDayKey = `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`
+      setExpandedDays(new Set([firstDayKey]))
+      setHasExpandedInitial(true)
+    }
+  }, [hasExpandedInitial])
 
   const loadProducts = async () => {
     try {
@@ -259,6 +277,17 @@ export default function SalesPage() {
     })
   }
 
+  if (searchQuery.trim()) {
+    const q = searchQuery.trim().toLowerCase()
+    filteredSales = filteredSales.filter(sale => {
+      const matchComment = sale.comment?.toLowerCase().includes(q)
+      const matchItems = sale.items.some(
+        item => item.productName?.toLowerCase().includes(q)
+      )
+      return matchComment || matchItems
+    })
+  }
+
   // Agrupar ventas por día
   const salesByDay: { [key: string]: Sale[] } = {}
   filteredSales.forEach(sale => {
@@ -266,21 +295,37 @@ export default function SalesPage() {
     const year = saleDate.getFullYear()
     const month = saleDate.getMonth() + 1
     const day = saleDate.getDate()
-    
     const dayKey = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`
-    
-    if (!salesByDay[dayKey]) {
-      salesByDay[dayKey] = []
-    }
+    if (!salesByDay[dayKey]) salesByDay[dayKey] = []
     salesByDay[dayKey].push(sale)
   })
 
-  // Ordenar días (más reciente primero)
-  const sortedDays = Object.keys(salesByDay).sort((a, b) => {
-    const dateA = new Date(a.split('/').reverse().join('-'))
-    const dateB = new Date(b.split('/').reverse().join('-'))
-    return dateB.getTime() - dateA.getTime()
-  })
+  // Generar rango de días (últimos 14 días desde hoy) para que cada día tenga su bloque
+  const DAYS_TO_SHOW = 14
+  const allDaysInRange = useMemo(() => {
+    const days: string[] = []
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    for (let i = 0; i < DAYS_TO_SHOW; i++) {
+      const d = new Date(today)
+      d.setDate(d.getDate() - i)
+      const year = d.getFullYear()
+      const month = d.getMonth() + 1
+      const day = d.getDate()
+      days.push(`${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`)
+    }
+    return days
+  }, [])
+
+  // Días a mostrar: si hay filtro por fecha, solo ese día; si no, rango de 14 días
+  const sortedDays = useMemo(() => {
+    if (filterDate) {
+      const [y, m, d] = filterDate.split('-').map(Number)
+      const key = `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`
+      return [key]
+    }
+    return allDaysInRange
+  }, [filterDate, allDaysInRange])
 
   // Paginación
   const paginatedDays = sortedDays.slice((page - 1) * itemsPerPage, page * itemsPerPage)
@@ -288,6 +333,30 @@ export default function SalesPage() {
 
   const getDayTotal = (sales: Sale[]) => {
     return sales.reduce((sum, sale) => sum + sale.total, 0)
+  }
+
+  const getDayByPayment = (sales: Sale[]) => {
+    const efectivo = sales.filter(s => s.paymentMethod === 'efectivo').reduce((sum, s) => sum + s.total, 0)
+    const nequi = sales.filter(s => s.paymentMethod === 'nequi').reduce((sum, s) => sum + s.total, 0)
+    const sinPago = sales.filter(s => !s.paymentMethod).reduce((sum, s) => sum + s.total, 0)
+    return { efectivo, nequi, sinPago }
+  }
+
+  const getSaleItemsSummary = (sale: Sale, maxItems = 3) => {
+    return sale.items
+      .slice(0, maxItems)
+      .map(item => `${item.quantity}× ${item.productName}`)
+      .join(', ') + (sale.items.length > maxItems ? ` +${sale.items.length - maxItems} más` : '')
+  }
+
+  const toggleDayExpanded = (dayKey: string) => {
+    const newExpanded = new Set(expandedDays)
+    if (newExpanded.has(dayKey)) {
+      newExpanded.delete(dayKey)
+    } else {
+      newExpanded.add(dayKey)
+    }
+    setExpandedDays(newExpanded)
   }
 
   const getDayLabel = (dayKey: string) => {
@@ -336,7 +405,14 @@ export default function SalesPage() {
           </button>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-berry-950">Ventas</h1>
-            <p className="text-xs text-stone-600 mt-0.5 font-medium">{filteredSales.length} ventas</p>
+            <p className="text-xs text-stone-600 mt-0.5 font-medium">
+              {filteredSales.length} {filteredSales.length === 1 ? 'venta' : 'ventas'}
+              {filteredSales.length > 0 && (
+                <span className="text-berry-600 font-semibold ml-1">
+                  · Total ${formatPrice(filteredSales.reduce((sum, s) => sum + s.total, 0))}
+                </span>
+              )}
+            </p>
           </div>
         </div>
 
@@ -371,19 +447,25 @@ export default function SalesPage() {
                 <option value="sin-pago">Sin pago</option>
               </select>
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-2 bg-pink-50 rounded-lg border border-pink-200 hover:border-pink-300 hover:bg-pink-100 transition-all flex-shrink-0">
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-pink-50 rounded-lg border border-pink-200 hover:border-pink-300 hover:bg-pink-100 transition-all flex-shrink-0 min-w-[120px]">
               <span className="text-xs text-pink-600">🔍</span>
               <input
                 type="text"
-                placeholder="Buscar..."
-                className="text-xs font-medium border-0 focus:ring-0 focus:outline-none bg-transparent text-stone-700 placeholder-stone-400 w-28"
+                placeholder="Producto o comentario..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setPage(1)
+                }}
+                className="text-xs font-medium border-0 focus:ring-0 focus:outline-none bg-transparent text-stone-700 placeholder-stone-400 flex-1 min-w-0"
               />
             </div>
-            {(filterDate || filterPaymentMethod !== 'all') && (
+            {(filterDate || filterPaymentMethod !== 'all' || searchQuery) && (
               <button
                 onClick={() => {
                   setFilterDate('')
                   setFilterPaymentMethod('all')
+                  setSearchQuery('')
                   setPage(1)
                 }}
                 className="px-2.5 py-2 text-xs font-medium text-berry-700 hover:text-berry-800 hover:bg-berry-100 rounded-lg transition-colors border border-berry-200 bg-white flex-shrink-0"
@@ -405,101 +487,28 @@ export default function SalesPage() {
           <>
             <div className="space-y-4">
               {paginatedDays.map((dayKey) => {
-                const daySales = salesByDay[dayKey]
-                const dayTotal = getDayTotal(daySales)
-                const dayLabel = getDayLabel(dayKey)
+                const daySales = salesByDay[dayKey] ?? []
+                const isEmpty = daySales.length === 0
+                const isExpanded = expandedDays.has(dayKey)
 
                 return (
-                  <div key={dayKey} className="border border-berry-200 rounded-xl overflow-hidden bg-white shadow-md hover:shadow-lg transition-all mb-4">
-                    {/* Encabezado del día con paleta de la app */}
-                    <div className="bg-gradient-to-r from-berry-600 to-purple-600 px-4 py-3 border-b border-berry-300">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-1 h-6 bg-white/30 rounded-full"></div>
-                          <div>
-                            <h4 className="font-bold text-sm text-white">{dayLabel}</h4>
-                            <span className="text-[10px] text-white/90 font-medium bg-white/20 px-2 py-0.5 rounded-full">
-                              {daySales.length} {daySales.length === 1 ? 'venta' : 'ventas'}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="bg-white/95 px-4 py-2 rounded-lg shadow-md border border-white/50">
-                          <span className="text-sm font-bold text-berry-700">${formatPrice(dayTotal)}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Lista de ventas del día */}
-                    <div className="divide-y divide-stone-100">
-                      {daySales
-                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                        .map((sale) => {
-                          const saleDate = new Date(sale.date)
-                          return (
-                            <div
-                              key={sale.id}
-                              className="p-4 hover:bg-berry-50/50 transition-all border-l-3 border-transparent hover:border-berry-300"
-                            >
-                              {/* Header con paleta de la app */}
-                              <div className="flex items-start justify-between gap-3 mb-3">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                    <div className="flex items-center gap-1 px-2 py-1 bg-berry-100 rounded-lg border border-berry-200">
-                                      <span className="text-xs text-berry-600">🕐</span>
-                                      <span className="text-xs font-semibold text-berry-900">
-                                        {saleDate.toLocaleTimeString('es-CO', {
-                                          hour: '2-digit',
-                                          minute: '2-digit'
-                                        })}
-                                      </span>
-                                    </div>
-                                    {sale.paymentMethod && (
-                                      <span className={`text-[10px] px-2 py-1 rounded-lg font-medium border ${
-                                        sale.paymentMethod === 'efectivo' 
-                                          ? 'bg-green-100 text-green-800 border-green-300' 
-                                          : 'bg-blue-100 text-blue-800 border-blue-300'
-                                      }`}>
-                                        {sale.paymentMethod}
-                                      </span>
-                                    )}
-                                    {!sale.paymentMethod && (
-                                      <span className="text-[10px] px-2 py-1 rounded-lg bg-amber-100 text-amber-800 border border-amber-300 font-medium">
-                                        Sin pago
-                                      </span>
-                                    )}
-                                    <span className="text-[10px] text-stone-600 bg-stone-100 px-2 py-1 rounded-lg border border-stone-200 font-medium">
-                                      {sale.items.length} {sale.items.length === 1 ? 'item' : 'items'}
-                                    </span>
-                                  </div>
-                                  {sale.comment && (
-                                    <div className="text-[10px] text-stone-700 italic line-clamp-1 mt-1.5 bg-berry-50 px-2.5 py-1 rounded-lg border-l-3 border-berry-400">
-                                      💬 {sale.comment}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex flex-col items-end justify-start gap-1.5 flex-shrink-0">
-                                  <button
-                                    onClick={() => {
-                                      setSelectedSale(sale)
-                                      setShowDetail(true)
-                                    }}
-                                    className="text-lg hover:scale-110 transition-transform active:scale-95 opacity-60 hover:opacity-100 mb-0.5"
-                                    title="Ver más detalles"
-                                  >
-                                    ⚙️
-                                  </button>
-                                  <div className="bg-gradient-to-br from-berry-500 to-purple-500 px-3.5 py-2 rounded-lg border border-berry-300 shadow-sm">
-                                    <span className="text-sm font-bold text-white whitespace-nowrap">
-                                      ${formatPrice(sale.total)}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })}
-                    </div>
-                  </div>
+                  <DaySalesBlock
+                    key={dayKey}
+                    dayKey={dayKey}
+                    daySales={daySales}
+                    isExpanded={isExpanded}
+                    onToggleExpand={() => toggleDayExpanded(dayKey)}
+                    onSelectSale={(sale) => {
+                      setSelectedSale(sale)
+                      setShowDetail(true)
+                    }}
+                    formatPrice={formatPrice}
+                    getDayTotal={getDayTotal}
+                    getDayByPayment={getDayByPayment}
+                    getSaleItemsSummary={getSaleItemsSummary}
+                    getDayLabel={getDayLabel}
+                    isEmpty={isEmpty}
+                  />
                 )
               })}
             </div>
@@ -536,16 +545,7 @@ export default function SalesPage() {
           <div className="bg-white rounded-lg p-4 sm:p-5 max-w-2xl w-full my-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-4 pb-3 border-b border-stone-200">
               <h3 className="text-lg sm:text-xl font-semibold text-stone-900">Detalle de Venta</h3>
-              <div className="flex flex-col items-end gap-2">
-                <button
-                  onClick={() => {
-                    setShowDetail(false)
-                    setSelectedSale(null)
-                  }}
-                  className="w-8 h-8 flex items-center justify-center text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-md transition-colors"
-                >
-                  ×
-                </button>
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
                     const saleDate = new Date(selectedSale.date)
@@ -563,10 +563,19 @@ export default function SalesPage() {
                     setProductSearch('')
                     setShowDetail(false)
                   }}
-                  className="text-2xl hover:scale-110 transition-transform"
-                  title="Editar Venta"
+                  className="px-3 py-1.5 text-sm font-semibold text-berry-700 hover:text-berry-800 bg-berry-100 hover:bg-berry-200 rounded-lg border border-berry-200 transition-colors"
                 >
-                  ⚙️
+                  Editar
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDetail(false)
+                    setSelectedSale(null)
+                  }}
+                  className="w-8 h-8 flex items-center justify-center text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-md transition-colors"
+                  aria-label="Cerrar"
+                >
+                  ×
                 </button>
               </div>
             </div>
@@ -639,8 +648,8 @@ export default function SalesPage() {
                 </div>
               </div>
 
-              {/* Botón Cerrar */}
-              <div className="pt-4 border-t border-stone-200">
+              {/* Botones Cerrar y Eliminar */}
+              <div className="pt-4 border-t border-stone-200 space-y-2">
                 <button
                   onClick={() => {
                     setShowDetail(false)
@@ -649,6 +658,18 @@ export default function SalesPage() {
                   className="w-full px-4 py-2.5 bg-gradient-to-r from-berry-500 to-purple-500 hover:from-berry-600 hover:to-purple-600 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg text-sm sm:text-base"
                 >
                   Cerrar
+                </button>
+                <button
+                  onClick={() => {
+                    if (selectedSale && confirm('¿Eliminar esta venta? Se restaurará el stock de los productos.')) {
+                      handleDeleteSale(selectedSale.id)
+                      setShowDetail(false)
+                      setSelectedSale(null)
+                    }
+                  }}
+                  className="w-full px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
+                >
+                  Eliminar venta
                 </button>
               </div>
             </div>

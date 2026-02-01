@@ -2820,8 +2820,8 @@ export default function AdminPage() {
         {/* Vista de Gestión de Recetas */}
         {currentView === 'recipes' && (
           <>
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-              <h2 className="text-xl sm:text-2xl font-bold text-berry-950 text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-berry-950 text-center sm:text-left order-2 sm:order-1">
                 Gestión de Recetas
               </h2>
               <button
@@ -2834,9 +2834,9 @@ export default function AdminPage() {
                     ingredients: []
                   })
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg order-1 sm:order-2 min-h-[44px]"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
                 Nueva Receta
@@ -2844,71 +2844,71 @@ export default function AdminPage() {
             </div>
 
             {editingRecipe ? (
-              /* Formulario de receta */
-              <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 mb-6">
-                <h3 className="text-lg font-bold text-berry-950 mb-4">
+              /* Formulario de receta - compacto y claro */
+              <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-4 sm:p-5 mb-4">
+                <h3 className="text-base font-bold text-berry-950 mb-3">
                   {editingRecipe === 'new' ? 'Nueva Receta' : 'Editar Receta'}
                 </h3>
                 
-                <div className="space-y-4">
-                  {/* Producto final */}
-                  <div>
-                    <label className="block text-sm font-semibold text-berry-950 mb-2">
-                      Producto Final (Cóctel/Café)
-                    </label>
-                    <select
-                      value={recipeForm.productId}
-                      onChange={(e) => {
-                        const product = products.find(p => p.id === e.target.value)
-                        if (product) {
-                          setRecipeForm({
-                            ...recipeForm,
-                            productId: product.id,
-                            productName: product.name,
-                            category: product.category === 'coctel' ? 'coctel' :
-                                      product.category === 'cafe-caliente' ? 'cafe-caliente' :
-                                      product.category === 'cafe-frio' ? 'cafe-frio' : 'coctel'
-                          })
-                        }
-                      }}
-                      className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
-                    >
-                      <option value="">Seleccionar producto...</option>
-                      {products
-                        .filter(p => p.category === 'coctel' || p.category === 'cafe-caliente' || p.category === 'cafe-frio')
-                        .map(product => (
-                          <option key={product.id} value={product.id}>
-                            {product.name} ({product.category})
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-
-                  {/* Categoría */}
-                  <div>
-                    <label className="block text-sm font-semibold text-berry-950 mb-2">
-                      Categoría
-                    </label>
-                    <select
-                      value={recipeForm.category}
-                      onChange={(e) => setRecipeForm({ ...recipeForm, category: e.target.value as any })}
-                      className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
-                    >
-                      <option value="coctel">Cóctel</option>
-                      <option value="cafe-caliente">Café Caliente</option>
-                      <option value="cafe-frio">Café Frío</option>
-                    </select>
+                <div className="space-y-3">
+                  {/* Producto final + Categoría en fila en desktop */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-berry-950 mb-1">
+                        Producto Final (Cóctel/Café)
+                      </label>
+                      <select
+                        value={recipeForm.productId}
+                        onChange={(e) => {
+                          const product = products.find(p => p.id === e.target.value)
+                          if (product) {
+                            setRecipeForm({
+                              ...recipeForm,
+                              productId: product.id,
+                              productName: product.name,
+                              category: product.category === 'coctel' ? 'coctel' :
+                                        product.category === 'cafe-caliente' ? 'cafe-caliente' :
+                                        product.category === 'cafe-frio' ? 'cafe-frio' : 'coctel'
+                            })
+                          }
+                        }}
+                        className="w-full px-3 py-2 border-2 border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-berry-500 focus:border-berry-500 min-h-[40px]"
+                      >
+                        <option value="">Seleccionar producto...</option>
+                        {products
+                          .filter(p => p.category === 'coctel' || p.category === 'cafe-caliente' || p.category === 'cafe-frio')
+                          .map(product => (
+                            <option key={product.id} value={product.id}>
+                              {product.name} ({product.category})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-berry-950 mb-1">
+                        Categoría
+                      </label>
+                      <select
+                        value={recipeForm.category}
+                        onChange={(e) => setRecipeForm({ ...recipeForm, category: e.target.value as any })}
+                        className="w-full px-3 py-2 border-2 border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-berry-500 focus:border-berry-500 min-h-[40px]"
+                      >
+                        <option value="coctel">Cóctel</option>
+                        <option value="cafe-caliente">Café Caliente</option>
+                        <option value="cafe-frio">Café Frío</option>
+                      </select>
+                    </div>
                   </div>
 
                   {/* Ingredientes */}
                   <div>
-                    <label className="block text-sm font-semibold text-berry-950 mb-2">
+                    <label className="block text-xs font-semibold text-berry-950 mb-1">
                       Ingredientes
                     </label>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {recipeForm.ingredients.map((ingredient, index) => (
-                        <div key={index} className="flex gap-2 items-start p-3 bg-stone-50 rounded-lg border border-stone-200">
-                          <div className="flex-1">
+                        <div key={index} className="flex flex-col gap-1.5 sm:flex-row sm:gap-2 sm:items-center p-2 sm:p-2.5 bg-stone-50 rounded-lg border border-stone-200">
+                          <div className="w-full sm:flex-1 min-w-0">
                             <select
                               value={ingredient.productId}
                               onChange={(e) => {
@@ -2923,17 +2923,17 @@ export default function AdminPage() {
                                   setRecipeForm({ ...recipeForm, ingredients: newIngredients })
                                 }
                               }}
-                              className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
+                              className="w-full px-2.5 py-2 border border-stone-300 rounded-lg text-sm min-h-[40px]"
                             >
-                              <option value="">Seleccionar ingrediente...</option>
+                              <option value="">Ingrediente...</option>
                               {inventory.map(item => (
                                 <option key={item.id} value={item.id}>
-                                  {item.name} (Stock: {item.quantity || 0} {item.unit || 'unidad'})
+                                  {item.name} ({item.quantity ?? 0} {item.unit || 'und'})
                                 </option>
                               ))}
                             </select>
                           </div>
-                          <div className="w-24">
+                          <div className="flex gap-1.5 items-center">
                             <input
                               type="number"
                               step="0.01"
@@ -2944,11 +2944,9 @@ export default function AdminPage() {
                                 newIngredients[index].quantity = parseFloat(e.target.value) || 0
                                 setRecipeForm({ ...recipeForm, ingredients: newIngredients })
                               }}
-                              placeholder="Cantidad"
-                              className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
+                              placeholder="Cant."
+                              className="w-16 sm:w-20 px-2 py-2 border border-stone-300 rounded-lg text-sm min-h-[40px]"
                             />
-                          </div>
-                          <div className="w-32">
                             <select
                               value={ingredient.unit}
                               onChange={(e) => {
@@ -2956,167 +2954,155 @@ export default function AdminPage() {
                                 newIngredients[index].unit = e.target.value as any
                                 setRecipeForm({ ...recipeForm, ingredients: newIngredients })
                               }}
-                              className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
+                              className="w-20 sm:w-24 px-2 py-2 border border-stone-300 rounded-lg text-sm min-h-[40px]"
                             >
                               <option value="ml">ml</option>
                               <option value="gr">gr</option>
-                              <option value="unidad">unidad</option>
+                              <option value="unidad">und</option>
                               <option value="oz">oz</option>
                               <option value="l">l</option>
                               <option value="kg">kg</option>
                             </select>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newIngredients = recipeForm.ingredients.filter((_, i) => i !== index)
+                                setRecipeForm({ ...recipeForm, ingredients: newIngredients })
+                              }}
+                              className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg min-h-[40px] min-w-[40px] flex items-center justify-center flex-shrink-0"
+                              aria-label="Quitar ingrediente"
+                              title="Quitar ingrediente"
+                            >
+                              <span className="text-sm font-bold">✕</span>
+                            </button>
                           </div>
-                          <button
-                            onClick={() => {
-                              const newIngredients = recipeForm.ingredients.filter((_, i) => i !== index)
-                              setRecipeForm({ ...recipeForm, ingredients: newIngredients })
-                            }}
-                            className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-semibold"
-                          >
-                            ✕
-                          </button>
                         </div>
                       ))}
                       <button
+                        type="button"
                         onClick={() => {
                           setRecipeForm({
                             ...recipeForm,
                             ingredients: [...recipeForm.ingredients, { productId: '', productName: '', quantity: 0, unit: 'ml' }]
                           })
                         }}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold"
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold w-full min-h-[40px]"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
-                        Agregar Ingrediente
+                        Agregar ingrediente
                       </button>
                     </div>
                   </div>
 
-                  {/* Botones */}
-                  <div className="flex gap-3 pt-4 border-t border-stone-200">
+                  {/* Botones Guardar / Cancelar */}
+                  <div className="flex flex-col-reverse sm:flex-row gap-2 pt-3 border-t border-stone-200">
                     <button
-                      onClick={handleSaveRecipe}
-                      disabled={loading}
-                      className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
-                    >
-                      {loading ? 'Guardando...' : 'Guardar Receta'}
-                    </button>
-                    <button
+                      type="button"
                       onClick={() => {
                         setEditingRecipe(null)
                         setRecipeForm({ productId: '', productName: '', category: 'coctel', ingredients: [] })
                       }}
-                      className="px-4 py-2 bg-stone-500 hover:bg-stone-600 text-white rounded-lg font-semibold transition-colors"
+                      className="w-full sm:w-auto px-4 py-2.5 bg-stone-500 hover:bg-stone-600 text-white rounded-lg text-sm font-semibold transition-colors min-h-[40px]"
                     >
                       Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveRecipe}
+                      disabled={loading}
+                      className="w-full sm:flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 min-h-[40px]"
+                    >
+                      {loading ? 'Guardando...' : 'Guardar receta'}
                     </button>
                   </div>
                 </div>
               </div>
             ) : null}
 
-            {/* Lista de recetas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Lista de recetas - tarjetas compactas */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {recipes.length === 0 ? (
-                <div className="col-span-2 text-center py-12 text-stone-500 bg-white rounded-xl border border-stone-200">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="col-span-full text-center py-8 sm:py-10 px-4 text-stone-500 bg-white rounded-xl border border-stone-200">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mx-auto mb-2 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <p className="text-lg font-medium">No hay recetas registradas</p>
-                  <p className="text-sm mt-1">Crea una nueva receta para comenzar</p>
+                  <p className="text-sm font-medium">No hay recetas registradas</p>
+                  <p className="text-xs mt-1">Crea una nueva receta para comenzar</p>
                 </div>
               ) : (
                 recipes.map(recipe => {
                   const product = products.find(p => p.id === recipe.productId)
                   const availability = getProductAvailability(product || recipe as any)
                   return (
-                    <div key={recipe.id} className="bg-white rounded-xl shadow-md border border-stone-200 overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col">
-                      {/* Header con imagen */}
-                      <div className="relative">
+                    <div key={recipe.id} className="bg-white rounded-lg shadow border border-stone-200 overflow-hidden hover:shadow-md hover:border-berry-200 transition-all flex flex-col min-w-0">
+                      {/* Imagen pequeña */}
+                      <div className="relative flex-shrink-0">
                         {product?.imageUrl ? (
-                          <div className="w-full h-48 bg-gradient-to-br from-stone-100 to-stone-200 relative overflow-hidden">
+                          <div className="w-full aspect-[4/3] max-h-28 bg-stone-100 relative overflow-hidden">
                             <Image
                               src={product.imageUrl}
                               alt={recipe.productName}
                               fill
                               className="object-cover"
-                              sizes="(max-width: 768px) 100vw, 50vw"
+                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = 'none'
                               }}
                             />
                           </div>
                         ) : (
-                          <div className="w-full h-48 bg-gradient-to-br from-berry-100 to-berry-200 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-berry-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <div className="w-full aspect-[4/3] max-h-28 bg-gradient-to-br from-berry-100 to-berry-200 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-berry-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
                           </div>
                         )}
-                        {/* Badge de categoría */}
-                        <div className="absolute top-3 left-3">
-                          <span className="px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-semibold text-berry-950 capitalize shadow-sm">
+                        <div className="absolute top-1 left-1 flex items-center gap-1 flex-wrap">
+                          <span className="px-1.5 py-0.5 bg-white/95 rounded text-[10px] font-semibold text-berry-950 capitalize">
                             {recipe.category.replace('-', ' ')}
                           </span>
-                        </div>
-                        {/* Badge de disponibilidad */}
-                        {availability !== null && typeof availability === 'number' && (
-                          <div className="absolute top-3 right-3">
-                            <span className="px-3 py-1 bg-blue-500 text-white rounded-full text-xs font-semibold shadow-md">
-                              {availability} disponibles
+                          {availability !== null && typeof availability === 'number' && (
+                            <span className="px-1.5 py-0.5 bg-blue-500 text-white rounded text-[10px] font-semibold">
+                              {availability}
                             </span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Contenido */}
-                      <div className="p-5 flex-1 flex flex-col">
-                        {/* Título y precio */}
-                        <div className="mb-4">
-                          <h3 className="text-xl font-bold text-berry-950 mb-2 line-clamp-2">{recipe.productName}</h3>
-                          {product?.price && (
-                            <p className="text-2xl font-bold text-berry-700">
-                              ${product.price.toLocaleString('es-CO')}
-                            </p>
-                          )}
-                          {availability === 'no-recipe' && (
-                            <p className="text-sm text-amber-600 mt-2 font-medium">⚠️ Sin receta configurada</p>
                           )}
                         </div>
-
-                        {/* Ingredientes */}
-                        <div className="mb-4 flex-1">
-                          <h4 className="font-semibold text-berry-950 mb-3 text-sm uppercase tracking-wide">Ingredientes</h4>
-                          <div className="space-y-2">
-                            {recipe.ingredients.map((ingredient: any, idx: number) => {
+                      </div>
+                      {/* Contenido compacto */}
+                      <div className="p-2.5 sm:p-3 flex-1 flex flex-col min-w-0">
+                        <h3 className="text-sm font-bold text-berry-950 line-clamp-2 leading-tight mb-0.5">{recipe.productName}</h3>
+                        {product?.price && (
+                          <p className="text-base font-bold text-berry-700 mb-1.5">${product.price.toLocaleString('es-CO')}</p>
+                        )}
+                        {availability === 'no-recipe' && (
+                          <p className="text-[10px] text-amber-600 font-medium mb-1">Sin receta</p>
+                        )}
+                        {/* Ingredientes en lista compacta */}
+                        <div className="flex-1 min-h-0 mb-2">
+                          <p className="text-[10px] font-semibold text-berry-800 uppercase tracking-wide mb-1">Ingredientes</p>
+                          <ul className="space-y-0.5 text-[11px] text-stone-600">
+                            {recipe.ingredients.slice(0, 4).map((ingredient: any, idx: number) => {
                               const inventoryItem = inventory.find(i => i.id === ingredient.productId)
-                              const stock = inventoryItem?.quantity || 0
+                              const stock = inventoryItem?.quantity ?? 0
                               const canMake = stock >= ingredient.quantity
                               return (
-                                <div key={idx} className={`p-3 rounded-lg border ${canMake ? 'bg-green-50/50 border-green-200' : 'bg-red-50/50 border-red-200'}`}>
-                                  <div className="flex justify-between items-start mb-1">
-                                    <span className="font-medium text-berry-950 text-sm flex-1">{ingredient.productName}</span>
-                                    <span className="text-xs font-semibold text-berry-700 bg-white px-2 py-1 rounded ml-2">
-                                      {ingredient.quantity} {ingredient.unit}
-                                    </span>
-                                  </div>
-                                  <div className="text-xs text-stone-600 flex items-center gap-1">
-                                    <span>Stock: {stock} {inventoryItem?.unit || 'unidad'}</span>
-                                    {!canMake && (
-                                      <span className="text-red-600 font-semibold ml-auto">⚠️ Insuficiente</span>
-                                    )}
-                                  </div>
-                                </div>
+                                <li key={idx} className="flex justify-between gap-1 min-w-0">
+                                  <span className={`truncate ${!canMake ? 'text-red-600' : ''}`}>{ingredient.productName}</span>
+                                  <span className="flex-shrink-0 font-medium">{ingredient.quantity} {ingredient.unit}</span>
+                                </li>
                               )
                             })}
-                          </div>
+                            {recipe.ingredients.length > 4 && (
+                              <li className="text-stone-500">+{recipe.ingredients.length - 4} más</li>
+                            )}
+                          </ul>
                         </div>
-
-                        {/* Botones de acción */}
-                        <div className="flex gap-2 pt-4 border-t border-stone-200 mt-auto">
+                        {/* Botones Editar / Eliminar */}
+                        <div className="flex gap-1.5 pt-2 border-t border-stone-100 mt-auto">
                           <button
+                            type="button"
                             onClick={() => {
                               setEditingRecipe(recipe)
                               setRecipeForm({
@@ -3126,21 +3112,23 @@ export default function AdminPage() {
                                 ingredients: recipe.ingredients
                               })
                             }}
-                            className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                            className="flex-1 min-w-0 px-2 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs font-semibold flex items-center justify-center gap-1"
+                            title="Editar receta"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                             Editar
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleDeleteRecipe(recipe.id)}
-                            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                            className="px-2 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-semibold flex items-center justify-center flex-shrink-0"
+                            title="Eliminar receta"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
-                            Eliminar
                           </button>
                         </div>
                       </div>
