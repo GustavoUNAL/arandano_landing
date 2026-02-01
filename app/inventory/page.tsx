@@ -68,15 +68,13 @@ interface GroupedProduct {
 }
 
 const CATEGORIES = [
-  'licores',
-  'licores para shots',
-  'siropes y bases',
-  'productos de limpieza',
-  'insumos para café',
-  'desechables',
-  'acompañantes',
   'activos',
-  'productos regulados'
+  'cigarrillos',
+  'aseo',
+  'comestibles',
+  'bebidas alcoholicas',
+  'insumos para cocteles',
+  'insumos para cafeteria'
 ]
 
 const STANDARD_UNITS = [
@@ -163,6 +161,7 @@ export default function InventoryPage() {
   const [loadingStockInfo, setLoadingStockInfo] = useState<Record<string, boolean>>({})
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [showCategoryModalInForm, setShowCategoryModalInForm] = useState(false)
+  const [categoryPopupCategory, setCategoryPopupCategory] = useState<string | null>(null)
   const [showLotModal, setShowLotModal] = useState(false)
   const [showDateModal, setShowDateModal] = useState(false)
   const [showProductModal, setShowProductModal] = useState(false)
@@ -325,47 +324,41 @@ export default function InventoryPage() {
     setSaving(true)
     try {
       const updates: Partial<InventoryItem> = {}
-      
-      // Si cambió el nombre del lote, actualizar lot
-      if (lotEditForm.lot !== editingLot.lot) {
-        updates.lot = lotEditForm.lot
-      }
-      
-      // Si cambió el proveedor, actualizar supplier
-      if (lotEditForm.supplier !== editingLot.supplier) {
-        updates.supplier = lotEditForm.supplier || undefined
-      }
-      
-      // Si cambió la fecha de compra, actualizar purchaseDate
-      if (lotEditForm.purchaseDate !== editingLot.purchaseDate) {
-        updates.purchaseDate = lotEditForm.purchaseDate || undefined
-      }
+      if (lotEditForm.lot !== editingLot.lot) updates.lot = lotEditForm.lot.trim()
+      if (lotEditForm.supplier !== editingLot.supplier) updates.supplier = lotEditForm.supplier || undefined
+      if (lotEditForm.purchaseDate !== editingLot.purchaseDate) updates.purchaseDate = lotEditForm.purchaseDate || undefined
 
-      // Si no hay cambios, no hacer nada
       if (Object.keys(updates).length === 0) {
         setEditingLot(null)
         setLotEditForm({ lot: '', supplier: '', purchaseDate: '' })
+        setSaving(false)
         return
       }
 
-      const response = await fetch('/api/inventory/bulk', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lotName: editingLot.lot,
-          updates
+      // Actualizar cada ítem del lote con la ruta /api/inventory/[id]
+      const results = await Promise.all(
+        editingLot.items.map(async (item) => {
+          const res = await fetch(`/api/inventory/${item.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+          })
+          return { id: item.id, ok: res.ok, error: res.ok ? null : await res.json().catch(() => ({})) }
         })
-      })
+      )
 
-      if (response.ok) {
-        await loadInventory()
-        setEditingLot(null)
-        setLotEditForm({ lot: '', supplier: '', purchaseDate: '' })
-        showAlert('success', 'Lote actualizado exitosamente')
-      } else {
-        const errorData = await response.json()
-        showAlert('error', errorData.error || 'Error al actualizar lote')
+      const failed = results.filter(r => !r.ok)
+      if (failed.length > 0) {
+        const msg = failed[0].error?.error || 'Error al actualizar lote'
+        showAlert('error', msg)
+        setSaving(false)
+        return
       }
+
+      await loadInventory()
+      setEditingLot(null)
+      setLotEditForm({ lot: '', supplier: '', purchaseDate: '' })
+      showAlert('success', 'Lote actualizado exitosamente')
     } catch (error) {
       console.error('Error updating lot:', error)
       showAlert('error', 'Error al actualizar lote')
@@ -388,34 +381,29 @@ export default function InventoryPage() {
 
     setSaving(true)
     try {
-      // Asegurar que el nombre del lote esté limpio
       const lotNameToDelete = deletingLot.lot.trim()
-      
-      console.log('Eliminando lote:', lotNameToDelete)
-      console.log('Items en el lote:', deletingLot.items.map(i => ({ id: i.id, name: i.name, lot: i.lot })))
-      
-      const response = await fetch('/api/inventory/bulk', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lotName: lotNameToDelete
+
+      // Eliminar cada ítem del lote con DELETE /api/inventory/[id]
+      const results = await Promise.all(
+        deletingLot.items.map(async (item) => {
+          const res = await fetch(`/api/inventory/${item.id}`, { method: 'DELETE' })
+          return { id: item.id, ok: res.ok, error: res.ok ? null : await res.json().catch(() => ({})) }
         })
-      })
+      )
 
-      const data = await response.json()
-
-      if (response.ok) {
-        await loadInventory()
-        setDeletingLot(null)
-        setEditingLot(null) // Cerrar también el modal de edición
-        setLotEditForm({ lot: '', supplier: '', purchaseDate: '' })
-        showAlert('success', `Lote "${lotNameToDelete}" eliminado exitosamente`)
-      } else {
-        console.error('Error response:', data)
-        const errorMsg = data.error || 'Error al eliminar lote'
-        const debugInfo = data.debug ? `\nLotes disponibles: ${data.debug.availableLots?.join(', ') || 'N/A'}` : ''
-        showAlert('error', errorMsg + debugInfo)
+      const failed = results.filter(r => !r.ok)
+      if (failed.length > 0) {
+        const msg = failed[0].error?.error || 'Error al eliminar lote'
+        showAlert('error', msg)
+        setSaving(false)
+        return
       }
+
+      await loadInventory()
+      setDeletingLot(null)
+      setEditingLot(null)
+      setLotEditForm({ lot: '', supplier: '', purchaseDate: '' })
+      showAlert('success', `Lote "${lotNameToDelete}" eliminado exitosamente`)
     } catch (error) {
       console.error('Error deleting lot:', error)
       showAlert('error', 'Error al eliminar lote')
@@ -888,25 +876,49 @@ export default function InventoryPage() {
     setExpandedLots(newExpanded)
   }
 
-  // Calcular total excluyendo activos y productos regulados (no afectan el inventario operativo)
+  // Valor operativo: excluye activos y cigarrillos (control aparte)
   const totalValue = filteredItems
-    .filter(item => item.category !== 'activos' && item.category !== 'productos regulados')
+    .filter(item => item.category !== 'activos' && item.category !== 'cigarrillos')
     .reduce((sum, item) => sum + (item.totalValue || 0), 0)
 
-  // Total de activos por separado (solo si están filtrados)
   const totalAssetsValue = filteredItems
     .filter(item => item.category === 'activos')
     .reduce((sum, item) => sum + (item.totalValue || 0), 0)
 
-  // Total de productos regulados por separado
   const totalRegulatedValue = filteredItems
-    .filter(item => item.category === 'productos regulados')
+    .filter(item => item.category === 'cigarrillos')
     .reduce((sum, item) => sum + (item.totalValue || 0), 0)
 
-  // Items sin activos ni productos regulados para el conteo general
-  const operationalItems = filteredItems.filter(item => item.category !== 'activos' && item.category !== 'productos regulados')
+  const operationalItems = filteredItems.filter(item => item.category !== 'activos' && item.category !== 'cigarrillos')
   const assetsItems = filteredItems.filter(item => item.category === 'activos')
-  const regulatedItems = filteredItems.filter(item => item.category === 'productos regulados')
+  const regulatedItems = filteredItems.filter(item => item.category === 'cigarrillos')
+
+  // Desglose por categoría (count + value) para el resumen
+  const byCategory = useMemo(() => {
+    const map = new Map<string, { count: number; value: number }>()
+    CATEGORIES.forEach(c => map.set(c, { count: 0, value: 0 }))
+    filteredItems.forEach(item => {
+      const cat = item.category || 'comestibles'
+      if (!map.has(cat)) map.set(cat, { count: 0, value: 0 })
+      const entry = map.get(cat)!
+      entry.count += 1
+      entry.value += item.totalValue || 0
+    })
+    const labels: Record<string, string> = {
+      'activos': 'Activos',
+      'cigarrillos': 'Cigarrillos',
+      'aseo': 'Aseo',
+      'comestibles': 'Comestibles',
+      'bebidas alcoholicas': 'Bebidas alcohólicas',
+      'insumos para cocteles': 'Insumos cocteles',
+      'insumos para cafeteria': 'Insumos cafetería'
+    }
+    return CATEGORIES.map(cat => ({
+      category: cat,
+      label: labels[cat] || cat.charAt(0).toUpperCase() + cat.slice(1),
+      ...map.get(cat) || { count: 0, value: 0 }
+    })).filter(x => x.count > 0)
+  }, [filteredItems])
 
   return (
     <div className="min-h-screen bg-stone-50 py-4 sm:py-8 px-4">
@@ -974,88 +986,206 @@ export default function InventoryPage() {
 
         <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
 
-          {/* Resumen Mejorado */}
-          <div className="bg-gradient-to-br from-berry-50 to-berry-100 border-2 border-berry-200 rounded-xl p-5 mb-4 shadow-sm">
-            <div className="space-y-3">
-              {/* Primera fila: Lotes e Items */}
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="bg-berry-600 text-white rounded-lg px-3 py-1.5">
-                    <span className="text-sm font-bold">{groupedByLot.length}</span>
-                  </div>
-                  <div>
-                    <div className="text-xs text-stone-600 uppercase tracking-wide">Lotes registrados</div>
-                    <div className="text-sm text-stone-700 font-medium">({filteredItems.length} items registrados)</div>
-                  </div>
-                </div>
+          {/* Resumen: desglose por categoría y valores, optimizado para móvil */}
+          <div className="bg-gradient-to-br from-berry-50 to-berry-100 border-2 border-berry-200 rounded-xl p-3 sm:p-4 mb-4 shadow-sm">
+            <div className="space-y-2 sm:space-y-2.5">
+              {/* Fila 1: Lotes · Ítems · Con lote · Operativos */}
+              <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 text-xs sm:text-sm">
+                <span className="flex items-center gap-1">
+                  <span className="bg-berry-600 text-white rounded px-1.5 sm:px-2 py-0.5 font-bold text-[10px] sm:text-xs">{groupedByLot.length}</span>
+                  <span className="text-stone-600">lotes</span>
+                </span>
+                <span className="text-stone-400 hidden sm:inline">·</span>
+                <span className="text-stone-700 font-medium">{filteredItems.length} ítems</span>
+                <span className="text-stone-400 hidden sm:inline">·</span>
+                <span className="text-stone-600">{itemsWithLots} con lote</span>
+                {operationalItems.length !== filteredItems.length && (
+                  <>
+                    <span className="text-stone-400 hidden sm:inline">·</span>
+                    <span className="text-stone-600">{operationalItems.length} oper.</span>
+                  </>
+                )}
               </div>
 
-              {/* Segunda fila: Valor Total Inventario */}
-              <div className="pt-2 border-t border-berry-200">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-berry-800">Valor total inventario</span>
-                  <span className="text-lg font-bold text-berry-700">${totalValue.toLocaleString('es-CO')}</span>
+              {/* Fila 2: Valor operativo + Activos + Cigarrillos */}
+              <div className="pt-2 border-t border-berry-200 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1.5 sm:gap-2">
+                <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
+                  <span className="text-[10px] sm:text-xs text-stone-600">Valor operativo</span>
+                  <span className="text-base sm:text-lg font-bold text-berry-700">${totalValue.toLocaleString('es-CO')}</span>
                 </div>
+                {(assetsItems.length > 0 || regulatedItems.length > 0) && (filterCategory === 'activos' || filterCategory === 'cigarrillos' || !filterCategory) && (
+                  <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-0.5 text-[10px] sm:text-xs">
+                    {assetsItems.length > 0 && (filterCategory === 'activos' || !filterCategory) && (
+                      <span className="text-stone-600">
+                        Activos <span className="font-semibold text-stone-700">${totalAssetsValue.toLocaleString('es-CO')}</span>
+                      </span>
+                    )}
+                    {regulatedItems.length > 0 && (filterCategory === 'cigarrillos' || !filterCategory) && (
+                      <span className="text-stone-600">
+                        Cigarr. <span className="font-semibold text-stone-700">${totalRegulatedValue.toLocaleString('es-CO')}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Tercera fila: Activos y Regulados en grid */}
-              {(assetsItems.length > 0 || regulatedItems.length > 0) && (filterCategory === 'activos' || filterCategory === 'productos regulados' || !filterCategory) && (
-                <div className="pt-2 border-t border-berry-200 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {assetsItems.length > 0 && (filterCategory === 'activos' || !filterCategory) && (
-                    <div className="bg-white/60 rounded-lg p-3 border border-berry-200">
-                      <div className="text-xs text-stone-600 mb-1">Valor activos</div>
-                      <div className="text-base font-bold text-stone-700">${totalAssetsValue.toLocaleString('es-CO')}</div>
-                      <div className="text-xs text-stone-500 mt-1">No incluido en inventario general</div>
-                    </div>
-                  )}
-                  {regulatedItems.length > 0 && (filterCategory === 'productos regulados' || !filterCategory) && (
-                    <div className="bg-white/60 rounded-lg p-3 border border-berry-200">
-                      <div className="text-xs text-stone-600 mb-1">Valor productos regulados</div>
-                      <div className="text-base font-bold text-stone-700">${totalRegulatedValue.toLocaleString('es-CO')}</div>
-                      <div className="text-xs text-stone-500 mt-1">Control aparte - no incluido</div>
-                    </div>
-                  )}
+              {/* Lista por categoría: clic filtra y lista los ítems de esa categoría */}
+              {byCategory.length > 0 && (
+                <div className="pt-2 border-t border-berry-200">
+                  <div className="text-[10px] sm:text-xs text-stone-600 uppercase tracking-wide mb-1.5">Por categoría (clic para ver productos)</div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 sm:gap-2">
+                    {byCategory.map(({ category, label, count, value }) => {
+                      const isSelected = filterCategory === category
+                      return (
+                        <button
+                          key={category}
+                          type="button"
+                          onClick={() => setCategoryPopupCategory(category)}
+                          className={`text-left rounded-lg px-2 py-1.5 sm:px-2.5 sm:py-2 border min-w-0 transition-all focus:outline-none focus:ring-2 focus:ring-berry-500 focus:ring-offset-1 ${
+                            isSelected
+                              ? 'bg-berry-200 border-berry-400 ring-2 ring-berry-400/50'
+                              : 'bg-white/70 border-berry-200/80 hover:bg-berry-50 hover:border-berry-300'
+                          }`}
+                          title={`Ver ${count} productos de ${label}`}
+                        >
+                          <div className="text-[10px] sm:text-xs font-medium text-stone-700 truncate">
+                            {label}
+                          </div>
+                          <div className="flex items-baseline justify-between gap-1 mt-0.5">
+                            <span className="text-[10px] text-stone-500">{count} ítems</span>
+                            <span className="text-[10px] sm:text-xs font-semibold text-berry-700 truncate ml-1">
+                              ${value.toLocaleString('es-CO')}
+                            </span>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
 
               {/* Filtros activos */}
-              {(filterLot || filterDate || filterProductType) && (
-                <div className="pt-2 border-t border-berry-200">
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    {filterLot && (
-                      <span className="px-2 py-1 bg-berry-200 text-berry-800 rounded-full font-medium">
-                        Lote: {filterLot}
+              {(filterLot || filterDate || filterProductType.length > 0) && (
+                <div className="pt-2 border-t border-berry-200 flex flex-wrap gap-1 text-[10px] sm:text-xs">
+                  {filterLot && (
+                    <span className="px-1.5 sm:px-2 py-0.5 bg-berry-200 text-berry-800 rounded-full font-medium">Lote: {filterLot}</span>
+                  )}
+                  {filterDate && (
+                    <span className="px-1.5 sm:px-2 py-0.5 bg-berry-200 text-berry-800 rounded-full font-medium">
+                      {new Date(filterDate + 'T00:00:00').toLocaleDateString('es-CO', { month: 'short', day: 'numeric' })}
+                    </span>
+                  )}
+                  {filterProductType.map(type => {
+                    const typeInfo = getProductTypeInfo(type)
+                    return typeInfo ? (
+                      <span key={type} className="px-1.5 sm:px-2 py-0.5 bg-amber-200 text-amber-800 rounded-full font-medium">
+                        {typeInfo.label}
                       </span>
-                    )}
-                    {filterDate && (
-                      <span className="px-2 py-1 bg-berry-200 text-berry-800 rounded-full font-medium">
-                        {new Date(filterDate + 'T00:00:00').toLocaleDateString('es-CO', {
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </span>
-                    )}
-                    {filterProductType.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {filterProductType.map(type => {
-                          const typeInfo = getProductTypeInfo(type)
-                          return typeInfo ? (
-                            <span key={type} className="px-2 py-1 bg-amber-200 text-amber-800 rounded-full font-medium text-xs">
-                              {typeInfo.label}
-                            </span>
-                          ) : null
-                        })}
-                      </div>
-                    )}
-                  </div>
+                    ) : null
+                  })}
                 </div>
               )}
             </div>
           </div>
         </div>
 
+        {/* Popup: productos por categoría */}
+        {categoryPopupCategory && (() => {
+          const categoryLabel = byCategory.find(c => c.category === categoryPopupCategory)?.label || categoryPopupCategory
+          const productsInCategory = items.filter(i => i.category === categoryPopupCategory)
+          const totalVal = productsInCategory.reduce((s, i) => s + (i.totalValue || 0), 0)
+          return (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
+              <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col">
+                <div className="flex items-center justify-between gap-3 p-4 border-b border-stone-200 flex-shrink-0">
+                  <h2 className="text-lg font-bold text-berry-900 truncate">
+                    Productos en: {categoryLabel}
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setCategoryPopupCategory(null)}
+                    className="flex-shrink-0 w-9 h-9 flex items-center justify-center text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg"
+                    aria-label="Cerrar"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="p-3 text-xs text-stone-500 border-b border-stone-100">
+                  {productsInCategory.length} producto{productsInCategory.length !== 1 ? 's' : ''} · Total ${totalVal.toLocaleString('es-CO')}
+                </div>
+                <div className="overflow-y-auto flex-1 p-3 sm:p-4">
+                  <ul className="space-y-2">
+                    {productsInCategory
+                      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+                      .map((item) => (
+                        <li key={item.id}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleEdit(item)
+                              setCategoryPopupCategory(null)
+                            }}
+                            className="w-full flex items-center justify-between gap-2 py-2 px-3 bg-stone-50 hover:bg-berry-50 rounded-lg border border-stone-100 hover:border-berry-200 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-berry-500 focus:ring-offset-1"
+                            title="Ver detalle"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium text-stone-800 truncate">{item.name}</div>
+                              <div className="text-xs text-stone-500">
+                                {item.quantity} {item.unit}
+                                {item.lot && ` · ${item.lot}`}
+                              </div>
+                            </div>
+                            <div className="flex-shrink-0 flex items-center gap-1">
+                              <span className="font-semibold text-berry-700">${(item.totalValue || 0).toLocaleString('es-CO')}</span>
+                              <span className="text-stone-400 text-xs">→</span>
+                            </div>
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+                <div className="p-3 border-t border-stone-200 flex flex-col-reverse sm:flex-row gap-2 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setCategoryPopupCategory(null)}
+                    className="px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-100 rounded-lg"
+                  >
+                    Cerrar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterCategory(categoryPopupCategory)
+                      setCategoryPopupCategory(null)
+                      document.getElementById('inventory-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }}
+                    className="px-4 py-2 text-sm font-semibold bg-berry-600 text-white hover:bg-berry-700 rounded-lg"
+                  >
+                    Ver en lista completa
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Lista de Items */}
-        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+        <div id="inventory-list" className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+          {filterCategory && (
+            <div className="mb-4 pb-3 border-b border-stone-200 flex items-center justify-between flex-wrap gap-2">
+              <h2 className="text-base sm:text-lg font-bold text-berry-800">
+                Productos en: {byCategory.find(c => c.category === filterCategory)?.label || filterCategory}
+              </h2>
+              <span className="text-sm text-stone-500">{filteredItems.length} producto{filteredItems.length !== 1 ? 's' : ''}</span>
+              <button
+                type="button"
+                onClick={() => setFilterCategory('')}
+                className="text-xs font-medium text-berry-600 hover:text-berry-800 hover:underline"
+              >
+                Ver todos
+              </button>
+            </div>
+          )}
           {loading && !items.length ? (
             <div className="text-center py-8 text-berry-600">Cargando...</div>
           ) : filteredItems.length === 0 ? (
@@ -3564,16 +3694,50 @@ export default function InventoryPage() {
                   />
                 </div>
 
-                <div>
+                <div className="sm:col-span-2">
                   <label className="block text-sm font-semibold text-stone-700 mb-2">
-                    Lote
+                    Lote al que pertenece
                   </label>
-                  <input
-                    type="text"
-                    value={editForm.lot || ''}
-                    onChange={(e) => setEditForm({ ...editForm, lot: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
-                  />
+                  <select
+                    value={
+                      editForm.lot && editForm.lot.trim() !== '' && uniqueLots.includes(editForm.lot.trim())
+                        ? editForm.lot.trim()
+                        : editForm.lot && editForm.lot.trim() !== ''
+                          ? '__otro__'
+                          : ''
+                    }
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setEditForm({ ...editForm, lot: v === '__otro__' ? (editForm.lot || '') : v })
+                    }}
+                    className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all bg-white"
+                  >
+                    <option value="">Sin lote</option>
+                    {uniqueLots.map((lot) => (
+                      <option key={lot} value={lot} title={lot}>
+                        {lot.length > 40 ? lot.slice(0, 40) + '…' : lot}
+                      </option>
+                    ))}
+                    <option value="__otro__">Otro (escribir)</option>
+                  </select>
+                  {(() => {
+                    const lotSelectValue =
+                      editForm.lot && editForm.lot.trim() !== '' && uniqueLots.includes(editForm.lot.trim())
+                        ? editForm.lot.trim()
+                        : editForm.lot && editForm.lot.trim() !== ''
+                          ? '__otro__'
+                          : ''
+                    if (lotSelectValue !== '__otro__') return null
+                    return (
+                      <input
+                        type="text"
+                        value={editForm.lot || ''}
+                        onChange={(e) => setEditForm({ ...editForm, lot: e.target.value })}
+                        placeholder="Ej: D1-20260131, Tiendas esquina"
+                        className="mt-2 w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                      />
+                    )
+                  })()}
                 </div>
               </div>
 
@@ -3702,25 +3866,23 @@ export default function InventoryPage() {
 
       {/* Modal de edición de lote */}
       {editingLot && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-berry-950">Editar Lote</h2>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 max-w-2xl w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-2xl font-bold text-berry-950 truncate min-w-0">Editar Lote</h2>
               <button
                 onClick={handleCancelLotEdit}
-                className="text-stone-500 hover:text-stone-700 text-2xl leading-none"
+                className="flex-shrink-0 w-10 h-10 flex items-center justify-center text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg text-2xl"
                 aria-label="Cerrar"
               >
                 ×
               </button>
             </div>
-            
-            <div className="mb-4 p-4 bg-berry-50 border border-berry-200 rounded-lg">
-              <div className="text-sm text-berry-700">
-                <strong>Este lote contiene {editingLot.items.length} producto(s)</strong>
-                <br />
-                Los cambios se aplicarán a todos los productos de este lote.
-              </div>
+            <div className="mb-4 p-3 sm:p-4 bg-berry-50 border border-berry-200 rounded-lg">
+              <p className="text-sm text-berry-700">
+                <strong>Este lote contiene {editingLot.items.length} producto(s).</strong>
+                <span className="block sm:inline sm:ml-1"> Los cambios se aplicarán a todos.</span>
+              </p>
             </div>
             
             <div className="space-y-4">
@@ -3732,9 +3894,13 @@ export default function InventoryPage() {
                   type="text"
                   value={lotEditForm.lot}
                   onChange={(e) => setLotEditForm({ ...lotEditForm, lot: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                  className="w-full px-4 py-3 min-h-[44px] border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                  placeholder="Ej: ESQUINA-20260131, D1-20260131"
                   required
                 />
+                <p className="mt-1.5 text-xs text-stone-500">
+                  Puedes editar el nombre del lote; el cambio se aplicará a todos los productos de este lote.
+                </p>
               </div>
 
               <div>
@@ -3745,7 +3911,7 @@ export default function InventoryPage() {
                   type="text"
                   value={lotEditForm.supplier}
                   onChange={(e) => setLotEditForm({ ...lotEditForm, supplier: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                  className="w-full px-4 py-3 min-h-[44px] border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                   placeholder="Nombre del proveedor"
                 />
               </div>
@@ -3758,7 +3924,7 @@ export default function InventoryPage() {
                   type="date"
                   value={lotEditForm.purchaseDate}
                   onChange={(e) => setLotEditForm({ ...lotEditForm, purchaseDate: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
+                  className="w-full px-4 py-3 min-h-[44px] border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                 />
               </div>
             </div>
@@ -3775,7 +3941,7 @@ export default function InventoryPage() {
                     }
                   }}
                   disabled={saving}
-                  className="w-full px-4 py-3 bg-red-50 hover:bg-red-100 border-2 border-red-300 text-red-700 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base flex items-center justify-center gap-2"
+                  className="w-full px-4 py-3 min-h-[44px] bg-red-50 hover:bg-red-100 border-2 border-red-300 text-red-700 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base flex items-center justify-center gap-2"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -3785,10 +3951,10 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 mt-6">
+            <div className="flex flex-col-reverse sm:flex-row gap-3 mt-6">
               <button
                 onClick={handleCancelLotEdit}
-                className="flex-1 px-4 py-3.5 border-2 border-stone-300 rounded-xl hover:bg-stone-50 transition-colors font-semibold text-base"
+                className="flex-1 min-h-[44px] px-4 py-3.5 border-2 border-stone-300 rounded-xl hover:bg-stone-50 transition-colors font-semibold text-base"
                 disabled={saving}
               >
                 Cancelar
@@ -3796,7 +3962,7 @@ export default function InventoryPage() {
               <button
                 onClick={handleSaveLotEdit}
                 disabled={saving || !lotEditForm.lot}
-                className="flex-1 px-4 py-3.5 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-lg hover:shadow-xl"
+                className="flex-1 min-h-[44px] px-4 py-3.5 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-lg hover:shadow-xl"
               >
                 {saving ? 'Guardando...' : 'Guardar Cambios del Lote'}
               </button>

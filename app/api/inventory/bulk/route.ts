@@ -24,9 +24,13 @@ export async function PUT(request: NextRequest) {
 
     // Obtener todos los items del inventario
     const inventory = await getInventory()
-    
-    // Filtrar items que pertenecen al lote
-    const itemsToUpdate = inventory.filter(item => item.lot === lotName)
+    const normalizedLotName = typeof lotName === 'string' ? lotName.trim() : String(lotName).trim()
+
+    // Filtrar items que pertenecen al lote (comparación normalizada)
+    const itemsToUpdate = inventory.filter(item => {
+      const itemLot = item.lot != null ? String(item.lot).trim() : ''
+      return itemLot === normalizedLotName
+    })
 
     if (itemsToUpdate.length === 0) {
       return NextResponse.json(

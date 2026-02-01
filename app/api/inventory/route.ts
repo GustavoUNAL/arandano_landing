@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem } from '@/lib/db-inventory'
 import { getInventory as getInventoryJSON } from '@/lib/inventory'
+import { normalizeInventoryCategory } from '@/lib/inventory-categories'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,6 +36,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    if (body.category !== undefined) {
+      body.category = normalizeInventoryCategory(body.category)
+    }
     const item = await createInventoryItem(body)
     return NextResponse.json(item, { status: 201 })
   } catch (error: any) {
