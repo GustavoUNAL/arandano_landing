@@ -151,6 +151,14 @@ function initializeDatabase() {
     }
   }
 
+  try {
+    db.exec(`ALTER TABLE inventory ADD COLUMN productId TEXT`)
+  } catch (e: any) {
+    if (!e.message?.includes('duplicate column')) {
+      console.warn('Error adding productId column:', e.message)
+    }
+  }
+
   // Tabla de ventas
   db.exec(`
     CREATE TABLE IF NOT EXISTS sales (

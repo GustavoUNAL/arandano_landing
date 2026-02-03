@@ -21,6 +21,24 @@ export interface ProductStockInfo {
   recipe?: Recipe // Receta asociada
 }
 
+/** Desglose de stock por ítem de inventario enlazado */
+export interface ProductStockDetailBreakdown {
+  inventoryItemId: string
+  inventoryItemName: string
+  quantity: number
+  unit: string
+  lot?: string
+  supplier?: string
+}
+
+export interface ProductStockDetail {
+  product: Product
+  totalStock: number
+  source: 'linked' | 'direct' | 'name-match'
+  /** Solo cuando source === 'linked': desglose por ítem de inventario */
+  breakdown?: ProductStockDetailBreakdown[]
+}
+
 export interface ProductAvailability {
   available: number // Cantidad que se puede preparar
   limitingIngredient?: {
@@ -34,21 +52,26 @@ export interface ProductAvailability {
 
 /**
  * Calcula el stock real de un producto desde la base de datos
- * - Si tiene stock directo -> usar ese
- * - Si el stock se calcula por movimientos -> calcular: stock = entradas - salidas
+ * 1. Si hay ítems de inventario enlazados (productId) → suma de cantidades
+ * 2. Si tiene stock directo en el producto → usar ese
+ * 3. Fallback: coincidencia por nombre en inventario
  */
 export async function calculateProductStock(product: Product): Promise<number> {
-  // Si el producto tiene un campo stock directo y es válido, usarlo
-  // El stock directo puede venir de actualizaciones manuales o del cálculo anterior
-  if (product.stock !== undefined && product.stock !== null && product.stock >= 0) {
-    return product.stock
-  }
-
-  // Si no tiene stock directo, calcular desde inventario (con caché)
   try {
     const inventory = await getCachedInventory(getInventory)
-    
-    // Buscar items de inventario que coincidan con el producto
+
+    // 1. Ítems de inventario enlazados al producto (productId)
+    const linkedItems = inventory.filter(item => item.productId === product.id)
+    if (linkedItems.length > 0) {
+      return linkedItems.reduce((sum, item) => sum + (item.quantity || 0), 0)
+    }
+
+    // 2. Stock directo en el producto
+    if (product.stock !== undefined && product.stock !== null && product.stock >= 0) {
+      return product.stock
+    }
+
+    // 3. Fallback: coincidencia por nombre
     const matchingItems = inventory.filter(item => {
       // Normalizar nombres para comparación
       const normalizedProductName = normalizeName(product.name)
@@ -65,12 +88,10 @@ export async function calculateProductStock(product: Product): Promise<number> {
       return totalStock
     }
 
-    // Si no hay inventario, retornar 0 o el stock manual si existe
-    return product.stock || 0
+    return product.stock ?? 0
   } catch (error) {
     console.error('[Stock] Error calculando stock:', error)
-    // En caso de error, retornar stock manual o 0
-    return product.stock || 0
+    return product.stock ?? 0
   }
 }
 
@@ -318,6 +339,33 @@ export async function calculateFullBottles(product: Product): Promise<number | u
     console.error('[Stock] Error calculando botellas completas:', error)
     return undefined
   }
+}
+
+/**
+ * Obtiene el stock detallado de un producto: total y desglose por ítem de inventario enlazado
+ */
+export async function getProductStockDetail(product: Product): Promise<ProductStockDetail> {
+  const inventory = await getCachedInventory(getInventory)
+  const linkedItems = inventory.filter(item => item.productId === product.id)
+
+  if (linkedItems.length > 0) {
+    const totalStock = linkedItems.reduce((sum, item) => sum + (item.quantity || 0), 0)
+    const breakdown: ProductStockDetailBreakdown[] = linkedItems.map(item => ({
+      inventoryItemId: item.id,
+      inventoryItemName: item.name,
+      quantity: item.quantity || 0,
+      unit: item.unit || 'u',
+      lot: item.lot,
+      supplier: item.supplier
+    }))
+    return { product, totalStock, source: 'linked', breakdown }
+  }
+
+  const totalStock = await calculateProductStock(product)
+  const source = (product.stock !== undefined && product.stock !== null && product.stock >= 0)
+    ? 'direct'
+    : 'name-match'
+  return { product, totalStock, source }
 }
 
 /**

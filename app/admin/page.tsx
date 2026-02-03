@@ -41,6 +41,8 @@ const CATEGORIES = {
   ]
 }
 
+const ALL_CATEGORIES = [...CATEGORIES.cafeteria, ...CATEGORIES.bebida]
+
 export default function AdminPage() {
   const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
@@ -59,8 +61,14 @@ export default function AdminPage() {
   const [editingStock, setEditingStock] = useState<{ id: string; stock: number } | null>(null)
   const [productsStockInfo, setProductsStockInfo] = useState<any[]>([]) // Información de stock
   const [selectedProductDetail, setSelectedProductDetail] = useState<Product | null>(null)
+  const [productStockDetail, setProductStockDetail] = useState<{
+    totalStock: number
+    source: 'linked' | 'direct' | 'name-match'
+    breakdown?: Array<{ inventoryItemName: string; quantity: number; unit: string; lot?: string; supplier?: string }>
+  } | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>('') // Búsqueda de productos
   const [productTypeFilter, setProductTypeFilter] = useState<'all' | 'simple' | 'composite'>('all') // Filtro de tipo de producto
+  const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all') // Filtro por categoría
   const [editingProductForSale, setEditingProductForSale] = useState<Product | null | 'new'>(null)
   // Estados para gestión de recetas
   const [recipes, setRecipes] = useState<any[]>([])
@@ -760,6 +768,30 @@ export default function AdminPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, currentView, products.length])
+
+  // Cargar stock detallado (inventario enlazado) cuando se abre el detalle de un producto
+  useEffect(() => {
+    if (!selectedProductDetail) {
+      setProductStockDetail(null)
+      return
+    }
+    let cancelled = false
+    fetch(`/api/products/${selectedProductDetail.id}/stock-detail`)
+      .then(res => res.ok ? res.json() : null)
+      .then((data: { totalStock: number; source: string; breakdown?: Array<{ inventoryItemName: string; quantity: number; unit: string; lot?: string; supplier?: string }> }) => {
+        if (!cancelled && data) {
+          setProductStockDetail({
+            totalStock: data.totalStock,
+            source: data.source as 'linked' | 'direct' | 'name-match',
+            breakdown: data.breakdown
+          })
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setProductStockDetail(null)
+      })
+    return () => { cancelled = true }
+  }, [selectedProductDetail])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1714,7 +1746,7 @@ export default function AdminPage() {
             {/* Título y botones */}
             <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-4">
               <h2 className="text-xl sm:text-2xl font-bold text-berry-950 text-center sm:text-left">
-                Productos a la venta - Rentabilidad
+                Productos a la venta
               </h2>
               <div className="flex gap-3">
                 <button
@@ -1813,23 +1845,53 @@ export default function AdminPage() {
                   </p>
                 </div>
 
+                {/* Filtro por categoría */}
+                <div className="mb-6 bg-white rounded-lg p-4 border-2 border-stone-200 shadow-sm">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <label className="text-sm font-semibold text-berry-950 whitespace-nowrap">
+                      Filtrar por categoría:
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setProductCategoryFilter('all')}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                          productCategoryFilter === 'all'
+                            ? 'bg-berry-600 text-white shadow-md'
+                            : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                        }`}
+                      >
+                        Todas
+                      </button>
+                      {ALL_CATEGORIES.map(({ value, label }) => (
+                        <button
+                          key={value}
+                          onClick={() => setProductCategoryFilter(value)}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                            productCategoryFilter === value
+                              ? 'bg-berry-600 text-white shadow-md'
+                              : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Vista Cards para móvil */}
                 <div className="sm:hidden grid grid-cols-1 gap-4">
-                  {products
-                    .filter(product => {
-                      // Filtrar por tipo de producto
-                      const isRecipeProduct = product.category === 'coctel' || 
-                                              product.category === 'cafe-caliente' || 
-                                              product.category === 'cafe-frio'
-                      
-                      if (productTypeFilter === 'simple') {
-                        return !isRecipeProduct
-                      }
-                      if (productTypeFilter === 'composite') {
-                        return isRecipeProduct
-                      }
-                      return true // 'all' muestra todos
-                    })
+                  {(() => {
+                    const computed = products
+                      .filter(product => {
+                        const isRecipeProduct = product.category === 'coctel' || 
+                                                product.category === 'cafe-caliente' || 
+                                                product.category === 'cafe-frio'
+                        if (productTypeFilter === 'simple') return !isRecipeProduct
+                        if (productTypeFilter === 'composite') return isRecipeProduct
+                        if (productCategoryFilter !== 'all' && product.category !== productCategoryFilter) return false
+                        return true
+                      })
                     .map((product) => {
                       const productSales = sales.filter(sale =>
                         sale.items?.some((item: any) => item.productId === product.id)
@@ -1849,22 +1911,30 @@ export default function AdminPage() {
                       return { product, totalSold, cost, realCost, price, margin, marginPercent, totalProfit }
                     })
                     .sort((a, b) => {
-                      // Ordenar primero por si tienen costo (productos con costo primero)
                       if ((a.realCost !== null) !== (b.realCost !== null)) {
                         return (a.realCost !== null ? -1 : 1)
                       }
-                      // Si ambos tienen costo o ambos no tienen, ordenar por rentabilidad
                       return b.totalProfit - a.totalProfit
                     })
-                    .map(({ product, totalSold, cost, realCost, price, margin, marginPercent, totalProfit }) => {
-                      const productStock = getProductStock(product)
-                      const realStock = productStock !== null ? productStock : 0
-                      const availability = getProductAvailability(product)
-                      const fullBottles = getFullBottles(product)
-                      const isRecipeProduct = product.category === 'coctel' || 
-                                              product.category === 'cafe-caliente' || 
-                                              product.category === 'cafe-frio'
-                      return (
+                    const byCategory = new Map<string, Array<{ product: Product; totalSold: number; cost: number; realCost: number | null; price: number; margin: number; marginPercent: number; totalProfit: number }>>()
+                    for (const item of computed) {
+                      const c = item.product.category
+                      if (!byCategory.has(c)) byCategory.set(c, [])
+                      byCategory.get(c)!.push(item)
+                    }
+                    return ALL_CATEGORIES.filter(c => byCategory.has(c.value)).map(cat => (
+                      <div key={cat.value} className="mb-8">
+                        <h3 className="text-lg font-bold text-berry-800 border-b-2 border-berry-200 pb-2 mb-4">{cat.label}</h3>
+                        <div className="grid grid-cols-1 gap-4">
+                        {byCategory.get(cat.value)!.map(({ product, totalSold, cost, realCost, price, margin, marginPercent, totalProfit }) => {
+                          const productStock = getProductStock(product)
+                          const realStock = productStock !== null ? productStock : 0
+                          const availability = getProductAvailability(product)
+                          const fullBottles = getFullBottles(product)
+                          const isRecipeProduct = product.category === 'coctel' || 
+                                                  product.category === 'cafe-caliente' || 
+                                                  product.category === 'cafe-frio'
+                          return (
                       <div
                         key={product.id}
                         className="bg-gradient-to-br from-white to-stone-50 border-2 border-stone-200 rounded-xl p-5 hover:shadow-xl hover:border-berry-300 transition-all duration-300"
@@ -2026,8 +2096,12 @@ export default function AdminPage() {
                           </button>
                         </div>
                       </div>
-                      )
-                    })}
+                          )
+                        })}
+                        </div>
+                      </div>
+                    ))
+                  })()}
                 </div>
 
                 {/* Vista Tabla para desktop */}
@@ -2047,22 +2121,18 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {products
-                        .filter(product => {
-                          // Filtrar por tipo de producto
-                          const isRecipeProduct = product.category === 'coctel' || 
-                                                  product.category === 'cafe-caliente' || 
-                                                  product.category === 'cafe-frio'
-                          
-                          if (productTypeFilter === 'simple') {
-                            return !isRecipeProduct
-                          }
-                          if (productTypeFilter === 'composite') {
-                            return isRecipeProduct
-                          }
-                          return true // 'all' muestra todos
-                        })
-                        .map((product) => {
+                      {(() => {
+                        const rowsData = products
+                          .filter(product => {
+                            const isRecipeProduct = product.category === 'coctel' || 
+                                                    product.category === 'cafe-caliente' || 
+                                                    product.category === 'cafe-frio'
+                            if (productTypeFilter === 'simple') return !isRecipeProduct
+                            if (productTypeFilter === 'composite') return isRecipeProduct
+                            if (productCategoryFilter !== 'all' && product.category !== productCategoryFilter) return false
+                            return true
+                          })
+                          .map((product) => {
                           const productSales = sales.filter(sale =>
                             sale.items?.some((item: any) => item.productId === product.id)
                           )
@@ -2081,14 +2151,20 @@ export default function AdminPage() {
                           return { product, totalSold, cost, realCost, price, margin, marginPercent, totalProfit }
                         })
                         .sort((a, b) => {
-                          // Ordenar primero por si tienen costo (productos con costo primero)
                           if ((a.realCost !== null) !== (b.realCost !== null)) {
                             return (a.realCost !== null ? -1 : 1)
                           }
-                          // Si ambos tienen costo o ambos no tienen, ordenar por rentabilidad
                           return b.totalProfit - a.totalProfit
                         })
-                        .map(({ product, totalSold, cost, realCost, price, margin, marginPercent, totalProfit }) => {
+                    const desktopByCategory = new Map<string, Array<{ product: Product; totalSold: number; cost: number; realCost: number | null; price: number; margin: number; marginPercent: number; totalProfit: number }>>()
+                    for (const item of rowsData) {
+                      const c = item.product.category
+                      if (!desktopByCategory.has(c)) desktopByCategory.set(c, [])
+                      desktopByCategory.get(c)!.push(item)
+                    }
+                    type RowItem = { product: Product; totalSold: number; cost: number; realCost: number | null; price: number; margin: number; marginPercent: number; totalProfit: number }
+                    const renderRow = (item: RowItem) => {
+                          const { product, totalSold, cost, realCost, price, margin, marginPercent, totalProfit } = item
                           const productStock = getProductStock(product)
                           const realStock = productStock !== null ? productStock : 0
                           const availability = getProductAvailability(product)
@@ -2287,7 +2363,14 @@ export default function AdminPage() {
                             </td>
                           </tr>
                           )
-                        })}
+                          }
+                    return ALL_CATEGORIES.filter(c => desktopByCategory.has(c.value)).flatMap(cat => [
+                      <tr key={`cat-${cat.value}`} className="bg-berry-100 border-b-2 border-berry-200">
+                        <td colSpan={9} className="px-4 py-2 font-bold text-berry-950 text-sm">{cat.label}</td>
+                      </tr>,
+                      ...desktopByCategory.get(cat.value)!.map(renderRow)
+                    ])
+                      })()}
                     </tbody>
                   </table>
                 </div>
@@ -2636,6 +2719,49 @@ export default function AdminPage() {
                             )
                           })()}
                         </div>
+                        {productStockDetail && (
+                          <div className="col-span-2 mt-3 pt-3 border-t border-berry-200">
+                            <span className="block text-xs font-semibold text-berry-800 mb-2">Stock detallado (inventario enlazado)</span>
+                            <div className="text-sm text-stone-600 mb-2">
+                              Total actual: <span className="font-bold text-berry-700">{productStockDetail.totalStock}</span> unidades
+                              {productStockDetail.source === 'linked' && productStockDetail.breakdown && productStockDetail.breakdown.length > 0 && (
+                                <span className="ml-2 text-xs text-stone-500">
+                                  (desglose por ítem de inventario)
+                                </span>
+                              )}
+                            </div>
+                            {productStockDetail.breakdown && productStockDetail.breakdown.length > 0 ? (
+                              <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white">
+                                <table className="w-full text-xs">
+                                  <thead>
+                                    <tr className="bg-stone-100 border-b border-stone-200">
+                                      <th className="px-2 py-1.5 text-left font-semibold text-stone-700">Ítem inventario</th>
+                                      <th className="px-2 py-1.5 text-right font-semibold text-stone-700">Cantidad</th>
+                                      <th className="px-2 py-1.5 text-left font-semibold text-stone-700">Unidad</th>
+                                      <th className="px-2 py-1.5 text-left font-semibold text-stone-700">Lote</th>
+                                      <th className="px-2 py-1.5 text-left font-semibold text-stone-700">Proveedor</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {productStockDetail.breakdown.map((row, i) => (
+                                      <tr key={i} className="border-b border-stone-100">
+                                        <td className="px-2 py-1.5 text-stone-800">{row.inventoryItemName}</td>
+                                        <td className="px-2 py-1.5 text-right font-medium text-berry-700">{row.quantity}</td>
+                                        <td className="px-2 py-1.5 text-stone-600">{row.unit}</td>
+                                        <td className="px-2 py-1.5 text-stone-500">{row.lot || '-'}</td>
+                                        <td className="px-2 py-1.5 text-stone-500">{row.supplier || '-'}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-stone-500">
+                                {productStockDetail.source === 'linked' ? 'Sin ítems enlazados.' : productStockDetail.source === 'direct' ? 'Stock manual (no enlazado a inventario).' : 'Stock calculado por coincidencia de nombre. Enlaza ítems de inventario al producto para ver el desglose.'}
+                              </p>
+                            )}
+                          </div>
+                        )}
                         {cost > 0 && (
                           <div className="col-span-2">
                             <span className="block text-xs text-stone-600 mb-1">Rentabilidad por unidad:</span>

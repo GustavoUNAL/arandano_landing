@@ -8,6 +8,8 @@ export interface InventoryItem {
   quantity: number // Cantidad actual de productos
   initialQuantity?: number // Cantidad original comprada (productos)
   unit: string // Unidad de producto (Botella, Lata, etc.)
+  /** ID del producto a la venta al que pertenece este ítem (stock enlazado) */
+  productId?: string | null
   capacity?: number // Capacidad por unidad individual (ej: 750ml por botella)
   capacityUnit?: string // Unidad de capacidad (ml, cm3, litro, etc.)
   currentCapacity?: number // Capacidad actual por unidad (puede ser menor a la inicial)

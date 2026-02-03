@@ -10,6 +10,8 @@ interface InventoryItem {
   quantity: number // Cantidad actual de productos
   initialQuantity?: number // Cantidad original comprada (productos)
   unit: string // Unidad de producto (Botella, Lata, etc.)
+  /** ID del producto a la venta al que pertenece este ítem (stock enlazado) */
+  productId?: string | null
   capacity?: number // Capacidad por unidad individual (ej: 750ml por botella)
   capacityUnit?: string // Unidad de capacidad (ml, cm3, litro, etc.)
   currentCapacity?: number // Capacidad actual por unidad (puede ser menor a la inicial)
@@ -174,6 +176,7 @@ export default function InventoryPage() {
     category: '',
     quantity: 0,
     unit: 'Unidad',
+    productId: undefined,
     capacity: undefined,
     capacityUnit: undefined,
     currentCapacity: undefined,
@@ -188,10 +191,18 @@ export default function InventoryPage() {
     purchaseDate: new Date().toISOString().split('T')[0],
     notes: ''
   })
+  const [productsForLink, setProductsForLink] = useState<Array<{ id: string; name: string }>>([])
 
   useEffect(() => {
     loadInventory()
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/products')
+      .then(res => res.ok ? res.json() : [])
+      .then((list: Array<{ id: string; name: string }>) => setProductsForLink(list))
+      .catch(() => setProductsForLink([]))
   }, [])
 
   const showAlert = (type: 'success' | 'error', message: string) => {
@@ -244,6 +255,7 @@ export default function InventoryPage() {
       quantity: item.quantity,
       initialQuantity: item.initialQuantity || item.quantity,
       unit: unit,
+      productId: item.productId ?? undefined,
       capacity: item.capacity,
       capacityUnit: item.capacityUnit,
       currentCapacity: item.currentCapacity ?? item.capacity,
@@ -455,7 +467,8 @@ export default function InventoryPage() {
         supplier: newItemForm.supplier || undefined,
         lot: newItemForm.lot || undefined,
         purchaseDate: newItemForm.purchaseDate || new Date().toISOString().split('T')[0],
-        notes: newItemForm.notes || undefined
+        notes: newItemForm.notes || undefined,
+        productId: newItemForm.productId || undefined
       }
 
       const response = await fetch('/api/inventory', {
@@ -474,6 +487,7 @@ export default function InventoryPage() {
           category: '',
           quantity: 0,
           unit: 'Unidad',
+          productId: undefined,
           capacity: undefined,
           capacityUnit: undefined,
           currentCapacity: undefined,
@@ -509,6 +523,7 @@ export default function InventoryPage() {
       category: '',
       quantity: 0,
       unit: 'Unidad',
+      productId: undefined,
       capacity: undefined,
       capacityUnit: undefined,
       currentCapacity: undefined,
@@ -2842,6 +2857,23 @@ export default function InventoryPage() {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
+                  Producto a la venta (enlazar stock)
+                </label>
+                <select
+                  value={newItemForm.productId || ''}
+                  onChange={(e) => setNewItemForm({ ...newItemForm, productId: e.target.value || undefined })}
+                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all bg-white"
+                >
+                  <option value="">Ninguno</option>
+                  {productsForLink.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-stone-500 mt-1">Si enlazas este ítem a un producto, el stock del producto se calculará con la suma de los ítems enlazados.</p>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-stone-700 mb-2">
@@ -3295,6 +3327,23 @@ export default function InventoryPage() {
                   className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
+                  Producto a la venta (enlazar stock)
+                </label>
+                <select
+                  value={editForm.productId || ''}
+                  onChange={(e) => setEditForm({ ...editForm, productId: e.target.value || undefined })}
+                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-base transition-all bg-white"
+                >
+                  <option value="">Ninguno</option>
+                  {productsForLink.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-stone-500 mt-1">Si enlazas este ítem a un producto, el stock del producto se calculará con la suma de los ítems enlazados.</p>
               </div>
 
               {/* Información de Stock */}

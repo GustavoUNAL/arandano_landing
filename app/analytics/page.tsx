@@ -61,6 +61,8 @@ interface MonthlyKPIs extends KPIs {
   weeks: number[]
 }
 
+type ProductCategory = 'cafe-caliente' | 'cafe-frio' | 'pasteleria' | 'combo' | 'coctel' | 'cerveza' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky'
+
 interface ProductAnalytics {
   product: {
     id: string
@@ -68,6 +70,7 @@ interface ProductAnalytics {
     price: number
     stock: number
     cost?: number
+    category?: ProductCategory
   }
   totalSold: number
   totalRevenue: number
@@ -79,6 +82,20 @@ interface ProductAnalytics {
   lastSaleDaysAgo: number
   classification: 'estrella' | 'volumen' | 'premium' | 'problema'
 }
+
+const ANALYTICS_CATEGORIES: { value: ProductCategory; label: string }[] = [
+  { value: 'cafe-caliente', label: 'Cafés Calientes' },
+  { value: 'cafe-frio', label: 'Cafés Fríos' },
+  { value: 'pasteleria', label: 'Pastelería' },
+  { value: 'combo', label: 'Combos' },
+  { value: 'cerveza', label: 'Cervezas' },
+  { value: 'coctel', label: 'Cócteles' },
+  { value: 'vino', label: 'Vinos' },
+  { value: 'vodka', label: 'Vodka' },
+  { value: 'ginebra', label: 'Ginebra' },
+  { value: 'tequila', label: 'Tequila' },
+  { value: 'whisky', label: 'Whisky' }
+]
 
 // Componente de gráfica de barras
 const BarChart = ({ data, labels, colors, height = 200 }: { data: number[], labels: string[], colors: string[], height?: number }) => {
@@ -244,6 +261,7 @@ export default function AnalyticsPage() {
   const [weeklyKPIs, setWeeklyKPIs] = useState<WeeklyKPIs[]>([])
   const [monthlyKPIs, setMonthlyKPIs] = useState<MonthlyKPIs[]>([])
   const [productAnalytics, setProductAnalytics] = useState<ProductAnalytics[]>([])
+  const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all')
   const [loading, setLoading] = useState(true)
   const [groupBy, setGroupBy] = useState<'range' | 'week' | 'month'>('week')
   const [year, setYear] = useState(new Date().getFullYear())
@@ -851,7 +869,42 @@ export default function AnalyticsPage() {
 
               {/* Tabla de Productos mejorada */}
               <div className="mt-6">
-                <h3 className="text-lg font-bold text-berry-950 mb-4 text-center">Productos a la Venta - Rentabilidad</h3>
+                <h3 className="text-lg font-bold text-berry-950 mb-4 text-center">Productos a la venta</h3>
+                {/* Filtro por categoría */}
+                <div className="mb-4 p-4 bg-white rounded-lg border-2 border-stone-200 shadow-sm">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <label className="text-sm font-semibold text-berry-950 whitespace-nowrap">
+                      Filtrar por categoría:
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setProductCategoryFilter('all')}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                          productCategoryFilter === 'all'
+                            ? 'bg-berry-600 text-white shadow-md'
+                            : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                        }`}
+                      >
+                        Todas
+                      </button>
+                      {ANALYTICS_CATEGORIES.map(({ value, label }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setProductCategoryFilter(value)}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                            productCategoryFilter === value
+                              ? 'bg-berry-600 text-white shadow-md'
+                              : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
                 <div className="overflow-x-auto rounded-lg border-2 border-stone-200 shadow-sm">
                   <table className="w-full border-collapse bg-white">
                     <thead>
@@ -868,64 +921,88 @@ export default function AnalyticsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {productAnalytics.length > 0 ? (
-                        productAnalytics.map((analytics, index) => (
-                          <tr 
-                            key={analytics.product.id} 
-                            className={`border-b border-stone-200 transition-all ${
-                              index % 2 === 0 ? 'bg-white' : 'bg-stone-50'
-                            } hover:bg-berry-50 hover:shadow-sm`}
-                          >
-                            <td className="px-6 py-4 text-sm font-semibold text-stone-900 sticky left-0 z-10 bg-inherit">
-                              {analytics.product.name}
+                      {(() => {
+                        const filtered = productCategoryFilter === 'all'
+                          ? productAnalytics
+                          : productAnalytics.filter(a => (a.product as { category?: string }).category === productCategoryFilter)
+                        const byCategory = new Map<string, ProductAnalytics[]>()
+                        for (const a of filtered) {
+                          const cat = (a.product as { category?: string }).category ?? 'otros'
+                          if (!byCategory.has(cat)) byCategory.set(cat, [])
+                          byCategory.get(cat)!.push(a)
+                        }
+                        const categoryOrder = ['cafe-caliente', 'cafe-frio', 'pasteleria', 'combo', 'cerveza', 'coctel', 'vino', 'vodka', 'ginebra', 'tequila', 'whisky', 'otros']
+                        const sortedCats = categoryOrder.filter(c => byCategory.has(c))
+                        const restCats = [...byCategory.keys()].filter(c => !categoryOrder.includes(c))
+                        const allCats = [...sortedCats, ...restCats]
+                        if (filtered.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan={9} className="px-6 py-8 text-center text-stone-500">
+                                No hay productos con datos de ventas
+                              </td>
+                            </tr>
+                          )
+                        }
+                        const getCatLabel = (value: string) => value === 'otros' ? 'Otros' : (ANALYTICS_CATEGORIES.find(c => c.value === value)?.label ?? value)
+                        return allCats.flatMap(cat => [
+                          <tr key={`cat-${cat}`} className="bg-berry-100 border-b-2 border-berry-200">
+                            <td colSpan={9} className="px-6 py-2 font-bold text-berry-950 text-sm">
+                              {getCatLabel(cat)}
                             </td>
-                            <td className="px-6 py-4 text-center">
-                              <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold border-2 ${getClassificationColor(analytics.classification)}`}>
-                                {getClassificationIcon(analytics.classification)} {analytics.classification}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-center text-sm font-semibold text-stone-700">
-                              {analytics.totalSold.toLocaleString('es-CO')}
-                            </td>
-                            <td className="px-6 py-4 text-right text-sm font-bold text-berry-600">
-                              ${analytics.totalRevenue.toLocaleString('es-CO')}
-                            </td>
-                            <td className="px-6 py-4 text-right text-sm font-semibold text-red-600">
-                              ${analytics.totalCost.toLocaleString('es-CO')}
-                            </td>
-                            <td className={`px-6 py-4 text-right text-sm font-bold ${
-                              analytics.grossMargin >= 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              ${analytics.grossMargin.toLocaleString('es-CO')}
-                            </td>
-                            <td className={`px-6 py-4 text-center text-sm font-bold ${
-                              analytics.grossMarginPercent >= 30 ? 'text-green-600' : 
-                              analytics.grossMarginPercent >= 15 ? 'text-yellow-600' : 
-                              analytics.grossMarginPercent >= 0 ? 'text-orange-600' : 'text-red-600'
-                            }`}>
-                              {analytics.grossMarginPercent.toFixed(1)}%
-                            </td>
-                            <td className="px-6 py-4 text-center text-sm text-stone-600">
-                              {analytics.rotation.toFixed(2)}x
-                            </td>
-                            <td className="px-6 py-4 text-center text-sm text-stone-600">
-                              {analytics.lastSaleDaysAgo === 999 ? (
-                                <span className="text-red-500 font-semibold">Nunca</span>
-                              ) : analytics.lastSaleDaysAgo === 0 ? (
-                                <span className="text-green-600 font-semibold">Hoy</span>
-                              ) : (
-                                `${analytics.lastSaleDaysAgo} días`
-                              )}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={9} className="px-6 py-8 text-center text-stone-500">
-                            No hay productos con datos de ventas
-                          </td>
-                        </tr>
-                      )}
+                          </tr>,
+                          ...byCategory.get(cat)!.map((analytics, index) => (
+                            <tr
+                              key={analytics.product.id}
+                              className={`border-b border-stone-200 transition-all ${
+                                index % 2 === 0 ? 'bg-white' : 'bg-stone-50'
+                              } hover:bg-berry-50 hover:shadow-sm`}
+                            >
+                              <td className="px-6 py-4 text-sm font-semibold text-stone-900 sticky left-0 z-10 bg-inherit">
+                                {analytics.product.name}
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold border-2 ${getClassificationColor(analytics.classification)}`}>
+                                  {getClassificationIcon(analytics.classification)} {analytics.classification}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-center text-sm font-semibold text-stone-700">
+                                {analytics.totalSold.toLocaleString('es-CO')}
+                              </td>
+                              <td className="px-6 py-4 text-right text-sm font-bold text-berry-600">
+                                ${analytics.totalRevenue.toLocaleString('es-CO')}
+                              </td>
+                              <td className="px-6 py-4 text-right text-sm font-semibold text-red-600">
+                                ${analytics.totalCost.toLocaleString('es-CO')}
+                              </td>
+                              <td className={`px-6 py-4 text-right text-sm font-bold ${
+                                analytics.grossMargin >= 0 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                ${analytics.grossMargin.toLocaleString('es-CO')}
+                              </td>
+                              <td className={`px-6 py-4 text-center text-sm font-bold ${
+                                analytics.grossMarginPercent >= 30 ? 'text-green-600' : 
+                                analytics.grossMarginPercent >= 15 ? 'text-yellow-600' : 
+                                analytics.grossMarginPercent >= 0 ? 'text-orange-600' : 'text-red-600'
+                              }`}>
+                                {analytics.grossMarginPercent.toFixed(1)}%
+                              </td>
+                              <td className="px-6 py-4 text-center text-sm text-stone-600">
+                                {analytics.rotation.toFixed(2)}x
+                              </td>
+                              <td className="px-6 py-4 text-center text-sm text-stone-600">
+                                {analytics.lastSaleDaysAgo === 999 ? (
+                                  <span className="text-red-500 font-semibold">Nunca</span>
+                                ) : analytics.lastSaleDaysAgo === 0 ? (
+                                  <span className="text-green-600 font-semibold">Hoy</span>
+                                ) : (
+                                  `${analytics.lastSaleDaysAgo} días`
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        ])
+                      })()}
                     </tbody>
                   </table>
                 </div>

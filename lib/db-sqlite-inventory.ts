@@ -16,6 +16,7 @@ export async function getInventory(): Promise<InventoryItem[]> {
     quantity: row.quantity,
     initialQuantity: row.initialQuantity || undefined,
     unit: row.unit,
+    productId: row.productId || undefined,
     capacity: row.capacity || undefined,
     capacityUnit: row.capacityUnit || undefined,
     currentCapacity: row.currentCapacity ?? row.capacity ?? undefined,
@@ -40,16 +41,17 @@ export async function createInventoryItem(item: Omit<InventoryItem, 'id'>): Prom
   
   db.prepare(`
     INSERT INTO inventory (
-      id, name, category, quantity, initialQuantity, unit, capacity, capacityUnit, currentCapacity, currentCapacityUnit, unitsPerPackage, unitsPerPackageUnit, productType, unitPrice, totalValue,
+      id, name, category, quantity, initialQuantity, unit, productId, capacity, capacityUnit, currentCapacity, currentCapacityUnit, unitsPerPackage, unitsPerPackageUnit, productType, unitPrice, totalValue,
       code, purchaseDate, lot, supplier, notes, createdAt, updatedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     item.name,
     item.category,
     item.quantity,
-    item.initialQuantity || item.quantity || null, // Si no se especifica, usar quantity como initialQuantity
+    item.initialQuantity || item.quantity || null,
     item.unit,
+    item.productId || null,
     item.capacity || null,
     item.capacityUnit || null,
     item.currentCapacity ?? item.capacity ?? null,
@@ -86,6 +88,7 @@ export async function getInventoryItemById(id: string): Promise<InventoryItem | 
     quantity: row.quantity,
     initialQuantity: row.initialQuantity || undefined,
     unit: row.unit,
+    productId: row.productId || undefined,
     capacity: row.capacity || undefined,
     capacityUnit: row.capacityUnit || undefined,
     currentCapacity: row.currentCapacity ?? row.capacity ?? undefined,
