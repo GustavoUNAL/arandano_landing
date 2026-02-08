@@ -1,5 +1,19 @@
 'use client'
 
+/** Parsea YYYY-MM-DD como fecha local para que el día de la semana coincida. */
+function parseSaleDateLocal(dateStr: string, hour?: number): Date {
+  const s = dateStr.split('T')[0]
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-').map(Number)
+    const date = new Date(y, m - 1, d)
+    if (hour !== undefined) date.setHours(hour, 0, 0, 0)
+    return date
+  }
+  const date = new Date(dateStr)
+  if (hour !== undefined) date.setHours(hour, 0, 0, 0)
+  return date
+}
+
 export interface SaleItem {
   productId: string
   productName: string
@@ -108,10 +122,9 @@ export function DaySalesBlock({
             </div>
           ) : (
             daySales
-              .sort((a, b) => b.hour - a.hour || new Date(b.date).getTime() - new Date(a.date).getTime())
+              .sort((a, b) => parseSaleDateLocal(b.date, b.hour).getTime() - parseSaleDateLocal(a.date, a.hour).getTime())
               .map((sale) => {
-                const saleDate = new Date(sale.date)
-                saleDate.setHours(sale.hour, 0, 0, 0)
+                const saleDate = parseSaleDateLocal(sale.date, sale.hour)
                 return (
                   <div
                     key={sale.id}

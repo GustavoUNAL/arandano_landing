@@ -4,6 +4,29 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { DaySalesBlock } from '@/components/sales/DaySalesBlock'
 
+/** Parsea fecha tipo YYYY-MM-DD como fecha local para que el día de la semana coincida (evita UTC). */
+function parseSaleDate(dateStr: string, hour?: number): Date {
+  const s = dateStr.split('T')[0]
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-').map(Number)
+    const date = new Date(y, m - 1, d)
+    if (hour !== undefined) date.setHours(hour, 0, 0, 0)
+    return date
+  }
+  const date = new Date(dateStr)
+  if (hour !== undefined) date.setHours(hour, 0, 0, 0)
+  return date
+}
+
+/** Devuelve dayKey (dd/mm/yyyy) para una venta usando fecha local. */
+function getSaleDayKey(sale: { date: string }): string {
+  const date = parseSaleDate(sale.date)
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`
+}
+
 interface Sale {
   id: string
   date: string
@@ -94,7 +117,7 @@ export default function SalesPage() {
       const allSales = await response.json()
       // Ordenar por fecha más reciente
       const sorted = allSales.sort((a: Sale, b: Sale) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime()
+        parseSaleDate(b.date, b.hour).getTime() - parseSaleDate(a.date, a.hour).getTime()
       )
       setSales(sorted)
     } catch (error) {
@@ -259,7 +282,7 @@ export default function SalesPage() {
     const filterDay = parseInt(filterDate.split('-')[2])
     
     filteredSales = filteredSales.filter(sale => {
-      const saleDate = new Date(sale.date)
+      const saleDate = parseSaleDate(sale.date)
       const saleYear = saleDate.getFullYear()
       const saleMonth = saleDate.getMonth() + 1
       const saleDay = saleDate.getDate()
@@ -288,14 +311,10 @@ export default function SalesPage() {
     })
   }
 
-  // Agrupar ventas por día
+  // Agrupar ventas por día (fecha local para que jueves 5 = jueves)
   const salesByDay: { [key: string]: Sale[] } = {}
   filteredSales.forEach(sale => {
-    const saleDate = new Date(sale.date)
-    const year = saleDate.getFullYear()
-    const month = saleDate.getMonth() + 1
-    const day = saleDate.getDate()
-    const dayKey = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`
+    const dayKey = getSaleDayKey(sale)
     if (!salesByDay[dayKey]) salesByDay[dayKey] = []
     salesByDay[dayKey].push(sale)
   })
@@ -548,11 +567,11 @@ export default function SalesPage() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    const saleDate = new Date(selectedSale.date)
+                    const saleDate = parseSaleDate(selectedSale.date, selectedSale.hour ?? 0)
                     const year = saleDate.getFullYear()
                     const month = String(saleDate.getMonth() + 1).padStart(2, '0')
                     const day = String(saleDate.getDate()).padStart(2, '0')
-                    const hours = String(selectedSale.hour !== undefined ? selectedSale.hour : saleDate.getHours()).padStart(2, '0')
+                    const hours = String(saleDate.getHours()).padStart(2, '0')
                     const minutes = String(saleDate.getMinutes()).padStart(2, '0')
                     setEditingSale(selectedSale)
                     setEditSaleDateTime(`${year}-${month}-${day}T${hours}:${minutes}`)
@@ -586,7 +605,8 @@ export default function SalesPage() {
                 <div className="flex items-center justify-between text-xs text-stone-500">
                   <span>Fecha:</span>
                   <span className="text-stone-700">
-                    {new Date(selectedSale.date).toLocaleDateString('es-CO', {
+                    {parseSaleDate(selectedSale.date, selectedSale.hour ?? 0).toLocaleDateString('es-CO', {
+                      weekday: 'long',
                       day: '2-digit',
                       month: '2-digit',
                       year: 'numeric',
