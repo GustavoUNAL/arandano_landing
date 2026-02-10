@@ -87,6 +87,15 @@ export default function SalesPage() {
     loadProducts()
   }, [])
 
+  // Recargar ventas al volver a esta pestaña (p. ej. después de cobrar en mesero)
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') loadSales()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [])
+
   // Expandir el primer día (hoy o el más reciente) por defecto al cargar (solo una vez)
   useEffect(() => {
     if (!hasExpandedInitial) {
@@ -113,10 +122,15 @@ export default function SalesPage() {
 
   const loadSales = async () => {
     try {
-      const response = await fetch(`/api/sales?t=${Date.now()}`)
-      const allSales = await response.json()
-      // Ordenar por fecha más reciente
-      const sorted = allSales.sort((a: Sale, b: Sale) => 
+      const response = await fetch(`/api/sales?t=${Date.now()}`, { cache: 'no-store' })
+      const data = await response.json()
+      if (!response.ok) {
+        console.error('[Ventas] Error al cargar:', data?.message || data?.error)
+        setSales([])
+        return
+      }
+      const allSales = Array.isArray(data) ? data : []
+      const sorted = allSales.sort((a: Sale, b: Sale) =>
         parseSaleDate(b.date, b.hour).getTime() - parseSaleDate(a.date, a.hour).getTime()
       )
       setSales(sorted)
@@ -388,10 +402,16 @@ export default function SalesPage() {
     yesterday.setDate(yesterday.getDate() - 1)
     const isYesterday = date.getTime() === yesterday.getTime()
 
+    const dateInParens = date.toLocaleDateString('es-CO', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })
+
     if (isToday) {
-      return 'Hoy'
+      return `Hoy (${dateInParens})`
     } else if (isYesterday) {
-      return 'Ayer'
+      return `Ayer (${dateInParens})`
     } else {
       const label = date.toLocaleDateString('es-CO', {
         weekday: 'long',

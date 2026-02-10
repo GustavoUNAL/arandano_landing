@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSale, getSales, getSalesByDateRange } from '@/lib/db-sales'
 import { getSales as getSalesJSON } from '@/lib/sales'
+import { getDbMode } from '@/lib/db-utils'
 import { updateProduct, getProductById } from '@/lib/db-products'
 import { getRecipeByProductId } from '@/lib/db-recipes'
 import { getInventory, updateInventoryItem } from '@/lib/db-inventory'
@@ -14,26 +15,33 @@ export async function GET(request: NextRequest) {
     
     if (startDate && endDate) {
       const sales = await getSalesByDateRange(startDate, endDate)
-      return NextResponse.json(sales)
+      return NextResponse.json(sales, {
+        headers: { 'Cache-Control': 'no-store, max-age=0' }
+      })
     }
-    
+
     const sales = await getSales()
-    return NextResponse.json(sales)
+    return NextResponse.json(sales, {
+      headers: { 'Cache-Control': 'no-store, max-age=0' }
+    })
   } catch (error: any) {
     console.error('[API] Error obteniendo ventas:', error)
     console.error('[API] Stack trace:', error?.stack)
     const errorMessage = error?.message || 'Error desconocido al obtener ventas'
-    
-    // Intentar usar JSON como fallback si hay error con SQLite
-    try {
-      const jsonSales = getSalesJSON()
-      return NextResponse.json(jsonSales)
-    } catch (fallbackError) {
-      // Ignorar error de fallback
+
+    // Solo usar JSON como fallback si el proyecto está en modo JSON.
+    // En modo SQLite no devolver sales.json (está desactualizado) para no mostrar lista incorrecta.
+    if (getDbMode() === 'json') {
+      try {
+        const jsonSales = getSalesJSON()
+        return NextResponse.json(jsonSales)
+      } catch (fallbackError) {
+        // seguir y devolver 500
+      }
     }
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Error al obtener ventas',
         details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
         message: errorMessage
@@ -55,28 +63,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Usar fecha proporcionada o fecha actual
-    const saleDate = date ? new Date(date) : new Date()
-    const saleHour = hour !== undefined ? hour : saleDate.getHours()
-    
-    console.log('[API] Creando venta con items:', items.length)
-    
-    // Crear la venta
+    // Guardar fecha como YYYY-MM-DD para que el resumen por día coincida siempre
+    const isDateOnly = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+    const dateOnly = isDateOnly ? date : (date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0])
+    const saleHour = hour !== undefined ? Number(hour) : (date ? new Date(date).getHours() : new Date().getHours())
+    const totalNumber = typeof total === 'number' ? total : Number(total) || 0
+
+    console.log('[API] Creando venta con items:', items.length, 'fecha', dateOnly, 'hora', saleHour)
+
+    // Crear la venta (si esto falla, sí devolvemos error)
     let sale
     try {
       sale = await createSale({
-        date: saleDate.toISOString(),
+        date: dateOnly,
         hour: saleHour,
         items: items.map((item: any) => ({
           productId: item.productId,
           productName: item.productName,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          totalPrice: item.quantity * item.unitPrice
+          quantity: Number(item.quantity) || 0,
+          unitPrice: Number(item.unitPrice) || 0,
+          totalPrice: (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
         })),
-        total,
-        subtotal: subtotal || total,
-        discount: discount || 0,
+        total: totalNumber,
+        subtotal: typeof subtotal === 'number' ? subtotal : totalNumber,
+        discount: discount ?? 0,
         discountType: discountType,
         discountValue: discountValue,
         comment: comment,
@@ -90,101 +100,80 @@ export async function POST(request: NextRequest) {
       throw new Error(`Error al crear venta: ${saleError.message}`)
     }
 
-    // Actualizar stock y última fecha de venta de productos
-    // Si es cóctel/café: descontar ingredientes según receta
-    // Si es producto normal: descontar stock del producto
+    // Actualizar stock (opcional): si falla, la venta ya está guardada y devolvemos 201 con advertencia
     const updateErrors: string[] = []
-    const inventory = await getInventory()
-    
-    for (const item of items) {
-      try {
-        const product = await getProductById(item.productId)
-        if (!product) {
-          console.warn(`[API] Producto ${item.productId} no encontrado para actualizar stock`)
-          updateErrors.push(`Producto ${item.productId} no encontrado`)
-          continue
-        }
+    try {
+      const inventory = await getInventory()
 
-        // Verificar si es cóctel o café (tiene receta)
-        const isRecipeProduct = product.category === 'coctel' || 
-                                product.category === 'cafe-caliente' || 
-                                product.category === 'cafe-frio'
-        
-        if (isRecipeProduct) {
-          // Obtener receta
-          const recipe = await getRecipeByProductId(product.id)
-          
-          if (recipe) {
-            // Descontar ingredientes según receta
-            for (const ingredient of recipe.ingredients) {
-              const inventoryItem = inventory.find(inv => inv.id === ingredient.productId)
-              
-              if (inventoryItem) {
-                // Calcular cantidad a descontar por cada unidad vendida
-                const totalQuantityToDiscount = ingredient.quantity * item.quantity
-                const newQuantity = Math.max(0, (inventoryItem.quantity || 0) - totalQuantityToDiscount)
-                
-                // Actualizar inventario
-                await updateInventoryItem(inventoryItem.id, {
-                  quantity: newQuantity
-                })
-                
-                // Registrar movimiento de stock
-                await createStockMovement({
-                  type: 'recipe-consumption',
-                  inventoryItemId: inventoryItem.id,
-                  productId: product.id,
-                  productName: inventoryItem.name,
-                  quantity: -totalQuantityToDiscount, // Negativo porque es salida
-                  unit: ingredient.unit,
-                  saleId: sale.id,
-                  recipeId: recipe.id,
-                  date: saleDate.toISOString(),
-                  comment: `Consumo por venta de ${item.quantity}x ${product.name}`
-                })
-                
-                console.log(`[API] Ingrediente ${ingredient.productName} actualizado: -${totalQuantityToDiscount} ${ingredient.unit}`)
-              } else {
-                console.warn(`[API] Ingrediente ${ingredient.productId} no encontrado en inventario`)
-                updateErrors.push(`Ingrediente ${ingredient.productName} no encontrado`)
+      for (const item of items) {
+        try {
+          const product = await getProductById(item.productId)
+          if (!product) {
+            updateErrors.push(`Producto ${item.productId} no encontrado`)
+            continue
+          }
+
+          const isRecipeProduct = product.category === 'coctel' ||
+            product.category === 'cafe-caliente' ||
+            product.category === 'cafe-frio'
+
+          if (isRecipeProduct) {
+            const recipe = await getRecipeByProductId(product.id)
+            if (recipe) {
+              for (const ingredient of recipe.ingredients) {
+                const inventoryItem = inventory.find(inv => inv.id === ingredient.productId)
+                if (inventoryItem) {
+                  const totalQuantityToDiscount = ingredient.quantity * item.quantity
+                  const newQuantity = Math.max(0, (inventoryItem.quantity || 0) - totalQuantityToDiscount)
+                  await updateInventoryItem(inventoryItem.id, { quantity: newQuantity })
+                  await createStockMovement({
+                    type: 'recipe-consumption',
+                    inventoryItemId: inventoryItem.id,
+                    productId: product.id,
+                    productName: inventoryItem.name,
+                    quantity: -totalQuantityToDiscount,
+                    unit: ingredient.unit,
+                    saleId: sale.id,
+                    recipeId: recipe.id,
+                    date: saleDate.toISOString(),
+                    comment: `Consumo por venta de ${item.quantity}x ${product.name}`
+                  })
+                } else {
+                  updateErrors.push(`Ingrediente ${ingredient.productName} no encontrado`)
+                }
               }
+            } else {
+              updateErrors.push(`Producto ${product.name} sin receta`)
             }
           } else {
-            console.warn(`[API] Producto ${product.name} (cóctel/café) no tiene receta configurada`)
-            updateErrors.push(`Producto ${product.name} sin receta`)
+            await updateProduct(item.productId, {
+              stock: Math.max(0, (product.stock || 0) - item.quantity),
+              lastSaleDate: saleDate.toISOString(),
+              totalSold: (product.totalSold || 0) + item.quantity
+            })
+            await createStockMovement({
+              type: 'sale',
+              productId: product.id,
+              productName: product.name,
+              quantity: -item.quantity,
+              unit: 'unidad',
+              saleId: sale.id,
+              date: saleDate.toISOString(),
+              comment: `Venta de ${item.quantity} unidades`
+            })
           }
-        } else {
-          // Producto normal: descontar stock directo
-          await updateProduct(item.productId, {
-            stock: Math.max(0, (product.stock || 0) - item.quantity),
-            lastSaleDate: saleDate.toISOString(),
-            totalSold: (product.totalSold || 0) + item.quantity
-          })
-          
-          // Registrar movimiento de stock
-          await createStockMovement({
-            type: 'sale',
-            productId: product.id,
-            productName: product.name,
-            quantity: -item.quantity, // Negativo porque es salida
-            unit: 'unidad',
-            saleId: sale.id,
-            date: saleDate.toISOString(),
-            comment: `Venta de ${item.quantity} unidades`
-          })
-          
-          console.log(`[API] Producto ${item.productId} actualizado: -${item.quantity} unidades`)
+        } catch (productError: any) {
+          console.error(`[API] Error actualizando producto ${item.productId}:`, productError)
+          updateErrors.push(`Error producto ${item.productId}: ${productError.message}`)
         }
-      } catch (productError: any) {
-        console.error(`[API] Error actualizando producto ${item.productId}:`, productError)
-        updateErrors.push(`Error actualizando producto ${item.productId}: ${productError.message}`)
-        // Continuar con los demás productos
       }
+    } catch (stockError: any) {
+      console.warn('[API] Error al actualizar stock (venta ya guardada):', stockError?.message)
+      updateErrors.push(`Stock no actualizado: ${stockError?.message}`)
     }
 
-    // Si hubo errores actualizando productos, loguearlos pero no fallar la venta
     if (updateErrors.length > 0) {
-      console.warn('[API] Advertencias al actualizar productos:', updateErrors)
+      console.warn('[API] Advertencias:', updateErrors)
     }
 
     return NextResponse.json({

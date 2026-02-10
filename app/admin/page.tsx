@@ -9,8 +9,8 @@ interface Product {
   name: string
   price: number
   description?: string
-  category: 'cafe-caliente' | 'cafe-frio' | 'pasteleria' | 'combo' | 'coctel' | 'cerveza' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky'
-  type: 'cafeteria' | 'bebida'
+  category: 'cafe-caliente' | 'cafe-frio' | 'pasteleria' | 'combo' | 'coctel' | 'cerveza' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky' | 'aguardiente' | 'brandy' | 'ron' | 'otros'
+  type: 'cafeteria' | 'bebida' | 'producto'
   stock: number
   imageUrl?: string
   size?: string
@@ -37,7 +37,11 @@ const CATEGORIES = {
     { value: 'vodka', label: 'Vodka' },
     { value: 'ginebra', label: 'Ginebra' },
     { value: 'tequila', label: 'Tequila' },
-    { value: 'whisky', label: 'Whisky' }
+    { value: 'whisky', label: 'Whisky' },
+    { value: 'aguardiente', label: 'Aguardiente' },
+    { value: 'brandy', label: 'Brandy' },
+    { value: 'ron', label: 'Ron' },
+    { value: 'otros', label: 'Otros' }
   ]
 }
 
@@ -1218,6 +1222,7 @@ export default function AdminPage() {
                 >
                   <option value="cafeteria">Cafetería</option>
                   <option value="bebida">Bebida</option>
+                  <option value="producto">Producto</option>
                 </select>
               </div>
 
@@ -1487,7 +1492,7 @@ export default function AdminPage() {
                             </h3>
                             <div className="flex items-center gap-2 mb-2">
                               <span className={`px-2 py-1 rounded text-xs ${
-                                product.type === 'cafeteria' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                                product.type === 'cafeteria' ? 'bg-amber-100 text-amber-800' : product.type === 'producto' ? 'bg-gray-100 text-gray-800' : 'bg-blue-100 text-blue-800'
                               }`}>
                                 {product.type}
                               </span>
@@ -1559,7 +1564,7 @@ export default function AdminPage() {
                           </h3>
                           <div className="flex items-center gap-2 mb-2">
                             <span className={`px-2 py-1 rounded text-xs ${
-                              product.type === 'cafeteria' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                              product.type === 'cafeteria' ? 'bg-amber-100 text-amber-800' : product.type === 'producto' ? 'bg-gray-100 text-gray-800' : 'bg-blue-100 text-blue-800'
                             }`}>
                               {product.type}
                             </span>
@@ -1661,7 +1666,7 @@ export default function AdminPage() {
                           <td className="px-4 py-3 text-sm">{product.name}</td>
                           <td className="px-4 py-3 text-sm">
                             <span className={`px-2 py-1 rounded text-xs ${
-                              product.type === 'cafeteria' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                              product.type === 'cafeteria' ? 'bg-amber-100 text-amber-800' : product.type === 'producto' ? 'bg-gray-100 text-gray-800' : 'bg-blue-100 text-blue-800'
                             }`}>
                               {product.type}
                             </span>
@@ -2475,6 +2480,7 @@ export default function AdminPage() {
                       >
                         <option value="cafeteria">Cafetería</option>
                         <option value="bebida">Bebida</option>
+                        <option value="producto">Producto</option>
                       </select>
                     </div>
                     <div>
@@ -2619,7 +2625,7 @@ export default function AdminPage() {
                       )}
                       <div className="flex items-center gap-2 mb-2">
                         <span className={`px-2 py-1 rounded text-xs ${
-                          product.type === 'cafeteria' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                          product.type === 'cafeteria' ? 'bg-amber-100 text-amber-800' : product.type === 'producto' ? 'bg-gray-100 text-gray-800' : 'bg-blue-100 text-blue-800'
                         }`}>
                           {product.type}
                         </span>

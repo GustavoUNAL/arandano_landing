@@ -931,7 +931,7 @@ export default function AnalyticsPage() {
                           if (!byCategory.has(cat)) byCategory.set(cat, [])
                           byCategory.get(cat)!.push(a)
                         }
-                        const categoryOrder = ['cafe-caliente', 'cafe-frio', 'pasteleria', 'combo', 'cerveza', 'coctel', 'vino', 'vodka', 'ginebra', 'tequila', 'whisky', 'otros']
+                        const categoryOrder = ['cafe-caliente', 'cafe-frio', 'pasteleria', 'combo', 'cerveza', 'coctel', 'vino', 'vodka', 'ginebra', 'tequila', 'whisky', 'aguardiente', 'brandy', 'ron', 'otros']
                         const sortedCats = categoryOrder.filter(c => byCategory.has(c))
                         const restCats = [...byCategory.keys()].filter(c => !categoryOrder.includes(c))
                         const allCats = [...sortedCats, ...restCats]

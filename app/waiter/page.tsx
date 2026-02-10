@@ -107,11 +107,13 @@ export default function WaiterPage() {
 
   const loadRecentSales = async () => {
     try {
-      // Agregar timestamp para evitar caché
-      const response = await fetch(`/api/sales?t=${Date.now()}`)
-      const sales = await response.json()
-      
-      // Guardar el total de ventas
+      const response = await fetch(`/api/sales?t=${Date.now()}`, { cache: 'no-store' })
+      const data = await response.json()
+      if (!response.ok) {
+        console.error('[Waiter] Error al cargar ventas:', data?.message || data?.error)
+        return
+      }
+      const sales = Array.isArray(data) ? data : []
       setTotalSalesCount(sales.length)
     } catch (error) {
       console.error('Error loading sales:', error)
@@ -206,11 +208,11 @@ export default function WaiterPage() {
     setProcessing(true)
 
     try {
-      // Usar la fecha y hora seleccionada en el campo
+      // Fecha y hora seleccionadas: enviar día como YYYY-MM-DD para que el resumen por día sea correcto
       const saleDate = new Date(paymentDate)
+      const dateOnly = paymentDate.slice(0, 10)
       const saleHour = saleDate.getHours()
-      
-      // Registrar la venta
+
       const response = await fetch('/api/sales', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -229,7 +231,7 @@ export default function WaiterPage() {
           comment: orderComment || undefined,
           channel: 'presencial',
           paymentMethod: paymentMethod,
-          date: saleDate.toISOString(),
+          date: dateOnly,
           hour: saleHour
         })
       })

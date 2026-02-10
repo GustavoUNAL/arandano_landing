@@ -16,8 +16,8 @@ interface Product {
   price: number
   description?: string
   size?: string
-  category: 'cafe-caliente' | 'cafe-frio' | 'pasteleria' | 'combo' | 'cerveza' | 'coctel' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky'
-  type: 'cafeteria' | 'bebida'
+  category: 'cafe-caliente' | 'cafe-frio' | 'pasteleria' | 'combo' | 'cerveza' | 'coctel' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky' | 'aguardiente' | 'brandy' | 'ron' | 'otros'
+  type: 'cafeteria' | 'bebida' | 'producto'
   stock?: number
   imageUrl?: string
 }
@@ -28,7 +28,7 @@ interface CartItem extends Product {
 
 // Orden de categorías (constantes fuera del componente para mejor rendimiento)
 const CAFETERIA_CATEGORY_ORDER: Product['category'][] = ['cafe-caliente', 'cafe-frio', 'pasteleria', 'combo']
-const BEBIDAS_CATEGORY_ORDER: Product['category'][] = ['cerveza', 'coctel', 'vino', 'vodka', 'ginebra', 'tequila', 'whisky']
+const BEBIDAS_CATEGORY_ORDER: Product['category'][] = ['cerveza', 'coctel', 'vino', 'vodka', 'ginebra', 'tequila', 'whisky', 'aguardiente', 'brandy', 'ron', 'otros']
 
 const CartIcon = ({ count }: { count: number }) => (
   <div className="relative inline-flex items-center justify-center">
@@ -220,6 +220,10 @@ export default function CarritoPage() {
     'ginebra': 'Ginebra',
     'tequila': 'Tequila',
     'whisky': 'Whisky',
+    'aguardiente': 'Aguardiente',
+    'brandy': 'Brandy',
+    'ron': 'Ron',
+    'otros': 'Otros',
   }
 
   const categoryIcons: Record<string, string> = {
@@ -234,6 +238,10 @@ export default function CarritoPage() {
     'ginebra': '🍸',
     'tequila': '🥃',
     'whisky': '🥃',
+    'aguardiente': '🍶',
+    'brandy': '🥃',
+    'ron': '🥃',
+    'otros': '📦',
   }
 
   const ProductCard = ({ product }: { product: Product }) => {
@@ -336,7 +344,7 @@ export default function CarritoPage() {
     }
     
     filteredProducts.forEach(product => {
-      const typeGroup = product.type === 'cafeteria' ? byType.cafeteria : byType.bebida
+      const typeGroup = product.type === 'cafeteria' ? byType.cafeteria : byType.bebida // producto → bebida para mostrar en menú
       if (!typeGroup[product.category]) {
         typeGroup[product.category] = []
       }

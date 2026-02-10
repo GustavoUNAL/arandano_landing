@@ -56,11 +56,11 @@ const productUpdates = [
   { id: 'vaso-leche', name: 'Vaso de leche caliente' },
   { id: 'cafe-frio', name: 'Café frío artesanal' },
   { id: 'cafe-frio-leche', name: 'Café frío artesanal con leche' },
-  { id: 'cafe-helado', name: 'Café helado artesanal (tipo affogato)' },
+  { id: 'cafe-helado', name: 'Café helado artesanal (affogato)' },
   { id: 'bebida-1767479422734-8ofoa07j2', name: 'Cóctel de soda sin licor' },
   { id: 'coctel-arandano', name: 'Cóctel de arándano' },
   { id: 'bebida-1767478463497-c2aya0ta0', name: 'Cóctel de Campari' },
-  { id: 'bebida-1767478306369-c8s8nr6nh', name: 'Cóctel Moscow Mule (versión práctica)' },
+  { id: 'bebida-1767478306369-c8s8nr6nh', name: 'Moscow Mule' },
   { id: 'bebida-1767479680271-wp5qa9j7m', name: 'Margarita' },
   { id: 'bebida-1767479537737-5pcmv20sn', name: 'Hervido de fruta de temporada' },
   { id: 'vino-caliente', name: 'Vino caliente' },
@@ -152,7 +152,7 @@ const recipesByProductId = {
     ],
   },
   'cafe-helado': {
-    productName: 'Café helado artesanal (tipo affogato)',
+    productName: 'Café helado artesanal (affogato)',
     ingredients: [
       ing(INV.cafe, NAMES.cafe, 10, 'gr'),
       ing(INV.hielo, 'Hielo', 150, 'gr'),
@@ -183,7 +183,7 @@ const recipesByProductId = {
     ],
   },
   'bebida-1767478306369-c8s8nr6nh': {
-    productName: 'Cóctel Moscow Mule (versión práctica)',
+    productName: 'Moscow Mule',
     ingredients: [
       ing(INV.vodka, NAMES.vodka, 45, 'ml'),
       ing(INV.soda, NAMES.soda, 120, 'ml'),
