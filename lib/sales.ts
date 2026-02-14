@@ -21,6 +21,8 @@ export interface Sale {
   channel: 'presencial' | 'whatsapp'
   paymentMethod?: 'efectivo' | 'nequi'
   ticketNumber?: string
+  /** Mesa o ubicación del pedido (ej: Mesa 1, Barra, Terraza) */
+  mesa?: string
 }
 
 const salesFilePath = path.join(process.cwd(), 'data', 'sales.json')

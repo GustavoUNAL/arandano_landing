@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { items, total, subtotal, discount, discountType, discountValue, comment, channel, paymentMethod, date, hour } = body
+    const { items, total, subtotal, discount, discountType, discountValue, comment, channel, paymentMethod, date, hour, mesa } = body
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -92,7 +92,8 @@ export async function POST(request: NextRequest) {
         comment: comment,
         channel: channel || 'whatsapp',
         paymentMethod: paymentMethod || 'efectivo',
-        ticketNumber: `T-${Date.now()}`
+        ticketNumber: `T-${Date.now()}`,
+        mesa: mesa || undefined
       })
       console.log('[API] Venta creada exitosamente:', sale.id)
     } catch (saleError: any) {
@@ -102,6 +103,7 @@ export async function POST(request: NextRequest) {
 
     // Actualizar stock (opcional): si falla, la venta ya está guardada y devolvemos 201 con advertencia
     const updateErrors: string[] = []
+    const saleDate = new Date(dateOnly + 'T' + String(saleHour).padStart(2, '0') + ':00:00')
     try {
       const inventory = await getInventory()
 

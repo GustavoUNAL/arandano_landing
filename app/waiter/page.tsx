@@ -1,7 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+
+const PLANTA_LAYOUT_KEY = 'waiter-planta-layout'
+
+const defaultPlantaLayout = {
+  bar: { top: 6, left: 8, width: 84 },
+  mesa1: { top: 42, left: 12 },
+  mesa2: { top: 42, left: 60 }
+}
 
 interface Product {
   id: string
@@ -38,6 +46,45 @@ interface Sale {
   channel: 'presencial' | 'whatsapp'
   paymentMethod?: 'efectivo' | 'nequi'
   ticketNumber?: string
+  mesa?: string
+}
+
+const MESAS_OPCIONES_DEFAULT = [
+  'Mesa circular 1',
+  'Mesa circular 2',
+  'Barra',
+  'Otro'
+]
+
+const MESAS_STORAGE_KEY = 'waiter-mesas-order-v2'
+const CUENTAS_MESAS_STORAGE_KEY = 'waiter-cuentas-mesas'
+
+interface CuentaMesa {
+  items: CartItem[]
+  comment: string
+}
+
+function iconoMesa (mesa: string): string {
+  if (mesa === 'Otro') return '✏️ '
+  if (mesa === 'Barra') return '🍸 '
+  if (mesa.startsWith('Mesa circular')) return '⭕ '
+  return '🪑 '
+}
+
+function loadMesasOrden(): string[] {
+  if (typeof window === 'undefined') return [...MESAS_OPCIONES_DEFAULT]
+  try {
+    const saved = localStorage.getItem(MESAS_STORAGE_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved) as string[]
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch (_) {}
+  return [...MESAS_OPCIONES_DEFAULT]
+}
+
+function WaiterLayout ({ children }: { children: React.ReactNode }) {
+  return <div className="min-h-screen bg-stone-50">{children}</div>
 }
 
 const CATEGORIES = [
@@ -70,7 +117,112 @@ export default function WaiterPage() {
   const [discount, setDiscount] = useState<string>('')
   const [discountType, setDiscountType] = useState<'percentage' | 'amount'>('percentage')
   const [orderComment, setOrderComment] = useState<string>('')
+  /** Mesa elegida para entrar al cobro. Si está vacía se muestra solo la pantalla de elegir mesa. */
+  const [mesaElegida, setMesaElegida] = useState<string>('')
+  const [mesaOtro, setMesaOtro] = useState<string>('')
+  const [showMesaOtroInput, setShowMesaOtroInput] = useState(false)
+  /** Orden de las mesas (como están ubicadas). Cargado desde localStorage. */
+  const [mesasOrden, setMesasOrden] = useState<string[]>(MESAS_OPCIONES_DEFAULT)
+  /** Cuentas por mesa: items y comentario que se van sumando. Persistido en localStorage. */
+  const [cuentasPorMesa, setCuentasPorMesa] = useState<Record<string, CuentaMesa>>({})
   const [loading, setLoading] = useState(true)
+  /** Posiciones en % en la vista planta (barra y mesas). Arrastrables. */
+  const [plantaLayout, setPlantaLayout] = useState<typeof defaultPlantaLayout>(defaultPlantaLayout)
+  const [plantaDragging, setPlantaDragging] = useState<string | null>(null)
+  const plantaDragStart = useRef<{ id: string; startX: number; startY: number; startLeft: number; startTop: number; startWidth?: number } | null>(null)
+  const plantaContainerRef = useRef<HTMLDivElement>(null)
+  const plantaLayoutRef = useRef(plantaLayout)
+  const plantaDidDragRef = useRef(false)
+  plantaLayoutRef.current = plantaLayout
+
+  // Cargar orden de mesas y layout planta desde localStorage al montar (client)
+  useEffect(() => {
+    setMesasOrden(loadMesasOrden())
+    try {
+      const saved = typeof window !== 'undefined' && localStorage.getItem(PLANTA_LAYOUT_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved) as typeof defaultPlantaLayout
+        if (parsed.bar && parsed.mesa1 && parsed.mesa2) setPlantaLayout(parsed)
+      }
+    } catch (_) {}
+  }, [])
+
+  const savePlantaLayout = useCallback((layout: typeof defaultPlantaLayout) => {
+    try {
+      localStorage.setItem(PLANTA_LAYOUT_KEY, JSON.stringify(layout))
+    } catch (_) {}
+  }, [])
+
+  const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v))
+
+  const handlePlantaPointerDown = useCallback((e: React.PointerEvent, id: 'bar' | 'mesa1' | 'mesa2') => {
+    e.preventDefault()
+    plantaDidDragRef.current = false
+    const el = id === 'bar' ? plantaLayout.bar : id === 'mesa1' ? plantaLayout.mesa1 : plantaLayout.mesa2
+    const startLeft = 'width' in el ? el.left : el.left
+    const startTop = 'width' in el ? el.top : el.top
+    plantaDragStart.current = {
+      id,
+      startX: e.clientX,
+      startY: e.clientY,
+      startLeft,
+      startTop,
+      ...('width' in el && { startWidth: el.width })
+    }
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+  }, [plantaLayout])
+
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      const ref = plantaContainerRef.current
+      const start = plantaDragStart.current
+      if (!ref || !start) return
+      const rect = ref.getBoundingClientRect()
+      const dx = ((e.clientX - start.startX) / rect.width) * 100
+      const dy = ((e.clientY - start.startY) / rect.height) * 100
+      plantaDidDragRef.current = true
+      setPlantaDragging(start.id)
+      setPlantaLayout(prev => {
+        const next = { ...prev }
+        if (start.id === 'bar') {
+          const w = start.startWidth ?? prev.bar.width
+          next.bar = {
+            ...prev.bar,
+            left: clamp(start.startLeft + dx, 0, 100 - w),
+            top: clamp(start.startTop + dy, 0, 82)
+          }
+        } else if (start.id === 'mesa1') {
+          next.mesa1 = {
+            left: clamp(start.startLeft + dx, 0, 72),
+            top: clamp(start.startTop + dy, 0, 72)
+          }
+        } else if (start.id === 'mesa2') {
+          next.mesa2 = {
+            left: clamp(start.startLeft + dx, 0, 72),
+            top: clamp(start.startTop + dy, 0, 72)
+          }
+        }
+        plantaLayoutRef.current = next
+        return next
+      })
+    }
+    const onUp = () => {
+      if (plantaDragStart.current) {
+        savePlantaLayout(plantaLayoutRef.current)
+        plantaDragStart.current = null
+      }
+      setPlantaDragging(null)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+    }
+  }, [savePlantaLayout])
+
   const [processing, setProcessing] = useState(false)
   const [totalSalesCount, setTotalSalesCount] = useState<number>(0)
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null)
@@ -87,6 +239,8 @@ export default function WaiterPage() {
   const [availableProducts, setAvailableProducts] = useState<Product[]>([])
   const [productSearch, setProductSearch] = useState<string>('')
   const [showProductSelector, setShowProductSelector] = useState(false)
+  /** Por producto: cuántas unidades se pagan en este cobro (por defecto todas). */
+  const [paymentSelection, setPaymentSelection] = useState<Record<string, number>>({})
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -103,7 +257,39 @@ export default function WaiterPage() {
     }
     loadProducts()
     loadRecentSales()
+    try {
+      const saved = typeof window !== 'undefined' && localStorage.getItem(CUENTAS_MESAS_STORAGE_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved) as Record<string, CuentaMesa>
+        if (parsed && typeof parsed === 'object') setCuentasPorMesa(parsed)
+      }
+    } catch (_) {}
   }, [])
+
+  const selectMesa = useCallback((mesa: string) => {
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem(CUENTAS_MESAS_STORAGE_KEY) : null
+      const parsed = raw ? (JSON.parse(raw) as Record<string, CuentaMesa>) : {}
+      const cuenta = parsed[mesa]
+      setCart(cuenta?.items ?? [])
+      setOrderComment(cuenta?.comment ?? '')
+    } catch (_) {
+      setCart([])
+      setOrderComment('')
+    }
+    setMesaElegida(mesa)
+  }, [])
+
+  useEffect(() => {
+    if (!mesaElegida) return
+    setCuentasPorMesa((prev) => {
+      const next = { ...prev, [mesaElegida]: { items: cart, comment: orderComment } }
+      try {
+        localStorage.setItem(CUENTAS_MESAS_STORAGE_KEY, JSON.stringify(next))
+      } catch (_) {}
+      return next
+    })
+  }, [mesaElegida, cart, orderComment])
 
   const loadRecentSales = async () => {
     try {
@@ -178,6 +364,22 @@ export default function WaiterPage() {
     return Math.max(0, subtotal - discountAmount)
   }
 
+  const getSelectedSubtotal = () => {
+    return cart.reduce((total, item) => total + (paymentSelection[item.id] ?? 0) * item.price, 0)
+  }
+
+  const getSelectedDiscountAmount = () => {
+    if (!discount) return 0
+    const discountValue = parseFloat(discount) || 0
+    const sub = getSelectedSubtotal()
+    if (discountType === 'percentage') return (sub * discountValue) / 100
+    return discountValue
+  }
+
+  const getSelectedTotal = () => {
+    return Math.max(0, getSelectedSubtotal() - getSelectedDiscountAmount())
+  }
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CO', {
       style: 'decimal',
@@ -187,28 +389,26 @@ export default function WaiterPage() {
   }
 
   const calculateChange = () => {
-    const total = getTotal()
+    const total = showPaymentModal ? getSelectedTotal() : getTotal()
     const paid = parseFloat(amountPaid) || 0
     return Math.max(0, paid - total)
   }
 
   const handlePayment = async () => {
-    if (cart.length === 0) return
+    const itemsToPay = cart.filter((item) => (paymentSelection[item.id] ?? 0) > 0)
+    if (itemsToPay.length === 0) return
 
-    const total = getTotal()
+    const total = getSelectedTotal()
     const paid = parseFloat(amountPaid) || 0
 
-    // Permitir pagar cero o sin monto para casos especiales
-    // Solo validar si el monto pagado es menor al total Y es diferente de 0 o vacío
     if (paymentMethod === 'efectivo' && amountPaid && paid > 0 && paid < total) {
-      alert('El monto pagado es menor al total')
+      alert('El monto pagado es menor al total a cobrar')
       return
     }
 
     setProcessing(true)
 
     try {
-      // Fecha y hora seleccionadas: enviar día como YYYY-MM-DD para que el resumen por día sea correcto
       const saleDate = new Date(paymentDate)
       const dateOnly = paymentDate.slice(0, 10)
       const saleHour = saleDate.getHours()
@@ -217,36 +417,42 @@ export default function WaiterPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: cart.map(item => ({
+          items: itemsToPay.map((item) => ({
             productId: item.id,
             productName: item.name,
-            quantity: item.quantity,
+            quantity: paymentSelection[item.id] ?? 0,
             unitPrice: item.price
           })),
           total,
-          subtotal: getSubtotal(),
-          discount: getDiscountAmount(),
+          subtotal: getSelectedSubtotal(),
+          discount: getSelectedDiscountAmount(),
           discountType: discount ? discountType : undefined,
           discountValue: discount ? parseFloat(discount) : undefined,
           comment: orderComment || undefined,
           channel: 'presencial',
           paymentMethod: paymentMethod,
           date: dateOnly,
-          hour: saleHour
+          hour: saleHour,
+          mesa: mesaElegida || undefined
         })
       })
 
       if (response.ok) {
         const data = await response.json()
-        // Limpiar carrito y resetear modal
-        setCart([])
+        setCart((prev) =>
+          prev
+            .map((item) => ({
+              ...item,
+              quantity: item.quantity - (paymentSelection[item.id] ?? 0)
+            }))
+            .filter((item) => item.quantity > 0)
+        )
+        setPaymentSelection({})
         setAmountPaid('')
         setPaymentMethod('efectivo')
         setDiscount('')
         setDiscountType('percentage')
-        setOrderComment('')
         setPaymentAction('pay')
-        // Resetear fecha a la actual
         const now = new Date()
         const year = now.getFullYear()
         const month = String(now.getMonth() + 1).padStart(2, '0')
@@ -256,17 +462,11 @@ export default function WaiterPage() {
         setPaymentDate(`${year}-${month}-${day}T${hours}:${minutes}`)
         setShowPaymentModal(false)
         await loadRecentSales()
-        
-        // Mostrar advertencias si hay
         if (data.warnings && data.warnings.length > 0) {
           console.warn('Advertencias al crear venta:', data.warnings)
         }
-        
-        // Mostrar confirmación visual
         setShowSuccessMessage(true)
-        setTimeout(() => {
-          setShowSuccessMessage(false)
-        }, 3000)
+        setTimeout(() => setShowSuccessMessage(false), 3000)
       } else {
         // Intentar leer el mensaje de error del servidor
         let errorMessage = 'Error al registrar la venta'
@@ -438,40 +638,194 @@ export default function WaiterPage() {
     setCart([])
   }
 
+  let content: JSX.Element
   if (loading) {
-    return (
+    content = (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
         <div className="text-berry-600 text-xl">Cargando...</div>
       </div>
     )
-  }
-
-  return (
-    <div className="min-h-screen bg-stone-50">
+  } else if (!mesaElegida) {
+    content = (
+      <div className="min-h-screen bg-stone-50 flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200 bg-white">
+          <button onClick={() => router.push('/admin')} className="flex items-center gap-2 text-stone-600 hover:text-berry-600 font-medium">
+            ← Volver
+          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => router.push('/sales')} className="px-3 py-1.5 rounded-lg text-sm font-medium text-stone-600 hover:text-berry-600">
+              📊 Ver Ventas ({totalSalesCount})
+            </button>
+          </div>
+        </div>
+        <div className="container mx-auto px-4 py-6 max-w-2xl flex-1 flex flex-col">
+          {!showMesaOtroInput ? (
+            <>
+              <h1 className="text-2xl sm:text-3xl font-bold text-berry-950 mb-1 text-center mt-4">¿Para qué mesa es el pedido?</h1>
+              <p className="text-stone-600 mb-3 text-center text-sm">Vista en planta — toca para elegir o arrastra para mover</p>
+              {/* Planta: dos mesas redondas + barra (arrastrables) */}
+              <div className="w-full max-w-sm mx-auto flex-1 flex flex-col items-center justify-center min-h-[320px]">
+                <div
+                  ref={plantaContainerRef}
+                  className="relative w-full aspect-[3/4] min-h-[320px] max-h-[448px] bg-stone-100 rounded-2xl border-2 border-stone-300 shadow-inner overflow-hidden select-none touch-none"
+                >
+                  {/* Barra (arrastrable) */}
+                  <button
+                    type="button"
+                    onPointerDown={(e) => handlePlantaPointerDown(e, 'bar')}
+                    onClick={() => { if (plantaDidDragRef.current) return; selectMesa('Barra') }}
+                    style={{
+                      left: `${plantaLayout.bar.left}%`,
+                      top: `${plantaLayout.bar.top}%`,
+                      width: `${plantaLayout.bar.width}%`,
+                      height: '18%'
+                    }}
+                    className={`absolute rounded-lg bg-amber-800/90 border-2 border-amber-900 shadow-md flex flex-col items-center justify-center transition-shadow ${plantaDragging === 'bar' ? 'cursor-grabbing shadow-xl z-10' : 'cursor-grab hover:bg-amber-700'}`}
+                    aria-label="Barra"
+                  >
+                    {(cuentasPorMesa['Barra']?.items.reduce((s, i) => s + i.quantity, 0) ?? 0) > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold shadow pointer-events-none">
+                        {cuentasPorMesa['Barra'].items.reduce((s, i) => s + i.quantity, 0)}
+                      </span>
+                    )}
+                    <span className="text-white font-semibold text-sm drop-shadow pointer-events-none">🍸 Barra</span>
+                  </button>
+                  {/* Mesa circular 1 (arrastrable) */}
+                  <button
+                    type="button"
+                    onPointerDown={(e) => handlePlantaPointerDown(e, 'mesa1')}
+                    onClick={() => { if (plantaDidDragRef.current) return; selectMesa('Mesa circular 1') }}
+                    style={{
+                      left: `${plantaLayout.mesa1.left}%`,
+                      top: `${plantaLayout.mesa1.top}%`,
+                      width: '28%',
+                      aspectRatio: '1'
+                    }}
+                    className={`absolute rounded-full bg-berry-600 border-4 border-berry-800 shadow-lg flex items-center justify-center ${plantaDragging === 'mesa1' ? 'cursor-grabbing shadow-xl z-10' : 'cursor-grab hover:bg-berry-500'}`}
+                    aria-label="Mesa circular 1"
+                  >
+                    {(cuentasPorMesa['Mesa circular 1']?.items.reduce((s, i) => s + i.quantity, 0) ?? 0) > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold shadow pointer-events-none">
+                        {cuentasPorMesa['Mesa circular 1'].items.reduce((s, i) => s + i.quantity, 0)}
+                      </span>
+                    )}
+                    <span className="text-white font-bold text-xs drop-shadow pointer-events-none">1</span>
+                  </button>
+                  {/* Mesa circular 2 (arrastrable) */}
+                  <button
+                    type="button"
+                    onPointerDown={(e) => handlePlantaPointerDown(e, 'mesa2')}
+                    onClick={() => { if (plantaDidDragRef.current) return; selectMesa('Mesa circular 2') }}
+                    style={{
+                      left: `${plantaLayout.mesa2.left}%`,
+                      top: `${plantaLayout.mesa2.top}%`,
+                      width: '28%',
+                      aspectRatio: '1'
+                    }}
+                    className={`absolute rounded-full bg-berry-600 border-4 border-berry-800 shadow-lg flex items-center justify-center ${plantaDragging === 'mesa2' ? 'cursor-grabbing shadow-xl z-10' : 'cursor-grab hover:bg-berry-500'}`}
+                    aria-label="Mesa circular 2"
+                  >
+                    {(cuentasPorMesa['Mesa circular 2']?.items.reduce((s, i) => s + i.quantity, 0) ?? 0) > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold shadow pointer-events-none">
+                        {cuentasPorMesa['Mesa circular 2'].items.reduce((s, i) => s + i.quantity, 0)}
+                      </span>
+                    )}
+                    <span className="text-white font-bold text-xs drop-shadow pointer-events-none">2</span>
+                  </button>
+                  <div className="absolute bottom-2 left-0 right-0 text-center pointer-events-none">
+                    <span className="text-[10px] text-stone-500 uppercase tracking-wider">Vista en planta · arrastra para mover</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setShowMesaOtroInput(true); setMesaOtro('') }}
+                  className="mt-4 text-sm text-berry-600 hover:text-berry-700 font-medium underline"
+                >
+                  ✏️ Otra ubicación
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="w-full max-w-sm mx-auto space-y-3 flex-1">
+              <label className="block text-sm font-medium text-stone-700">Indica la mesa o ubicación</label>
+              <input type="text" value={mesaOtro} onChange={(e) => setMesaOtro(e.target.value)} placeholder="Ej: Mesa 10, Delivery..." className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl text-berry-950 focus:ring-2 focus:ring-berry-500 focus:border-berry-500" autoFocus />
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { setShowMesaOtroInput(false); setMesaOtro('') }} className="flex-1 py-3 px-4 rounded-xl font-medium bg-stone-200 text-stone-700 hover:bg-stone-300">Atrás</button>
+                <button type="button" onClick={() => { const valor = mesaOtro.trim(); if (valor) { selectMesa(valor); setShowMesaOtroInput(false); setMesaOtro('') } }} disabled={!mesaOtro.trim()} className="flex-1 py-3 px-4 rounded-xl font-semibold bg-berry-600 text-white hover:bg-berry-700 disabled:opacity-50 disabled:cursor-not-allowed">Continuar</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  } else {
+    const CobrosScreen = () => (
+    <WaiterLayout>
       <div className="container mx-auto px-4 py-6 max-w-7xl">
-        {/* Título Centrado */}
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl sm:text-3xl font-bold text-berry-950 mb-1">Sistema de Cobros</h1>
-          <p className="text-sm text-stone-600">Selecciona productos y gestiona pagos</p>
+        <div className="mb-6 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => router.push('/')}
+              className="flex items-center gap-2 text-stone-600 hover:text-berry-600 font-medium text-sm"
+            >
+              ← Volver
+            </button>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="text-center sm:text-left">
+              <h1 className="text-2xl sm:text-3xl font-bold text-berry-950 mb-1">Sistema de Cobros</h1>
+              <p className="text-sm text-stone-600 flex items-center justify-center sm:justify-start gap-1.5">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-berry-100 text-berry-800 font-medium">
+                  {iconoMesa(mesaElegida)}{mesaElegida}
+                </span>
+              </p>
+            </div>
+            <div className="flex flex-row justify-center sm:justify-end gap-2 flex-wrap">
+              <button
+                onClick={() => {
+                  if (cart.length === 0 || confirm('¿Salir de esta mesa? La cuenta se guarda y podrás volver después.')) {
+                    if (mesaElegida) {
+                      setCuentasPorMesa((prev) => {
+                        const next = { ...prev, [mesaElegida]: { items: cart, comment: orderComment } }
+                        try {
+                          localStorage.setItem(CUENTAS_MESAS_STORAGE_KEY, JSON.stringify(next))
+                        } catch (_) {}
+                        return next
+                      })
+                    }
+                    setMesaElegida('')
+                    setMesaOtro('')
+                    setShowMesaOtroInput(false)
+                    setCart([])
+                    setOrderComment('')
+                  }
+                }}
+                className="px-4 py-2.5 bg-stone-200 hover:bg-stone-300 text-stone-700 font-medium rounded-lg transition-colors text-sm"
+              >
+                Salir / Cambiar mesa
+              </button>
+              <button
+              onClick={() => setShowCategoriesModal(true)}
+              className="px-6 py-2.5 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-2"
+            >
+              <span>📂</span>
+              <span>{CATEGORIES.find(c => c.id === selectedCategory)?.name || 'Categorías'}</span>
+              <span>▼</span>
+            </button>
+          </div>
         </div>
 
-        {/* Botón Categorías y Ver Ventas en la misma fila */}
-        <div className="flex flex-row justify-center items-center gap-3 mb-6">
-          <button
-            onClick={() => setShowCategoriesModal(true)}
-            className="px-6 py-2.5 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-2"
-          >
-            <span>📂</span>
-            <span>{CATEGORIES.find(c => c.id === selectedCategory)?.name || 'Categorías'}</span>
-            <span>▼</span>
-          </button>
-          <button
-            onClick={() => router.push('/sales')}
-            className="px-6 py-2.5 bg-stone-600 hover:bg-stone-700 text-white font-semibold rounded-lg transition-colors"
-          >
-            📊 Ver Ventas ({totalSalesCount})
-          </button>
-        </div>
+        {/* Notificación: cantidad de productos seleccionados */}
+        {cart.length > 0 && (
+          <div className="mx-4 mt-2 mb-1 flex justify-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-berry-600 text-white text-sm font-semibold shadow-md">
+              <span>🛒</span>
+              <span>
+                {cart.reduce((sum, item) => sum + item.quantity, 0)} {cart.reduce((sum, item) => sum + item.quantity, 0) === 1 ? 'producto' : 'productos'} en la cuenta
+              </span>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-6">
           {/* Panel de Productos - Ahora ocupa todo el ancho */}
@@ -664,6 +1018,20 @@ export default function WaiterPage() {
                     ))}
                   </div>
 
+                  {/* Comentario / detalles de la mesa */}
+                  <div className="px-3 sm:px-4 py-3 border-t border-stone-200 bg-amber-50/50">
+                    <label className="block text-sm font-semibold text-berry-950 mb-1.5">
+                      Detalles o comentario de la mesa (opcional)
+                    </label>
+                    <textarea
+                      value={orderComment}
+                      onChange={(e) => setOrderComment(e.target.value)}
+                      placeholder="Ej: Sin hielo, nombre del cliente, instrucciones..."
+                      rows={2}
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-berry-500 focus:border-berry-500 resize-none"
+                    />
+                  </div>
+
                   {/* Resumen de precios */}
                   <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-3 sm:pt-4 border-t border-stone-200 bg-stone-50">
                     <div className="space-y-2 mb-3 sm:mb-4">
@@ -689,7 +1057,10 @@ export default function WaiterPage() {
 
                     {/* Botón de cobrar */}
                     <button
-                      onClick={() => setShowPaymentModal(true)}
+                      onClick={() => {
+                        setPaymentSelection(cart.reduce<Record<string, number>>((acc, item) => ({ ...acc, [item.id]: item.quantity }), {}))
+                        setShowPaymentModal(true)
+                      }}
                       className="w-full bg-gradient-to-r from-berry-600 to-purple-600 hover:from-berry-700 hover:to-purple-700 text-white font-semibold py-3 sm:py-3.5 rounded-lg transition-all shadow-lg hover:shadow-xl text-sm sm:text-base"
                     >
                       💳 Cobrar ${formatPrice(getTotal())}
@@ -747,6 +1118,7 @@ export default function WaiterPage() {
               <button
                 onClick={() => {
                   setShowPaymentModal(false)
+                  setPaymentSelection({})
                   setAmountPaid('')
                   setPaymentMethod('efectivo')
                   setPaymentAction('pay')
@@ -766,25 +1138,76 @@ export default function WaiterPage() {
               </button>
             </div>
             
+            {/* Mesa y comentario asignados */}
+            {(mesaElegida || orderComment) && (
+              <div className="mb-3 p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm">
+                {mesaElegida && (
+                  <p className="text-berry-800 font-medium">
+                    {iconoMesa(mesaElegida)} Mesa: {mesaElegida}
+                  </p>
+                )}
+                {orderComment && (
+                  <p className="text-stone-700 mt-1">
+                    📝 {orderComment}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Elegir qué productos cobrar ahora */}
+            <div className="mb-3">
+              <p className="text-xs font-medium text-stone-600 mb-2">Cantidad a pagar ahora (el resto queda en la cuenta):</p>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {cart.map((item) => {
+                  const toPay = paymentSelection[item.id] ?? 0
+                  return (
+                    <div key={item.id} className="flex items-center justify-between gap-2 p-2 bg-stone-50 rounded-lg border border-stone-200">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-berry-950 truncate">{item.name}</div>
+                        <div className="text-xs text-stone-500">En cuenta: {item.quantity} · ${formatPrice(item.price)} c/u</div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setPaymentSelection((prev) => ({ ...prev, [item.id]: Math.max(0, (prev[item.id] ?? item.quantity) - 1) }))}
+                          className="w-8 h-8 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded text-sm font-bold"
+                        >
+                          −
+                        </button>
+                        <span className="w-8 text-center font-semibold text-sm">{toPay}</span>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentSelection((prev) => ({ ...prev, [item.id]: Math.min(item.quantity, (prev[item.id] ?? 0) + 1) }))}
+                          className="w-8 h-8 flex items-center justify-center bg-berry-600 hover:bg-berry-700 text-white rounded text-sm font-bold"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
             {/* Resumen y Opciones en la misma fila */}
             <div className="mb-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-              {/* Resumen */}
+              {/* Resumen (solo lo seleccionado) */}
               <div>
                 <div className="space-y-1.5 p-3 bg-stone-50 rounded-lg border border-stone-200">
                   <div className="flex justify-between text-xs text-stone-600">
-                    <span>Subtotal:</span>
-                    <span>${formatPrice(getSubtotal())}</span>
+                    <span>Subtotal (seleccionado):</span>
+                    <span>${formatPrice(getSelectedSubtotal())}</span>
                   </div>
                   {discount && (
                     <div className="flex justify-between text-xs text-red-600">
                       <span>Desc. ({discountType === 'percentage' ? `${discount}%` : 'Monto'}):</span>
-                      <span>-${formatPrice(getDiscountAmount())}</span>
+                      <span>-${formatPrice(getSelectedDiscountAmount())}</span>
                     </div>
                   )}
                   <div className="flex justify-between items-center pt-1.5 border-t border-stone-200">
-                    <span className="text-stone-700 font-semibold text-sm">Total:</span>
+                    <span className="text-stone-700 font-semibold text-sm">A cobrar ahora:</span>
                     <span className="text-2xl font-bold text-berry-600">
-                      ${formatPrice(getTotal())}
+                      ${formatPrice(getSelectedTotal())}
                     </span>
                   </div>
                 </div>
@@ -871,15 +1294,15 @@ export default function WaiterPage() {
                     </div>
                   </div>
 
-                  {/* Comentario */}
+                  {/* Comentario / detalles de la mesa */}
                   <div>
                     <label className="block text-xs font-medium text-stone-700 mb-1.5">
-                      Comentario:
+                      Detalles / comentario de la mesa:
                     </label>
                     <textarea
                       value={orderComment}
                       onChange={(e) => setOrderComment(e.target.value)}
-                      placeholder="Ej: Consumo propio..."
+                      placeholder="Ej: Consumo propio, instrucciones..."
                       className="w-full px-2 py-1.5 border border-stone-300 rounded text-xs focus:ring-1 focus:ring-berry-500 focus:border-berry-500"
                       rows={2}
                     />
@@ -1006,7 +1429,7 @@ export default function WaiterPage() {
                 {/* Mostrar cambio o falta solo para efectivo */}
                 {amountPaid && (
                   <>
-                    {parseFloat(amountPaid) >= getTotal() && parseFloat(amountPaid) > 0 && (
+                    {parseFloat(amountPaid) >= getSelectedTotal() && parseFloat(amountPaid) > 0 && (
                       <div className="mt-2 p-2.5 bg-green-50 border-2 border-green-300 rounded-lg">
                         <div className="flex justify-between items-center">
                           <span className="text-green-800 font-semibold text-sm">💰 Cambio:</span>
@@ -1016,10 +1439,10 @@ export default function WaiterPage() {
                         </div>
                       </div>
                     )}
-                    {parseFloat(amountPaid) > 0 && parseFloat(amountPaid) < getTotal() && (
+                    {parseFloat(amountPaid) > 0 && parseFloat(amountPaid) < getSelectedTotal() && (
                       <div className="mt-2 p-2.5 bg-red-50 border-2 border-red-300 rounded-lg">
                         <p className="text-red-800 font-medium text-center text-sm">
-                          ⚠️ Falta: ${formatPrice(getTotal() - parseFloat(amountPaid))}
+                          ⚠️ Falta: ${formatPrice(getSelectedTotal() - parseFloat(amountPaid))}
                         </p>
                       </div>
                     )}
@@ -1040,7 +1463,8 @@ export default function WaiterPage() {
                 onClick={handlePayment}
                 disabled={
                   processing ||
-                  (paymentMethod === 'efectivo' && amountPaid !== '' && parseFloat(amountPaid) > 0 && parseFloat(amountPaid) < getTotal())
+                  getSelectedTotal() <= 0 ||
+                  (paymentMethod === 'efectivo' && amountPaid !== '' && parseFloat(amountPaid) > 0 && parseFloat(amountPaid) < getSelectedTotal())
                 }
                 className="flex-1 px-4 py-2.5 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
@@ -1049,6 +1473,7 @@ export default function WaiterPage() {
               <button
                 onClick={() => {
                   setShowPaymentModal(false)
+                  setPaymentSelection({})
                   setAmountPaid('')
                   setPaymentMethod('efectivo')
                   setPaymentAction('pay')
@@ -1073,11 +1498,11 @@ export default function WaiterPage() {
       )}
 
 
-      {/* Modal de edición de venta */}
+      {/* Vista profunda de edición de venta: ancho fijo, capa profunda */}
       {editingSale && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full my-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl flex flex-col bg-white rounded-2xl shadow-2xl my-8 min-h-[85vh] max-h-[90vh] overflow-hidden">
+            <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-stone-200 bg-stone-50 rounded-t-2xl">
               <h3 className="text-xl font-bold text-berry-950">Editar Venta</h3>
               <button
                 onClick={() => {
@@ -1094,7 +1519,8 @@ export default function WaiterPage() {
                 ×
               </button>
             </div>
-
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-5 sm:p-8 space-y-8">
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-stone-700 mb-2">
@@ -1245,6 +1671,8 @@ export default function WaiterPage() {
                 >
                   Cancelar
                 </button>
+              </div>
+            </div>
               </div>
             </div>
           </div>
@@ -1468,6 +1896,10 @@ export default function WaiterPage() {
         </>
       )}
     </div>
-  )
+    </WaiterLayout>
+    )
+    content = <CobrosScreen />
+  }
+  return content
 }
 

@@ -36,6 +36,7 @@ export interface Sale {
   channel: 'presencial' | 'whatsapp'
   paymentMethod?: 'efectivo' | 'nequi'
   ticketNumber?: string
+  mesa?: string
 }
 
 interface DaySalesBlockProps {
@@ -162,9 +163,10 @@ export function DaySalesBlock({
                         <p className="text-xs text-stone-600 mb-1.5 line-clamp-2">
                           {getSaleItemsSummary(sale)}
                         </p>
-                        {sale.comment && (
-                          <div className="text-[10px] text-stone-700 italic line-clamp-1 bg-berry-50 px-2.5 py-1 rounded-lg border-l-2 border-berry-400">
-                            💬 {sale.comment}
+                        {(sale.mesa || sale.comment) && (
+                          <div className="text-[10px] text-stone-700 italic line-clamp-2 bg-berry-50 px-2.5 py-1 rounded-lg border-l-2 border-berry-400 space-y-0.5">
+                            {sale.mesa && <span className="block">🪑 {sale.mesa}</span>}
+                            {sale.comment && <span className="block">💬 {sale.comment}</span>}
                           </div>
                         )}
                       </div>

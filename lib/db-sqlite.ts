@@ -173,6 +173,13 @@ function initializeDatabase() {
       updatedAt TEXT
     )
   `)
+  try {
+    db.exec(`ALTER TABLE sales ADD COLUMN mesa TEXT`)
+  } catch (e: any) {
+    if (!e.message?.includes('duplicate column')) {
+      console.warn('Error adding mesa column:', e.message)
+    }
+  }
 
   // Tabla de recetas
   db.exec(`

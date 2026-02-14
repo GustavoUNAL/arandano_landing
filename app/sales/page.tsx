@@ -47,6 +47,7 @@ interface Sale {
   channel: 'presencial' | 'whatsapp'
   paymentMethod?: 'efectivo' | 'nequi'
   ticketNumber?: string
+  mesa?: string
 }
 
 interface Product {
@@ -318,10 +319,11 @@ export default function SalesPage() {
     const q = searchQuery.trim().toLowerCase()
     filteredSales = filteredSales.filter(sale => {
       const matchComment = sale.comment?.toLowerCase().includes(q)
+      const matchMesa = sale.mesa?.toLowerCase().includes(q)
       const matchItems = sale.items.some(
         item => item.productName?.toLowerCase().includes(q)
       )
-      return matchComment || matchItems
+      return matchComment || matchMesa || matchItems
     })
   }
 
@@ -671,10 +673,20 @@ export default function SalesPage() {
                 </div>
               </div>
 
-              {selectedSale.comment && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 sm:p-4">
-                  <span className="block text-xs sm:text-sm font-semibold text-amber-800 mb-1">Comentario:</span>
-                  <p className="text-sm sm:text-base text-amber-700">{selectedSale.comment}</p>
+              {(selectedSale.mesa || selectedSale.comment) && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 sm:p-4 space-y-2">
+                  {selectedSale.mesa && (
+                    <div>
+                      <span className="block text-xs sm:text-sm font-semibold text-amber-800 mb-1">Mesa / Ubicación:</span>
+                      <p className="text-sm sm:text-base text-amber-700">🪑 {selectedSale.mesa}</p>
+                    </div>
+                  )}
+                  {selectedSale.comment && (
+                    <div>
+                      <span className="block text-xs sm:text-sm font-semibold text-amber-800 mb-1">Comentario:</span>
+                      <p className="text-sm sm:text-base text-amber-700">{selectedSale.comment}</p>
+                    </div>
+                  )}
                 </div>
               )}
 

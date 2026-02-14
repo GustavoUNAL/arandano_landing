@@ -42,10 +42,13 @@ const CATEGORIES = {
     { value: 'brandy', label: 'Brandy' },
     { value: 'ron', label: 'Ron' },
     { value: 'otros', label: 'Otros' }
+  ],
+  producto: [
+    { value: 'otros', label: 'Otros' }
   ]
 }
 
-const ALL_CATEGORIES = [...CATEGORIES.cafeteria, ...CATEGORIES.bebida]
+const ALL_CATEGORIES = [...CATEGORIES.cafeteria, ...CATEGORIES.bebida, ...CATEGORIES.producto]
 
 export default function AdminPage() {
   const router = useRouter()
@@ -1044,6 +1047,20 @@ export default function AdminPage() {
         {/* Dashboard con tarjetas */}
         {currentView === 'dashboard' && (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+            {/* Tarjeta Sistema de Cobros - Primero */}
+            <button
+              onClick={() => router.push('/waiter')}
+              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-amber-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
+            >
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-amber-200 transition-colors">
+                <span className="text-2xl sm:text-3xl">💳</span>
+              </div>
+              <h2 className="text-base sm:text-lg font-bold text-berry-950 mb-1.5 leading-tight">Cobros</h2>
+              <p className="text-stone-600 text-xs sm:text-sm leading-relaxed flex-grow">
+                Registro de ventas y procesamiento de pagos
+              </p>
+            </button>
+
             {/* Tarjeta Productos a la venta */}
             <button
               onClick={() => {
@@ -1131,20 +1148,6 @@ export default function AdminPage() {
               <h2 className="text-base sm:text-lg font-bold text-berry-950 mb-1.5 leading-tight">Analytics</h2>
               <p className="text-stone-600 text-xs sm:text-sm leading-relaxed flex-grow">
                 Métricas, KPIs y análisis de ventas
-              </p>
-            </button>
-
-            {/* Tarjeta Sistema de Cobros */}
-            <button
-              onClick={() => router.push('/waiter')}
-              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-amber-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
-            >
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-amber-200 transition-colors">
-                <span className="text-2xl sm:text-3xl">💳</span>
-              </div>
-              <h2 className="text-base sm:text-lg font-bold text-berry-950 mb-1.5 leading-tight">Cobros</h2>
-              <p className="text-stone-600 text-xs sm:text-sm leading-relaxed flex-grow">
-                Registro de ventas y procesamiento de pagos
               </p>
             </button>
           </div>

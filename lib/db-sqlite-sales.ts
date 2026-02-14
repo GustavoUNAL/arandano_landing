@@ -35,7 +35,8 @@ function normalizeSaleRow(row: any): Sale | null {
       total: row.total,
       paymentMethod: row.paymentMethod || undefined,
       channel: row.channel || 'presencial',
-      comment: row.notes || undefined
+      comment: row.notes || undefined,
+      mesa: row.mesa || undefined
     }
   } catch {
     return null
@@ -65,21 +66,42 @@ export async function createSale(sale: Omit<Sale, 'id'>): Promise<Sale> {
   const id = `sale-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   const now = new Date().toISOString()
   
-  db.prepare(`
-    INSERT INTO sales (
-      id, date, hour, items, total, paymentMethod, notes, createdAt, updatedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    id,
-    sale.date,
-    sale.hour,
-    JSON.stringify(sale.items),
-    sale.total,
-    sale.paymentMethod || null,
-    sale.comment || null, // Mapear 'comment' a 'notes'
-    now,
-    now
-  )
+  const tableInfo = db.prepare('PRAGMA table_info(sales)').all() as { name: string }[]
+  const hasMesa = tableInfo.some(col => col.name === 'mesa')
+  if (hasMesa) {
+    db.prepare(`
+      INSERT INTO sales (
+        id, date, hour, items, total, paymentMethod, notes, mesa, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      sale.date,
+      sale.hour,
+      JSON.stringify(sale.items),
+      sale.total,
+      sale.paymentMethod || null,
+      sale.comment || null,
+      sale.mesa || null,
+      now,
+      now
+    )
+  } else {
+    db.prepare(`
+      INSERT INTO sales (
+        id, date, hour, items, total, paymentMethod, notes, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      sale.date,
+      sale.hour,
+      JSON.stringify(sale.items),
+      sale.total,
+      sale.paymentMethod || null,
+      sale.comment || null,
+      now,
+      now
+    )
+  }
   
   const created = await getSaleById(id)
   if (!created) throw new Error('Error creando venta')

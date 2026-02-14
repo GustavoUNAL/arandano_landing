@@ -933,7 +933,7 @@ export default function AnalyticsPage() {
                         }
                         const categoryOrder = ['cafe-caliente', 'cafe-frio', 'pasteleria', 'combo', 'cerveza', 'coctel', 'vino', 'vodka', 'ginebra', 'tequila', 'whisky', 'aguardiente', 'brandy', 'ron', 'otros']
                         const sortedCats = categoryOrder.filter(c => byCategory.has(c))
-                        const restCats = [...byCategory.keys()].filter(c => !categoryOrder.includes(c))
+                        const restCats = Array.from(byCategory.keys()).filter(c => !categoryOrder.includes(c))
                         const allCats = [...sortedCats, ...restCats]
                         if (filtered.length === 0) {
                           return (
