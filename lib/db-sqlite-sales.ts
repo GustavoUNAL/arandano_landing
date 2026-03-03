@@ -27,9 +27,11 @@ function normalizeSaleRow(row: any): Sale | null {
       }
       return item
     })
+    const dateStr = typeof row.date === 'string' && row.date.length >= 10 ? row.date.slice(0, 10) : String(row.date || '')
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? dateStr : row.date
     return {
       id: row.id,
-      date: row.date,
+      date,
       hour: row.hour,
       items: normalizedItems,
       total: row.total,

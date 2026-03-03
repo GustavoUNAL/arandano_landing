@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { DaySalesBlock } from '@/components/sales/DaySalesBlock'
 
 /** Parsea fecha tipo YYYY-MM-DD como fecha local para que el día de la semana coincida (evita UTC). */
@@ -77,8 +78,6 @@ export default function SalesPage() {
   const [productSearch, setProductSearch] = useState<string>('')
   const [showProductSelector, setShowProductSelector] = useState(false)
   const [processing, setProcessing] = useState(false)
-  const [page, setPage] = useState(1)
-  const itemsPerPage = 50
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
   const [hasExpandedInitial, setHasExpandedInitial] = useState(false)
@@ -182,18 +181,19 @@ export default function SalesPage() {
     try {
       setProcessing(true)
       
+      const dateOnly = editSaleDateTime.slice(0, 10)
       const newDate = new Date(editSaleDateTime)
       const hour = newDate.getHours()
-      
+
       const newTotal = editSaleItems.reduce((sum, item) => sum + item.totalPrice, 0)
-      
+
       const response = await fetch(`/api/sales/${editingSale.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          date: newDate.toISOString(),
+          date: dateOnly,
           hour: hour,
           items: editSaleItems,
           total: newTotal,
@@ -209,8 +209,9 @@ export default function SalesPage() {
         throw new Error(error.error || error.details || 'Error al actualizar la venta')
       }
 
+      const updatedSale = await response.json()
       await loadSales()
-      
+
       setEditingSale(null)
       setEditSaleDateTime('')
       setEditSaleComment('')
@@ -218,9 +219,17 @@ export default function SalesPage() {
       setEditSalePaymentMethod('')
       setShowProductSelector(false)
       setProductSearch('')
-      setShowDetail(false)
-      setSelectedSale(null)
-      
+
+      const newDayKey = getSaleDayKey(updatedSale)
+      setExpandedDays((prev) => new Set([...prev, newDayKey]))
+      setSelectedSale(updatedSale)
+      setShowDetail(true)
+
+      setTimeout(() => {
+        const el = document.getElementById(`day-${newDayKey.replace(/\//g, '-')}`)
+        el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }, 400)
+
       alert('Venta actualizada correctamente')
     } catch (error: any) {
       console.error('[handleUpdateSale] Error completo:', error)
@@ -335,36 +344,80 @@ export default function SalesPage() {
     salesByDay[dayKey].push(sale)
   })
 
-  // Generar rango de días (últimos 14 días desde hoy) para que cada día tenga su bloque
-  const DAYS_TO_SHOW = 14
-  const allDaysInRange = useMemo(() => {
-    const days: string[] = []
+  // Días disponibles según las ventas (todos los días con al menos una venta)
+  const allDayKeys = useMemo(() => {
+    const keys = Object.keys(salesByDay)
+    return keys.sort((a, b) => {
+      const [da, ma, ya] = a.split('/').map(Number)
+      const [db, mb, yb] = b.split('/').map(Number)
+      const dateA = new Date(ya, ma - 1, da)
+      const dateB = new Date(yb, mb - 1, db)
+      return dateB.getTime() - dateA.getTime()
+    })
+  }, [salesByDay])
+
+  // Meses a mostrar en el calendario: desde el primer día con ventas hasta hoy, agrupados por mes
+  const calendarMonths = useMemo(() => {
+    if (allDayKeys.length === 0) return [] as {
+      year: number
+      monthIndex: number
+      label: string
+      cells: (string | null)[]
+    }[]
+
+    const parseKeyToDate = (key: string) => {
+      const [d, m, y] = key.split('/').map(Number)
+      return new Date(y, m - 1, d)
+    }
+
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    for (let i = 0; i < DAYS_TO_SHOW; i++) {
-      const d = new Date(today)
-      d.setDate(d.getDate() - i)
-      const year = d.getFullYear()
-      const month = d.getMonth() + 1
-      const day = d.getDate()
-      days.push(`${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`)
-    }
-    return days
-  }, [])
 
-  // Días a mostrar: si hay filtro por fecha, solo ese día; si no, rango de 14 días
-  const sortedDays = useMemo(() => {
-    if (filterDate) {
-      const [y, m, d] = filterDate.split('-').map(Number)
-      const key = `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`
-      return [key]
-    }
-    return allDaysInRange
-  }, [filterDate, allDaysInRange])
+    let minDate = parseKeyToDate(allDayKeys[allDayKeys.length - 1])
+    minDate.setHours(0, 0, 0, 0)
 
-  // Paginación
-  const paginatedDays = sortedDays.slice((page - 1) * itemsPerPage, page * itemsPerPage)
-  const totalPages = Math.ceil(sortedDays.length / itemsPerPage)
+    const months: { year: number; monthIndex: number; label: string; cells: (string | null)[] }[] = []
+
+    let year = minDate.getFullYear()
+    let monthIndex = minDate.getMonth()
+    const endYear = today.getFullYear()
+    const endMonthIndex = today.getMonth()
+
+    while (year < endYear || (year === endYear && monthIndex <= endMonthIndex)) {
+      const firstOfMonth = new Date(year, monthIndex, 1)
+      const startWeekday = firstOfMonth.getDay() // 0=Domingo
+      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate()
+      const cells: (string | null)[] = []
+
+      for (let i = 0; i < startWeekday; i++) {
+        cells.push(null)
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const current = new Date(year, monthIndex, day)
+        current.setHours(0, 0, 0, 0)
+        if (current > today) break // no mostrar días futuros
+        const dd = String(day).padStart(2, '0')
+        const mm = String(monthIndex + 1).padStart(2, '0')
+        const key = `${dd}/${mm}/${year}`
+        cells.push(key)
+      }
+
+      const labelDate = new Date(year, monthIndex, 1)
+      const labelRaw = labelDate.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })
+      const label = labelRaw.charAt(0).toUpperCase() + labelRaw.slice(1)
+
+      months.push({ year, monthIndex, label, cells })
+
+      monthIndex++
+      if (monthIndex > 11) {
+        monthIndex = 0
+        year++
+      }
+    }
+
+    return months
+  }, [allDayKeys])
 
   const getDayTotal = (sales: Sale[]) => {
     return sales.reduce((sum, sale) => sum + sale.total, 0)
@@ -428,7 +481,7 @@ export default function SalesPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="text-berry-600 text-xl">Cargando ventas...</div>
+        <div className="text-arandano-600 text-xl">Cargando ventas...</div>
       </div>
     )
   }
@@ -440,16 +493,16 @@ export default function SalesPage() {
         <div className="mb-5 relative">
           <button
             onClick={() => router.back()}
-            className="absolute left-0 top-1/2 -translate-y-1/2 px-3 py-1.5 text-xs font-medium text-berry-700 hover:text-berry-800 hover:bg-berry-50 rounded-lg transition-colors border border-berry-200"
+            className="absolute left-0 top-1/2 -translate-y-1/2 px-3 py-1.5 text-xs font-medium text-arandano-700 hover:text-arandano-800 hover:bg-arandano-50 rounded-lg transition-colors border border-arandano-200"
           >
             ← Volver
           </button>
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-berry-950">Ventas</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-arandano-950">Ventas</h1>
             <p className="text-xs text-stone-600 mt-0.5 font-medium">
               {filteredSales.length} {filteredSales.length === 1 ? 'venta' : 'ventas'}
               {filteredSales.length > 0 && (
-                <span className="text-berry-600 font-semibold ml-1">
+                <span className="text-arandano-600 font-semibold ml-1">
                   · Total ${formatPrice(filteredSales.reduce((sum, s) => sum + s.total, 0))}
                 </span>
               )}
@@ -458,16 +511,15 @@ export default function SalesPage() {
         </div>
 
         {/* Filtros con paleta de la app en una sola fila */}
-        <div className="mb-5 p-3 bg-white rounded-xl border border-berry-200 shadow-sm">
+        <div className="mb-5 p-3 bg-white rounded-xl border border-arandano-200 shadow-sm">
           <div className="flex items-center justify-center gap-2.5 flex-nowrap overflow-x-auto">
-            <div className="flex items-center gap-1.5 px-3 py-2 bg-berry-50 rounded-lg border border-berry-200 hover:border-berry-300 hover:bg-berry-100 transition-all flex-shrink-0">
-              <span className="text-xs text-berry-600">📅</span>
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-arandano-50 rounded-lg border border-arandano-200 hover:border-arandano-300 hover:bg-arandano-100 transition-all flex-shrink-0">
+              <span className="text-xs text-arandano-600">📅</span>
               <input
                 type="date"
                 value={filterDate}
                 onChange={(e) => {
                   setFilterDate(e.target.value)
-                  setPage(1)
                 }}
                 className="text-xs font-medium border-0 focus:ring-0 focus:outline-none bg-transparent text-stone-700 min-w-[125px]"
               />
@@ -478,7 +530,6 @@ export default function SalesPage() {
                 value={filterPaymentMethod}
                 onChange={(e) => {
                   setFilterPaymentMethod(e.target.value)
-                  setPage(1)
                 }}
                 className="text-xs font-medium border-0 focus:ring-0 focus:outline-none bg-transparent text-stone-700 cursor-pointer min-w-[105px]"
               >
@@ -496,7 +547,6 @@ export default function SalesPage() {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value)
-                  setPage(1)
                 }}
                 className="text-xs font-medium border-0 focus:ring-0 focus:outline-none bg-transparent text-stone-700 placeholder-stone-400 flex-1 min-w-0"
               />
@@ -507,76 +557,79 @@ export default function SalesPage() {
                   setFilterDate('')
                   setFilterPaymentMethod('all')
                   setSearchQuery('')
-                  setPage(1)
                 }}
-                className="px-2.5 py-2 text-xs font-medium text-berry-700 hover:text-berry-800 hover:bg-berry-100 rounded-lg transition-colors border border-berry-200 bg-white flex-shrink-0"
+                className="px-2.5 py-2 text-xs font-medium text-arandano-700 hover:text-arandano-800 hover:bg-arandano-50 rounded-lg transition-colors border border-arandano-200 bg-white flex-shrink-0"
               >
                 ✕
               </button>
             )}
+            <Link
+              href="/waiter"
+              className="px-3 py-2 text-xs font-medium text-arandano-700 hover:text-arandano-800 bg-arandano-50 hover:bg-arandano-100 rounded-lg transition-colors border border-arandano-200 flex-shrink-0"
+            >
+              📅 Registrar venta en fecha pasada
+            </Link>
           </div>
         </div>
 
-        {/* Lista de ventas */}
-        {sortedDays.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-xl border border-berry-200 shadow-sm">
-            <div className="text-4xl mb-3">📭</div>
-            <p className="text-stone-700 text-sm font-medium">No hay ventas con los filtros seleccionados</p>
-            <p className="text-stone-500 text-xs mt-1">Intenta ajustar los filtros</p>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-4">
-              {paginatedDays.map((dayKey) => {
-                const daySales = salesByDay[dayKey] ?? []
-                const isEmpty = daySales.length === 0
-                const isExpanded = expandedDays.has(dayKey)
+        {/* Calendarios mensuales de ventas (desktop) */}
+        {calendarMonths.length > 0 && (
+          <div className="hidden md:block mb-5 space-y-6">
+            {[...calendarMonths].reverse().map((month) => (
+              <div key={`${month.year}-${month.monthIndex}`}>
+                <h2 className="text-sm font-semibold text-arandano-900 mb-2">
+                  {month.label}
+                </h2>
+                <div className="grid grid-cols-7 gap-2 text-[11px] font-semibold text-stone-500 mb-1">
+                  {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map((d) => (
+                    <div key={d} className="text-center uppercase tracking-wide">
+                      {d}
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-2">
+                  {month.cells.map((key, idx) => {
+                    if (!key) {
+                      return <div key={`empty-${month.year}-${month.monthIndex}-${idx}`} className="h-16" />
+                    }
+                    const daySales = salesByDay[key] ?? []
+                    const total = getDayTotal(daySales)
+                    const [d, m, y] = key.split('/').map(Number)
+                    const date = new Date(y, m - 1, d)
+                    const today = new Date()
+                    today.setHours(0, 0, 0, 0)
+                    const isToday = date.toDateString() === today.toDateString()
 
-                return (
-                  <DaySalesBlock
-                    key={dayKey}
-                    dayKey={dayKey}
-                    daySales={daySales}
-                    isExpanded={isExpanded}
-                    onToggleExpand={() => toggleDayExpanded(dayKey)}
-                    onSelectSale={(sale) => {
-                      setSelectedSale(sale)
-                      setShowDetail(true)
-                    }}
-                    formatPrice={formatPrice}
-                    getDayTotal={getDayTotal}
-                    getDayByPayment={getDayByPayment}
-                    getSaleItemsSummary={getSaleItemsSummary}
-                    getDayLabel={getDayLabel}
-                    isEmpty={isEmpty}
-                  />
-                )
-              })}
-            </div>
-
-            {/* Paginación con paleta de la app */}
-            {totalPages > 1 && (
-              <div className="mt-5 flex justify-center items-center gap-2.5">
-                <button
-                  onClick={() => setPage(Math.max(1, page - 1))}
-                  disabled={page === 1}
-                  className="px-3.5 py-2 text-xs font-medium text-berry-700 hover:text-white hover:bg-berry-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all border border-berry-300 shadow-sm hover:shadow-md"
-                >
-                  Anterior
-                </button>
-                <span className="px-3.5 py-2 text-xs text-berry-700 font-semibold bg-berry-50 rounded-lg border border-berry-200">
-                  {page} / {totalPages}
-                </span>
-                <button
-                  onClick={() => setPage(Math.min(totalPages, page + 1))}
-                  disabled={page === totalPages}
-                  className="px-3.5 py-2 text-xs font-medium text-berry-700 hover:text-white hover:bg-berry-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all border border-berry-300 shadow-sm hover:shadow-md"
-                >
-                  Siguiente
-                </button>
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          toggleDayExpanded(key)
+                          const el = document.getElementById(`day-${key.replace(/\//g, '-')}`)
+                          el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                        }}
+                        className={`flex flex-col items-start justify-between p-2.5 rounded-xl border text-left transition-colors hover:shadow-sm h-20 ${
+                          isToday
+                            ? 'bg-arandano-100 border-arandano-400'
+                            : total > 0
+                              ? 'bg-arandano-50 border-arandano-200 hover:bg-arandano-100'
+                              : 'bg-pink-50 border-pink-200'
+                        }`}
+                      >
+                        <span className="text-[11px] font-semibold text-arandano-800">
+                          {d}
+                        </span>
+                        <span className="mt-auto text-[11px] text-stone-600">Total</span>
+                        <span className="text-xs font-bold text-arandano-900">
+                          ${formatPrice(total)}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-            )}
-          </>
+            ))}
+          </div>
         )}
       </div>
 
@@ -604,7 +657,7 @@ export default function SalesPage() {
                     setProductSearch('')
                     setShowDetail(false)
                   }}
-                  className="px-3 py-1.5 text-sm font-semibold text-berry-700 hover:text-berry-800 bg-berry-100 hover:bg-berry-200 rounded-lg border border-berry-200 transition-colors"
+                  className="px-3 py-1.5 text-sm font-semibold text-arandano-700 hover:text-arandano-800 bg-arandano-50 hover:bg-arandano-100 rounded-lg border border-arandano-200 transition-colors"
                 >
                   Editar
                 </button>
@@ -693,8 +746,8 @@ export default function SalesPage() {
               {/* Total */}
               <div className="border-t border-stone-200 pt-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-base sm:text-lg font-semibold text-berry-950">Total:</span>
-                  <span className="text-xl sm:text-2xl font-bold text-berry-600">
+                  <span className="text-base sm:text-lg font-semibold text-arandano-950">Total:</span>
+                  <span className="text-xl sm:text-2xl font-bold text-arandano-600">
                     ${formatPrice(selectedSale.total)}
                   </span>
                 </div>
@@ -707,7 +760,7 @@ export default function SalesPage() {
                     setShowDetail(false)
                     setSelectedSale(null)
                   }}
-                  className="w-full px-4 py-2.5 bg-gradient-to-r from-berry-500 to-purple-500 hover:from-berry-600 hover:to-purple-600 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg text-sm sm:text-base"
+                  className="w-full px-4 py-2.5 bg-gradient-to-r from-arandano-600 to-arandano-700 hover:from-arandano-700 hover:to-arandano-800 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg text-sm sm:text-base"
                 >
                   Cerrar
                 </button>
@@ -732,9 +785,9 @@ export default function SalesPage() {
       {/* Modal de edición de venta */}
       {editingSale && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full my-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full my-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-berry-950">Editar Venta</h3>
+              <h3 className="text-xl font-bold text-arandano-950">Editar Venta</h3>
               <button
                 onClick={() => {
                   setEditingSale(null)
@@ -774,7 +827,7 @@ export default function SalesPage() {
                   </label>
                   <button
                     onClick={() => setShowProductSelector(!showProductSelector)}
-                    className="px-3 py-1.5 bg-berry-600 hover:bg-berry-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    className="px-3 py-1.5 bg-arandano-600 hover:bg-arandano-700 text-white rounded-lg text-sm font-medium transition-colors"
                   >
                     {showProductSelector ? '✕ Cancelar' : '+ Agregar Producto'}
                   </button>
@@ -788,17 +841,17 @@ export default function SalesPage() {
                       value={productSearch}
                       onChange={(e) => setProductSearch(e.target.value)}
                       placeholder="Buscar producto..."
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent mb-2"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent mb-2"
                     />
                     <div className="max-h-48 overflow-y-auto space-y-1">
                       {filteredAvailableProducts.map((product) => (
                         <button
                           key={product.id}
                           onClick={() => addProductToSale(product)}
-                          className="w-full text-left px-3 py-2 bg-white hover:bg-berry-50 border border-stone-200 rounded-lg transition-colors flex justify-between items-center"
+                          className="w-full text-left px-3 py-2 bg-white hover:bg-arandano-50 border border-stone-200 rounded-lg transition-colors flex justify-between items-center"
                         >
-                          <span className="text-sm font-medium text-berry-950">{product.name}</span>
-                          <span className="text-sm text-berry-600 font-semibold">${formatPrice(product.price)}</span>
+                          <span className="text-sm font-medium text-arandano-950">{product.name}</span>
+                          <span className="text-sm text-arandano-600 font-semibold">${formatPrice(product.price)}</span>
                         </button>
                       ))}
                       {filteredAvailableProducts.length === 0 && (
@@ -813,7 +866,7 @@ export default function SalesPage() {
                   {editSaleItems.map((item, index) => (
                     <div key={index} className="flex items-center gap-2 p-3 bg-stone-50 rounded-lg border border-stone-200">
                       <div className="flex-1">
-                        <div className="font-medium text-sm text-berry-950">{item.productName}</div>
+                        <div className="font-medium text-sm text-arandano-950">{item.productName}</div>
                         <div className="text-xs text-stone-600">${formatPrice(item.unitPrice)} c/u</div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -826,11 +879,11 @@ export default function SalesPage() {
                         <span className="w-12 text-center font-semibold text-sm">{item.quantity}</span>
                         <button
                           onClick={() => updateProductQuantity(item.productId, item.quantity + 1)}
-                          className="w-8 h-8 flex items-center justify-center bg-berry-600 hover:bg-berry-700 text-white rounded text-sm font-bold"
+                          className="w-8 h-8 flex items-center justify-center bg-arandano-600 hover:bg-arandano-700 text-white rounded text-sm font-bold"
                         >
                           +
                         </button>
-                        <span className="w-20 text-right font-semibold text-berry-600">
+                        <span className="w-20 text-right font-semibold text-arandano-600">
                           ${formatPrice(item.totalPrice)}
                         </span>
                         <button
@@ -850,16 +903,18 @@ export default function SalesPage() {
                 </div>
               </div>
 
-              <div>
+              <div onClick={(e) => e.stopPropagation()}>
                 <label className="block text-sm font-semibold text-stone-700 mb-2">
                   💬 Comentario:
                 </label>
                 <textarea
                   value={editSaleComment}
                   onChange={(e) => setEditSaleComment(e.target.value)}
+                  onKeyDown={(e) => e.stopPropagation()}
                   placeholder="Ej: Consumo propio, nota especial, etc."
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y min-h-[4.5rem]"
                   rows={3}
+                  autoComplete="off"
                 />
                 <p className="text-xs text-stone-500 mt-1">Opcional: agrega un comentario a esta venta</p>
               </div>
@@ -882,7 +937,7 @@ export default function SalesPage() {
 
               <div className="bg-stone-50 rounded-lg p-3">
                 <p className="text-sm text-stone-600">
-                  <span className="font-semibold">Total:</span> <span className="text-lg font-bold text-berry-600">${formatPrice(getEditTotal())}</span>
+                  <span className="font-semibold">Total:</span> <span className="text-lg font-bold text-arandano-600">${formatPrice(getEditTotal())}</span>
                 </p>
                 <p className="text-sm text-stone-600">
                   <span className="font-semibold">Productos:</span> {editSaleItems.length}

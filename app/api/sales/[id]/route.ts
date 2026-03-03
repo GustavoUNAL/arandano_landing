@@ -21,28 +21,44 @@ export async function PUT(
       )
     }
 
-    // Preparar datos de actualización
-    // Cuando se recibe una fecha desde datetime-local, viene como "YYYY-MM-DDTHH:mm" (hora local)
-    // Necesitamos asegurarnos de que se convierta correctamente a UTC
-    let saleDate: Date
+    // Guardar fecha como YYYY-MM-DD y hora 0-23 (igual que POST) para que el día no cambie por zona horaria
+    let dateToStore: string
     let saleHour: number
-    
-    if (date) {
-      // date viene como ISO string desde el frontend (datetime-local convertido)
-      saleDate = new Date(date)
-      saleHour = hour !== undefined ? hour : saleDate.getHours()
-      
-      // Si tenemos una hora específica y la fecha viene de datetime-local sin zona horaria,
-      // asegurar que la fecha refleje correctamente la hora local deseada
-      // datetime-local envía como "2026-01-17T20:00" que JavaScript interpreta como hora local
-      // al hacer toISOString() ya se convierte correctamente a UTC
+
+    if (date !== undefined && date !== null && date !== '') {
+      const isDateOnly = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+      if (isDateOnly) {
+        dateToStore = date
+      } else if (typeof date === 'string' && date.length >= 10) {
+        // Si viene ISO o con hora, usar la parte de fecha en local para que coincida con el calendario
+        const datePart = date.slice(0, 10)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+          dateToStore = datePart
+        } else {
+          const d = new Date(date)
+          const y = d.getFullYear()
+          const m = String(d.getMonth() + 1).padStart(2, '0')
+          const day = String(d.getDate()).padStart(2, '0')
+          dateToStore = `${y}-${m}-${day}`
+        }
+      } else {
+        dateToStore = typeof originalSale.date === 'string' && originalSale.date.length >= 10
+          ? originalSale.date.slice(0, 10)
+          : new Date(originalSale.date).toISOString().split('T')[0]
+      }
+      saleHour = hour !== undefined && hour !== null ? Number(hour) : (typeof originalSale.hour === 'number' ? originalSale.hour : (typeof originalSale.date === 'string' && originalSale.date.length >= 10 ? 0 : new Date(originalSale.date).getHours()))
     } else {
-      saleDate = new Date(originalSale.date)
-      saleHour = hour !== undefined ? hour : (originalSale.hour || saleDate.getHours())
+      const existing = typeof originalSale.date === 'string' && originalSale.date.length >= 10 ? originalSale.date.slice(0, 10) : new Date(originalSale.date).toISOString().split('T')[0]
+      dateToStore = existing
+      saleHour = hour !== undefined && hour !== null ? Number(hour) : (typeof originalSale.hour === 'number' ? originalSale.hour : 0)
     }
-    
+
+    // Fecha-hora de la venta en local (para lastSaleDate de productos)
+    const [y, m, d] = dateToStore.split('-').map(Number)
+    const saleDate = new Date(y, m - 1, d, saleHour, 0, 0, 0)
+
     const updates: any = {
-      date: saleDate.toISOString(),
+      date: dateToStore,
       hour: saleHour,
       total: total !== undefined ? total : originalSale.total,
       paymentMethod: paymentMethod !== undefined ? paymentMethod : originalSale.paymentMethod,

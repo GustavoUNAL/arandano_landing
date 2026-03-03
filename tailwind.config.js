@@ -21,6 +21,20 @@ module.exports = {
           900: '#2a1a35',
           950: '#1a0f23',
         },
+        // Azul sobrio color arándano (sistema de cobros y acentos)
+        arandano: {
+          50: '#f0f4f8',
+          100: '#dbe4ee',
+          200: '#b8c9dc',
+          300: '#8aa5c2',
+          400: '#5c7ea3',
+          500: '#3d6185',
+          600: '#2f4d6b',
+          700: '#263d56',
+          800: '#1e3247',
+          900: '#18273a',
+          950: '#0f1929',
+        },
       },
       fontFamily: {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const PLANTA_LAYOUT_KEY = 'waiter-planta-layout'
 
@@ -64,6 +64,17 @@ interface CuentaMesa {
   comment: string
 }
 
+/** Parsea fecha de venta como fecha local (YYYY-MM-DD + hour) para que coincida con el calendario. */
+function parseSaleDateLocal (dateStr: string, hour: number = 0): Date {
+  const s = (dateStr || '').split('T')[0]
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-').map(Number)
+    return new Date(y, m - 1, d, hour, 0, 0, 0)
+  }
+  const d = new Date(dateStr)
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), hour, d.getHours(), d.getMinutes(), 0)
+}
+
 function iconoMesa (mesa: string): string {
   if (mesa === 'Otro') return '✏️ '
   if (mesa === 'Barra') return '🍸 '
@@ -92,11 +103,13 @@ const CATEGORIES = [
   { id: 'cocteles', name: 'Cócteles', filter: (p: Product) => p.type === 'bebida' && p.category === 'coctel' },
   { id: 'acompanantes', name: 'Acompañantes', filter: (p: Product) => p.type === 'cafeteria' && p.category === 'pasteleria' },
   { id: 'cervezas', name: 'Cervezas', filter: (p: Product) => p.type === 'bebida' && p.category === 'cerveza' },
+  { id: 'bebidas', name: 'Bebidas', filter: (p: Product) => p.type === 'bebida' },
   { id: 'shots', name: 'Shots', filter: (p: Product) => p.type === 'bebida' && (p.size?.toLowerCase().includes('shot') || p.size?.toLowerCase().includes('30ml') || p.name?.toLowerCase().includes('shot')) }
 ]
 
 export default function WaiterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [products, setProducts] = useState<Product[]>([])
   const [cart, setCart] = useState<CartItem[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('cafes')
@@ -117,10 +130,11 @@ export default function WaiterPage() {
   const [discount, setDiscount] = useState<string>('')
   const [discountType, setDiscountType] = useState<'percentage' | 'amount'>('percentage')
   const [orderComment, setOrderComment] = useState<string>('')
-  /** Mesa elegida para entrar al cobro. Si está vacía se muestra solo la pantalla de elegir mesa. */
+  /** Mesa elegida para el cobro. Se selecciona desde un modal; la lista de precios se muestra siempre primero. */
   const [mesaElegida, setMesaElegida] = useState<string>('')
   const [mesaOtro, setMesaOtro] = useState<string>('')
   const [showMesaOtroInput, setShowMesaOtroInput] = useState(false)
+  const [showMesaSelectorModal, setShowMesaSelectorModal] = useState(false)
   /** Orden de las mesas (como están ubicadas). Cargado desde localStorage. */
   const [mesasOrden, setMesasOrden] = useState<string[]>(MESAS_OPCIONES_DEFAULT)
   /** Cuentas por mesa: items y comentario que se van sumando. Persistido en localStorage. */
@@ -147,6 +161,14 @@ export default function WaiterPage() {
     } catch (_) {}
   }, [])
 
+  // Si se llega con ?date=YYYY-MM-DD (ej. desde Ventas "Agregar venta este día"), prellenar fecha de cobro
+  useEffect(() => {
+    const dateParam = searchParams.get('date')
+    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+      setPaymentDate(`${dateParam}T12:00`)
+    }
+  }, [searchParams])
+
   const savePlantaLayout = useCallback((layout: typeof defaultPlantaLayout) => {
     try {
       localStorage.setItem(PLANTA_LAYOUT_KEY, JSON.stringify(layout))
@@ -161,13 +183,14 @@ export default function WaiterPage() {
     const el = id === 'bar' ? plantaLayout.bar : id === 'mesa1' ? plantaLayout.mesa1 : plantaLayout.mesa2
     const startLeft = 'width' in el ? el.left : el.left
     const startTop = 'width' in el ? el.top : el.top
+    const startWidth = 'width' in el && typeof el.width === 'number' ? el.width : undefined
     plantaDragStart.current = {
       id,
       startX: e.clientX,
       startY: e.clientY,
       startLeft,
       startTop,
-      ...('width' in el && { startWidth: el.width })
+      ...(startWidth !== undefined && { startWidth })
     }
     ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
   }, [plantaLayout])
@@ -498,20 +521,21 @@ export default function WaiterPage() {
     try {
       setProcessing(true)
       
-      // Crear fecha con la hora especificada desde datetime-local
+      // datetime-local es "YYYY-MM-DDTHH:mm" (hora local) — enviar fecha como YYYY-MM-DD y hora por separado
+      const dateOnly = editSaleDateTime.slice(0, 10)
       const newDate = new Date(editSaleDateTime)
       const hour = newDate.getHours()
-      
+
       // Calcular el total basado en los items editados
       const newTotal = editSaleItems.reduce((sum, item) => sum + item.totalPrice, 0)
-      
+
       const response = await fetch(`/api/sales/${editingSale.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          date: newDate.toISOString(),
+          date: dateOnly,
           hour: hour,
           items: editSaleItems,
           total: newTotal,
@@ -527,9 +551,13 @@ export default function WaiterPage() {
         throw new Error(error.error || error.details || 'Error al actualizar la venta')
       }
 
-      // Recargar ventas
+      const updatedSale = await response.json()
+
+      // Recargar ventas y actualizar la venta seleccionada para que el detalle muestre la nueva fecha
       await loadRecentSales()
-      
+      setSelectedSale(updatedSale)
+      setShowSaleDetail(true)
+
       // Cerrar modal de edición
       setEditingSale(null)
       setEditSaleDateTime('')
@@ -642,120 +670,7 @@ export default function WaiterPage() {
   if (loading) {
     content = (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="text-berry-600 text-xl">Cargando...</div>
-      </div>
-    )
-  } else if (!mesaElegida) {
-    content = (
-      <div className="min-h-screen bg-stone-50 flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200 bg-white">
-          <button onClick={() => router.push('/admin')} className="flex items-center gap-2 text-stone-600 hover:text-berry-600 font-medium">
-            ← Volver
-          </button>
-          <div className="flex items-center gap-2">
-            <button onClick={() => router.push('/sales')} className="px-3 py-1.5 rounded-lg text-sm font-medium text-stone-600 hover:text-berry-600">
-              📊 Ver Ventas ({totalSalesCount})
-            </button>
-          </div>
-        </div>
-        <div className="container mx-auto px-4 py-6 max-w-2xl flex-1 flex flex-col">
-          {!showMesaOtroInput ? (
-            <>
-              <h1 className="text-2xl sm:text-3xl font-bold text-berry-950 mb-1 text-center mt-4">¿Para qué mesa es el pedido?</h1>
-              <p className="text-stone-600 mb-3 text-center text-sm">Vista en planta — toca para elegir o arrastra para mover</p>
-              {/* Planta: dos mesas redondas + barra (arrastrables) */}
-              <div className="w-full max-w-sm mx-auto flex-1 flex flex-col items-center justify-center min-h-[320px]">
-                <div
-                  ref={plantaContainerRef}
-                  className="relative w-full aspect-[3/4] min-h-[320px] max-h-[448px] bg-stone-100 rounded-2xl border-2 border-stone-300 shadow-inner overflow-hidden select-none touch-none"
-                >
-                  {/* Barra (arrastrable) */}
-                  <button
-                    type="button"
-                    onPointerDown={(e) => handlePlantaPointerDown(e, 'bar')}
-                    onClick={() => { if (plantaDidDragRef.current) return; selectMesa('Barra') }}
-                    style={{
-                      left: `${plantaLayout.bar.left}%`,
-                      top: `${plantaLayout.bar.top}%`,
-                      width: `${plantaLayout.bar.width}%`,
-                      height: '18%'
-                    }}
-                    className={`absolute rounded-lg bg-amber-800/90 border-2 border-amber-900 shadow-md flex flex-col items-center justify-center transition-shadow ${plantaDragging === 'bar' ? 'cursor-grabbing shadow-xl z-10' : 'cursor-grab hover:bg-amber-700'}`}
-                    aria-label="Barra"
-                  >
-                    {(cuentasPorMesa['Barra']?.items.reduce((s, i) => s + i.quantity, 0) ?? 0) > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold shadow pointer-events-none">
-                        {cuentasPorMesa['Barra'].items.reduce((s, i) => s + i.quantity, 0)}
-                      </span>
-                    )}
-                    <span className="text-white font-semibold text-sm drop-shadow pointer-events-none">🍸 Barra</span>
-                  </button>
-                  {/* Mesa circular 1 (arrastrable) */}
-                  <button
-                    type="button"
-                    onPointerDown={(e) => handlePlantaPointerDown(e, 'mesa1')}
-                    onClick={() => { if (plantaDidDragRef.current) return; selectMesa('Mesa circular 1') }}
-                    style={{
-                      left: `${plantaLayout.mesa1.left}%`,
-                      top: `${plantaLayout.mesa1.top}%`,
-                      width: '28%',
-                      aspectRatio: '1'
-                    }}
-                    className={`absolute rounded-full bg-berry-600 border-4 border-berry-800 shadow-lg flex items-center justify-center ${plantaDragging === 'mesa1' ? 'cursor-grabbing shadow-xl z-10' : 'cursor-grab hover:bg-berry-500'}`}
-                    aria-label="Mesa circular 1"
-                  >
-                    {(cuentasPorMesa['Mesa circular 1']?.items.reduce((s, i) => s + i.quantity, 0) ?? 0) > 0 && (
-                      <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold shadow pointer-events-none">
-                        {cuentasPorMesa['Mesa circular 1'].items.reduce((s, i) => s + i.quantity, 0)}
-                      </span>
-                    )}
-                    <span className="text-white font-bold text-xs drop-shadow pointer-events-none">1</span>
-                  </button>
-                  {/* Mesa circular 2 (arrastrable) */}
-                  <button
-                    type="button"
-                    onPointerDown={(e) => handlePlantaPointerDown(e, 'mesa2')}
-                    onClick={() => { if (plantaDidDragRef.current) return; selectMesa('Mesa circular 2') }}
-                    style={{
-                      left: `${plantaLayout.mesa2.left}%`,
-                      top: `${plantaLayout.mesa2.top}%`,
-                      width: '28%',
-                      aspectRatio: '1'
-                    }}
-                    className={`absolute rounded-full bg-berry-600 border-4 border-berry-800 shadow-lg flex items-center justify-center ${plantaDragging === 'mesa2' ? 'cursor-grabbing shadow-xl z-10' : 'cursor-grab hover:bg-berry-500'}`}
-                    aria-label="Mesa circular 2"
-                  >
-                    {(cuentasPorMesa['Mesa circular 2']?.items.reduce((s, i) => s + i.quantity, 0) ?? 0) > 0 && (
-                      <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold shadow pointer-events-none">
-                        {cuentasPorMesa['Mesa circular 2'].items.reduce((s, i) => s + i.quantity, 0)}
-                      </span>
-                    )}
-                    <span className="text-white font-bold text-xs drop-shadow pointer-events-none">2</span>
-                  </button>
-                  <div className="absolute bottom-2 left-0 right-0 text-center pointer-events-none">
-                    <span className="text-[10px] text-stone-500 uppercase tracking-wider">Vista en planta · arrastra para mover</span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { setShowMesaOtroInput(true); setMesaOtro('') }}
-                  className="mt-4 text-sm text-berry-600 hover:text-berry-700 font-medium underline"
-                >
-                  ✏️ Otra ubicación
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className="w-full max-w-sm mx-auto space-y-3 flex-1">
-              <label className="block text-sm font-medium text-stone-700">Indica la mesa o ubicación</label>
-              <input type="text" value={mesaOtro} onChange={(e) => setMesaOtro(e.target.value)} placeholder="Ej: Mesa 10, Delivery..." className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl text-berry-950 focus:ring-2 focus:ring-berry-500 focus:border-berry-500" autoFocus />
-              <div className="flex gap-2">
-                <button type="button" onClick={() => { setShowMesaOtroInput(false); setMesaOtro('') }} className="flex-1 py-3 px-4 rounded-xl font-medium bg-stone-200 text-stone-700 hover:bg-stone-300">Atrás</button>
-                <button type="button" onClick={() => { const valor = mesaOtro.trim(); if (valor) { selectMesa(valor); setShowMesaOtroInput(false); setMesaOtro('') } }} disabled={!mesaOtro.trim()} className="flex-1 py-3 px-4 rounded-xl font-semibold bg-berry-600 text-white hover:bg-berry-700 disabled:opacity-50 disabled:cursor-not-allowed">Continuar</button>
-              </div>
-            </div>
-          )}
-        </div>
+        <div className="text-arandano-600 text-xl">Cargando...</div>
       </div>
     )
   } else {
@@ -763,62 +678,72 @@ export default function WaiterPage() {
     <WaiterLayout>
       <div className="container mx-auto px-4 py-6 max-w-7xl">
         <div className="mb-6 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <button
-              onClick={() => router.push('/')}
-              className="flex items-center gap-2 text-stone-600 hover:text-berry-600 font-medium text-sm"
+              onClick={() => router.push('/sales')}
+              className="flex items-center gap-2 text-stone-600 hover:text-arandano-600 font-medium text-sm"
             >
               ← Volver
             </button>
+            <button
+              onClick={() => router.push('/sales')}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium text-stone-600 hover:text-arandano-600"
+            >
+              📊 Ver Ventas ({totalSalesCount})
+            </button>
           </div>
+          {/* Título y lista primero; mesa como selector secundario */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="text-center sm:text-left">
-              <h1 className="text-2xl sm:text-3xl font-bold text-berry-950 mb-1">Sistema de Cobros</h1>
-              <p className="text-sm text-stone-600 flex items-center justify-center sm:justify-start gap-1.5">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-berry-100 text-berry-800 font-medium">
-                  {iconoMesa(mesaElegida)}{mesaElegida}
-                </span>
-              </p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-arandano-950 mb-1">Sistema de Cobros</h1>
+              <p className="text-sm text-stone-600">Lista de precios — agrega productos y elige mesa antes de cobrar</p>
             </div>
-            <div className="flex flex-row justify-center sm:justify-end gap-2 flex-wrap">
+            <div className="flex flex-row justify-center sm:justify-end gap-2 flex-wrap items-center">
               <button
-                onClick={() => {
-                  if (cart.length === 0 || confirm('¿Salir de esta mesa? La cuenta se guarda y podrás volver después.')) {
-                    if (mesaElegida) {
-                      setCuentasPorMesa((prev) => {
-                        const next = { ...prev, [mesaElegida]: { items: cart, comment: orderComment } }
-                        try {
-                          localStorage.setItem(CUENTAS_MESAS_STORAGE_KEY, JSON.stringify(next))
-                        } catch (_) {}
-                        return next
-                      })
-                    }
-                    setMesaElegida('')
-                    setMesaOtro('')
-                    setShowMesaOtroInput(false)
-                    setCart([])
-                    setOrderComment('')
-                  }
-                }}
-                className="px-4 py-2.5 bg-stone-200 hover:bg-stone-300 text-stone-700 font-medium rounded-lg transition-colors text-sm"
+                onClick={() => setShowMesaSelectorModal(true)}
+                className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors ${
+                  mesaElegida
+                    ? 'bg-arandano-100 text-arandano-800 border border-arandano-300 hover:bg-arandano-200'
+                    : 'bg-amber-100 text-amber-800 border border-amber-300 hover:bg-amber-200'
+                }`}
               >
-                Salir / Cambiar mesa
+                <span>{mesaElegida ? iconoMesa(mesaElegida) : '🪑'}</span>
+                <span>{mesaElegida || 'Seleccionar mesa'}</span>
+                <span>▼</span>
               </button>
               <button
-              onClick={() => setShowCategoriesModal(true)}
-              className="px-6 py-2.5 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-2"
-            >
-              <span>📂</span>
-              <span>{CATEGORIES.find(c => c.id === selectedCategory)?.name || 'Categorías'}</span>
-              <span>▼</span>
-            </button>
+                onClick={() => {
+                  if (mesaElegida && (cart.length === 0 || confirm('¿Salir de esta mesa? La cuenta se guarda.'))) {
+                    setCuentasPorMesa((prev) => {
+                      const next = { ...prev, [mesaElegida]: { items: cart, comment: orderComment } }
+                      try { localStorage.setItem(CUENTAS_MESAS_STORAGE_KEY, JSON.stringify(next)) } catch (_) {}
+                      return next
+                    })
+                    setMesaElegida('')
+                    setCart([])
+                    setOrderComment('')
+                  } else if (!mesaElegida) setShowMesaSelectorModal(true)
+                }}
+                className="px-3 py-2 text-sm font-medium text-stone-600 hover:text-stone-800 hover:bg-stone-100 rounded-lg"
+              >
+                {mesaElegida ? 'Cambiar mesa' : 'Mesa'}
+              </button>
+              <button
+                onClick={() => setShowCategoriesModal(true)}
+                className="px-5 py-2.5 bg-arandano-600 hover:bg-arandano-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-2"
+              >
+                <span>📂</span>
+                <span>{CATEGORIES.find(c => c.id === selectedCategory)?.name || 'Categorías'}</span>
+                <span>▼</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Notificación: cantidad de productos seleccionados */}
         {cart.length > 0 && (
           <div className="mx-4 mt-2 mb-1 flex justify-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-berry-600 text-white text-sm font-semibold shadow-md">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-arandano-600 text-white text-sm font-semibold shadow-md">
               <span>🛒</span>
               <span>
                 {cart.reduce((sum, item) => sum + item.quantity, 0)} {cart.reduce((sum, item) => sum + item.quantity, 0) === 1 ? 'producto' : 'productos'} en la cuenta
@@ -833,7 +758,7 @@ export default function WaiterPage() {
 
             {/* Lista de productos */}
             <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
-              <h2 className="text-lg font-semibold text-berry-950 mb-3 text-center">
+              <h2 className="text-lg font-semibold text-arandano-950 mb-3 text-center">
                 {CATEGORIES.find(c => c.id === selectedCategory)?.name}
               </h2>
               <div className="grid grid-cols-2 gap-3">
@@ -846,17 +771,17 @@ export default function WaiterPage() {
                       key={product.id}
                       className={`p-3 border-2 rounded-lg transition-all flex flex-col ${
                         product.totalSold && product.totalSold > 0
-                          ? 'border-berry-300 bg-berry-50 hover:border-berry-400 hover:bg-berry-100'
-                          : 'border-stone-200 hover:border-berry-400 hover:bg-berry-50'
+                          ? 'border-arandano-300 bg-arandano-50 hover:border-arandano-400 hover:bg-arandano-100'
+                          : 'border-stone-200 hover:border-arandano-400 hover:bg-arandano-50'
                       }`}
                     >
                       {/* Nombre del producto */}
                       <div className="mb-2">
-                        <h3 className="font-semibold text-berry-950 text-sm leading-tight mb-1 line-clamp-2">
+                        <h3 className="font-semibold text-arandano-950 text-sm leading-tight mb-1 line-clamp-2">
                           {product.name}
                         </h3>
                         {product.totalSold && product.totalSold > 0 && (
-                          <div className="text-xs text-berry-600 font-medium mb-1">
+                          <div className="text-xs text-arandano-600 font-medium mb-1">
                             ⭐ {product.totalSold} vendidos
                           </div>
                         )}
@@ -864,7 +789,7 @@ export default function WaiterPage() {
 
                       {/* Precio destacado */}
                       <div className="mb-2">
-                        <div className="text-berry-600 font-bold text-lg">
+                        <div className="text-arandano-600 font-bold text-lg">
                           ${formatPrice(product.price)}
                         </div>
                       </div>
@@ -878,12 +803,12 @@ export default function WaiterPage() {
                                 e.stopPropagation()
                                 removeFromCart(product.id)
                               }}
-                              className="w-8 h-8 flex items-center justify-center bg-berry-600 hover:bg-berry-700 active:bg-berry-800 text-white rounded font-bold text-lg transition-all duration-200 hover:scale-105 active:scale-95"
+                              className="w-8 h-8 flex items-center justify-center bg-arandano-600 hover:bg-arandano-700 active:bg-arandano-800 text-white rounded font-bold text-lg transition-all duration-200 hover:scale-105 active:scale-95"
                               aria-label="Quitar uno"
                             >
                               −
                             </button>
-                            <span className="flex-1 text-center font-bold text-base text-berry-950 bg-stone-100 rounded py-1.5">
+                            <span className="flex-1 text-center font-bold text-base text-arandano-950 bg-stone-100 rounded py-1.5">
                               {quantity}
                             </span>
                             <button
@@ -891,7 +816,7 @@ export default function WaiterPage() {
                                 e.stopPropagation()
                                 addToCart(product)
                               }}
-                              className="w-8 h-8 flex items-center justify-center bg-berry-600 hover:bg-berry-700 active:bg-berry-800 text-white rounded font-bold text-lg transition-all duration-200 hover:scale-105 active:scale-95"
+                              className="w-8 h-8 flex items-center justify-center bg-arandano-600 hover:bg-arandano-700 active:bg-arandano-800 text-white rounded font-bold text-lg transition-all duration-200 hover:scale-105 active:scale-95"
                               aria-label="Agregar uno"
                             >
                               +
@@ -900,7 +825,7 @@ export default function WaiterPage() {
                         ) : (
                           <button
                             onClick={() => addToCart(product)}
-                            className="w-full py-2 bg-berry-600 hover:bg-berry-700 active:bg-berry-800 text-white font-medium text-sm rounded transition-all duration-200 hover:scale-105 active:scale-95"
+                            className="w-full py-2 bg-arandano-600 hover:bg-arandano-700 active:bg-arandano-800 text-white font-medium text-sm rounded transition-all duration-200 hover:scale-105 active:scale-95"
                           >
                             Agregar
                           </button>
@@ -948,12 +873,12 @@ export default function WaiterPage() {
           <div className={`fixed bottom-8 sm:bottom-4 left-0 right-0 sm:left-auto sm:right-4 ${showPaymentModal ? 'z-30' : 'z-40'}`}>
             <div className="bg-white rounded-t-xl sm:rounded-xl shadow-2xl border-t-2 sm:border-2 border-stone-200 w-full sm:max-w-md sm:w-[28rem]">
               {/* Header del carrito */}
-              <div className="flex justify-between items-center p-3 sm:p-4 border-b border-stone-200 bg-gradient-to-r from-berry-50 to-purple-50 rounded-t-xl">
+              <div className="flex justify-between items-center p-3 sm:p-4 border-b border-stone-200 bg-gradient-to-r from-arandano-50 to-purple-50 rounded-t-xl">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 bg-stone-700 rounded-full flex items-center justify-center text-white font-bold">
                     {cart.reduce((sum, item) => sum + item.quantity, 0)}
                   </div>
-                  <h2 className="text-lg font-bold text-berry-950">Carrito</h2>
+                  <h2 className="text-lg font-bold text-arandano-950">Carrito</h2>
                 </div>
                 <div className="flex items-center gap-2">
                   {cart.length > 0 && (
@@ -977,58 +902,73 @@ export default function WaiterPage() {
               </div>
 
               {showFloatingCart && (
-                <div className="max-h-[65vh] sm:max-h-[60vh] overflow-y-auto">
-                  {/* Items del carrito */}
-                  <div className="p-3 sm:p-4 space-y-2">
-                    {cart.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between p-2 bg-stone-50 rounded-lg"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm text-berry-950 truncate">
-                            {item.name}
+                <>
+                  {/* Items del carrito: solo esta parte hace scroll */}
+                  <div className="max-h-[40vh] sm:max-h-[36vh] overflow-y-auto overscroll-contain">
+                    <div className="p-3 sm:p-4 space-y-2">
+                      {cart.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between p-2 bg-stone-50 rounded-lg"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-arandano-950 truncate">
+                              {item.name}
+                            </div>
+                            <div className="text-xs text-stone-600">
+                              ${formatPrice(item.price)} c/u
+                            </div>
                           </div>
-                          <div className="text-xs text-stone-600">
-                            ${formatPrice(item.price)} c/u
+                          <div className="flex items-center gap-2 ml-2">
+                            <button
+                              onClick={() => removeFromCart(item.id)}
+                              className="w-7 h-7 flex items-center justify-center bg-stone-200 rounded hover:bg-stone-300 text-sm font-bold"
+                            >
+                              -
+                            </button>
+                            <span className="w-8 text-center font-medium text-sm">{item.quantity}</span>
+                            <button
+                              onClick={() => addToCart(item)}
+                              className="w-7 h-7 flex items-center justify-center bg-stone-600 text-white rounded hover:bg-stone-700 text-sm font-bold"
+                            >
+                              +
+                            </button>
+                            <button
+                              onClick={() => removeItemFromCart(item.id)}
+                              className="ml-1 text-red-600 hover:text-red-700 text-sm font-bold w-6 h-6 flex items-center justify-center hover:bg-red-50 rounded"
+                            >
+                              ✕
+                            </button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 ml-2">
-                          <button
-                            onClick={() => removeFromCart(item.id)}
-                            className="w-7 h-7 flex items-center justify-center bg-stone-200 rounded hover:bg-stone-300 text-sm font-bold"
-                          >
-                            -
-                          </button>
-                          <span className="w-8 text-center font-medium text-sm">{item.quantity}</span>
-                          <button
-                            onClick={() => addToCart(item)}
-                            className="w-7 h-7 flex items-center justify-center bg-stone-600 text-white rounded hover:bg-stone-700 text-sm font-bold"
-                          >
-                            +
-                          </button>
-                          <button
-                            onClick={() => removeItemFromCart(item.id)}
-                            className="ml-1 text-red-600 hover:text-red-700 text-sm font-bold w-6 h-6 flex items-center justify-center hover:bg-red-50 rounded"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Comentario / detalles de la mesa */}
-                  <div className="px-3 sm:px-4 py-3 border-t border-stone-200 bg-amber-50/50">
-                    <label className="block text-sm font-semibold text-berry-950 mb-1.5">
+                  {/* Comentario / detalles de la mesa: fuera del scroll para escribir sin problemas */}
+                  <div
+                    className="px-3 sm:px-4 py-3 border-t border-stone-200 bg-amber-50/50 flex-shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
+                    <label htmlFor="waiter-order-comment" className="block text-sm font-semibold text-arandano-950 mb-1.5">
                       Detalles o comentario de la mesa (opcional)
                     </label>
                     <textarea
+                      id="waiter-order-comment"
                       value={orderComment}
                       onChange={(e) => setOrderComment(e.target.value)}
+                      onKeyDown={(e) => e.stopPropagation()}
+                      onFocus={(e) => e.stopPropagation()}
+                      onBlur={(e) => e.stopPropagation()}
                       placeholder="Ej: Sin hielo, nombre del cliente, instrucciones..."
-                      rows={2}
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-berry-500 focus:border-berry-500 resize-none"
+                      rows={3}
+                      className="w-full px-3 py-2.5 border-2 border-stone-300 rounded-lg text-sm text-stone-900 bg-white focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500 focus:outline-none resize-y min-h-[4.5rem] touch-manipulation"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      data-lpignore="true"
+                      data-form-type="other"
                     />
                   </div>
 
@@ -1048,8 +988,8 @@ export default function WaiterPage() {
                         </div>
                       )}
                       <div className="flex justify-between items-center pt-2 border-t border-stone-200">
-                        <span className="text-sm sm:text-base font-semibold text-berry-950">Total:</span>
-                        <span className="text-lg sm:text-xl font-bold text-berry-600">
+                        <span className="text-sm sm:text-base font-semibold text-arandano-950">Total:</span>
+                        <span className="text-lg sm:text-xl font-bold text-arandano-600">
                           ${formatPrice(getTotal())}
                         </span>
                       </div>
@@ -1061,12 +1001,12 @@ export default function WaiterPage() {
                         setPaymentSelection(cart.reduce<Record<string, number>>((acc, item) => ({ ...acc, [item.id]: item.quantity }), {}))
                         setShowPaymentModal(true)
                       }}
-                      className="w-full bg-gradient-to-r from-berry-600 to-purple-600 hover:from-berry-700 hover:to-purple-700 text-white font-semibold py-3 sm:py-3.5 rounded-lg transition-all shadow-lg hover:shadow-xl text-sm sm:text-base"
+                      className="w-full bg-gradient-to-r from-arandano-600 to-purple-600 hover:from-arandano-700 hover:to-purple-700 text-white font-semibold py-3 sm:py-3.5 rounded-lg transition-all shadow-lg hover:shadow-xl text-sm sm:text-base"
                     >
                       💳 Cobrar ${formatPrice(getTotal())}
                     </button>
                   </div>
-                </div>
+                </>
               )}
             </div>
           </div>
@@ -1078,7 +1018,7 @@ export default function WaiterPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-berry-950">Selecciona una Categoría</h3>
+              <h3 className="text-xl font-bold text-arandano-950">Selecciona una Categoría</h3>
               <button
                 onClick={() => setShowCategoriesModal(false)}
                 className="w-8 h-8 flex items-center justify-center text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors text-xl font-bold"
@@ -1097,7 +1037,7 @@ export default function WaiterPage() {
                   }}
                   className={`px-6 py-4 rounded-lg font-semibold transition-colors text-left ${
                     selectedCategory === category.id
-                      ? 'bg-berry-600 text-white'
+                      ? 'bg-arandano-600 text-white'
                       : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                   }`}
                 >
@@ -1109,12 +1049,100 @@ export default function WaiterPage() {
         </div>
       )}
 
+      {/* Modal selección de mesa */}
+      {showMesaSelectorModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full my-4 shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-arandano-950">Seleccionar mesa</h3>
+              <button
+                onClick={() => { setShowMesaSelectorModal(false); setShowMesaOtroInput(false); setMesaOtro('') }}
+                className="w-8 h-8 flex items-center justify-center text-stone-500 hover:bg-stone-100 rounded-lg"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+            {!showMesaOtroInput ? (
+              <>
+                <p className="text-stone-600 text-sm mb-3">Toca una zona o arrastra para mover</p>
+                <div
+                  ref={plantaContainerRef}
+                  className="relative w-full aspect-[3/4] min-h-[280px] bg-stone-100 rounded-xl border-2 border-stone-300 overflow-hidden select-none touch-none"
+                >
+                  <button
+                    type="button"
+                    onPointerDown={(e) => handlePlantaPointerDown(e, 'bar')}
+                    onClick={() => { if (plantaDidDragRef.current) return; selectMesa('Barra'); setShowMesaSelectorModal(false) }}
+                    style={{ left: `${plantaLayout.bar.left}%`, top: `${plantaLayout.bar.top}%`, width: `${plantaLayout.bar.width}%`, height: '18%' }}
+                    className="absolute rounded-lg bg-amber-700 border-2 border-amber-800 flex items-center justify-center cursor-grab hover:bg-amber-600"
+                  >
+                    <span className="text-white font-semibold text-sm">🍸 Barra</span>
+                  </button>
+                  <button
+                    type="button"
+                    onPointerDown={(e) => handlePlantaPointerDown(e, 'mesa1')}
+                    onClick={() => { if (plantaDidDragRef.current) return; selectMesa('Mesa circular 1'); setShowMesaSelectorModal(false) }}
+                    style={{ left: `${plantaLayout.mesa1.left}%`, top: `${plantaLayout.mesa1.top}%`, width: '28%', aspectRatio: '1' }}
+                    className="absolute rounded-full bg-arandano-600 border-2 border-arandano-800 flex items-center justify-center cursor-grab hover:bg-arandano-500"
+                  >
+                    <span className="text-white font-bold text-sm">1</span>
+                  </button>
+                  <button
+                    type="button"
+                    onPointerDown={(e) => handlePlantaPointerDown(e, 'mesa2')}
+                    onClick={() => { if (plantaDidDragRef.current) return; selectMesa('Mesa circular 2'); setShowMesaSelectorModal(false) }}
+                    style={{ left: `${plantaLayout.mesa2.left}%`, top: `${plantaLayout.mesa2.top}%`, width: '28%', aspectRatio: '1' }}
+                    className="absolute rounded-full bg-arandano-600 border-2 border-arandano-800 flex items-center justify-center cursor-grab hover:bg-arandano-500"
+                  >
+                    <span className="text-white font-bold text-sm">2</span>
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setShowMesaOtroInput(true); setMesaOtro('') }}
+                  className="mt-4 w-full py-2.5 text-sm text-arandano-600 hover:text-arandano-700 font-medium border border-arandano-300 rounded-lg"
+                >
+                  ✏️ Otra ubicación
+                </button>
+              </>
+            ) : (
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-stone-700">Indica la mesa o ubicación</label>
+                <input
+                  type="text"
+                  value={mesaOtro}
+                  onChange={(e) => setMesaOtro(e.target.value)}
+                  placeholder="Ej: Mesa 10, Delivery..."
+                  className="w-full px-4 py-3 border-2 border-stone-300 rounded-xl text-arandano-950 focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => { setShowMesaOtroInput(false); setMesaOtro('') }} className="flex-1 py-3 rounded-xl font-medium bg-stone-200 text-stone-700">Atrás</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const valor = mesaOtro.trim()
+                      if (valor) { selectMesa(valor); setShowMesaSelectorModal(false); setShowMesaOtroInput(false); setMesaOtro('') }
+                    }}
+                    disabled={!mesaOtro.trim()}
+                    className="flex-1 py-3 rounded-xl font-semibold bg-arandano-600 text-white hover:bg-arandano-700 disabled:opacity-50"
+                  >
+                    Continuar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Modal de pago */}
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[50] p-4 pt-8 sm:pt-12 overflow-y-auto">
-          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full mt-0 mb-4 max-h-[85vh] overflow-y-auto shadow-2xl">
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full mt-0 mb-4 max-h-[85vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4 sm:mb-6">
-              <h3 className="text-xl sm:text-2xl font-bold text-berry-950">Procesar Venta</h3>
+              <h3 className="text-xl sm:text-2xl font-bold text-arandano-950">Procesar Venta</h3>
               <button
                 onClick={() => {
                   setShowPaymentModal(false)
@@ -1142,7 +1170,7 @@ export default function WaiterPage() {
             {(mesaElegida || orderComment) && (
               <div className="mb-3 p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm">
                 {mesaElegida && (
-                  <p className="text-berry-800 font-medium">
+                  <p className="text-arandano-800 font-medium">
                     {iconoMesa(mesaElegida)} Mesa: {mesaElegida}
                   </p>
                 )}
@@ -1163,7 +1191,7 @@ export default function WaiterPage() {
                   return (
                     <div key={item.id} className="flex items-center justify-between gap-2 p-2 bg-stone-50 rounded-lg border border-stone-200">
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm text-berry-950 truncate">{item.name}</div>
+                        <div className="font-medium text-sm text-arandano-950 truncate">{item.name}</div>
                         <div className="text-xs text-stone-500">En cuenta: {item.quantity} · ${formatPrice(item.price)} c/u</div>
                       </div>
                       <div className="flex items-center gap-1">
@@ -1178,7 +1206,7 @@ export default function WaiterPage() {
                         <button
                           type="button"
                           onClick={() => setPaymentSelection((prev) => ({ ...prev, [item.id]: Math.min(item.quantity, (prev[item.id] ?? 0) + 1) }))}
-                          className="w-8 h-8 flex items-center justify-center bg-berry-600 hover:bg-berry-700 text-white rounded text-sm font-bold"
+                          className="w-8 h-8 flex items-center justify-center bg-arandano-600 hover:bg-arandano-700 text-white rounded text-sm font-bold"
                         >
                           +
                         </button>
@@ -1206,7 +1234,7 @@ export default function WaiterPage() {
                   )}
                   <div className="flex justify-between items-center pt-1.5 border-t border-stone-200">
                     <span className="text-stone-700 font-semibold text-sm">A cobrar ahora:</span>
-                    <span className="text-2xl font-bold text-berry-600">
+                    <span className="text-2xl font-bold text-arandano-600">
                       ${formatPrice(getSelectedTotal())}
                     </span>
                   </div>
@@ -1223,7 +1251,7 @@ export default function WaiterPage() {
                   <span>{showAdvancedOptions ? '▼' : '▶'}</span>
                   <span>⚙️ Opciones</span>
                   {(discount || orderComment) && (
-                    <span className="ml-auto text-xs bg-berry-600 text-white px-2 py-0.5 rounded-full">
+                    <span className="ml-auto text-xs bg-arandano-600 text-white px-2 py-0.5 rounded-full">
                       {[discount, orderComment].filter(Boolean).length}
                     </span>
                   )}
@@ -1250,7 +1278,7 @@ export default function WaiterPage() {
                         }}
                         className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-colors ${
                           discountType === 'percentage'
-                            ? 'bg-berry-600 text-white'
+                            ? 'bg-arandano-600 text-white'
                             : 'bg-white border border-stone-300 text-stone-700 hover:bg-stone-50'
                         }`}
                       >
@@ -1264,7 +1292,7 @@ export default function WaiterPage() {
                         }}
                         className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-colors ${
                           discountType === 'amount'
-                            ? 'bg-berry-600 text-white'
+                            ? 'bg-arandano-600 text-white'
                             : 'bg-white border border-stone-300 text-stone-700 hover:bg-stone-50'
                         }`}
                       >
@@ -1280,7 +1308,7 @@ export default function WaiterPage() {
                         value={discount}
                         onChange={(e) => setDiscount(e.target.value)}
                         placeholder={discountType === 'percentage' ? '10' : '5000'}
-                        className="flex-1 px-2 py-1.5 border border-stone-300 rounded text-xs focus:ring-1 focus:ring-berry-500 focus:border-berry-500"
+                        className="flex-1 px-2 py-1.5 border border-stone-300 rounded text-xs focus:ring-1 focus:ring-arandano-500 focus:border-arandano-500"
                       />
                       {discount && (
                         <button
@@ -1295,16 +1323,28 @@ export default function WaiterPage() {
                   </div>
 
                   {/* Comentario / detalles de la mesa */}
-                  <div>
-                    <label className="block text-xs font-medium text-stone-700 mb-1.5">
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
+                    <label htmlFor="waiter-payment-comment" className="block text-xs font-medium text-stone-700 mb-1.5">
                       Detalles / comentario de la mesa:
                     </label>
                     <textarea
+                      id="waiter-payment-comment"
                       value={orderComment}
                       onChange={(e) => setOrderComment(e.target.value)}
+                      onKeyDown={(e) => e.stopPropagation()}
+                      onFocus={(e) => e.stopPropagation()}
+                      onBlur={(e) => e.stopPropagation()}
                       placeholder="Ej: Consumo propio, instrucciones..."
-                      className="w-full px-2 py-1.5 border border-stone-300 rounded text-xs focus:ring-1 focus:ring-berry-500 focus:border-berry-500"
-                      rows={2}
+                      className="w-full px-3 py-2.5 border-2 border-stone-300 rounded-lg text-sm text-stone-900 bg-white focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500 focus:outline-none resize-y min-h-[4rem] touch-manipulation"
+                      rows={3}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      data-lpignore="true"
+                      data-form-type="other"
                     />
                   </div>
                 </div>
@@ -1314,13 +1354,13 @@ export default function WaiterPage() {
                   <label className="block text-xs font-medium text-stone-700 mb-1.5">
                     📅 Fecha/hora:
                   </label>
+                  <p className="text-xs text-stone-500 mb-1">Puedes elegir una fecha pasada para registrar ventas anteriores.</p>
                   <div className="flex gap-2">
                     <input
                       type="datetime-local"
                       value={paymentDate}
                       onChange={(e) => setPaymentDate(e.target.value)}
-                      className="flex-1 px-2 py-1.5 border border-stone-300 rounded text-xs bg-white focus:ring-1 focus:ring-berry-500 focus:border-berry-500"
-                      max={new Date().toISOString().slice(0, 16)}
+                      className="flex-1 px-2 py-1.5 border border-stone-300 rounded text-xs bg-white focus:ring-1 focus:ring-arandano-500 focus:border-arandano-500"
                     />
                     <button
                       type="button"
@@ -1333,7 +1373,7 @@ export default function WaiterPage() {
                         const minutes = String(now.getMinutes()).padStart(2, '0')
                         setPaymentDate(`${year}-${month}-${day}T${hours}:${minutes}`)
                       }}
-                      className="px-2 py-1.5 text-xs bg-berry-100 hover:bg-berry-200 text-berry-700 rounded font-medium"
+                      className="px-2 py-1.5 text-xs bg-arandano-100 hover:bg-arandano-200 text-arandano-700 rounded font-medium"
                     >
                       Ahora
                     </button>
@@ -1355,7 +1395,7 @@ export default function WaiterPage() {
                   }}
                   className={`px-3 py-2.5 rounded-lg font-semibold transition-colors text-sm ${
                     paymentMethod === 'efectivo'
-                      ? 'bg-berry-600 text-white'
+                      ? 'bg-arandano-600 text-white'
                       : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                   }`}
                 >
@@ -1368,7 +1408,7 @@ export default function WaiterPage() {
                   }}
                   className={`px-3 py-2.5 rounded-lg font-semibold transition-colors text-sm ${
                     paymentMethod === 'nequi'
-                      ? 'bg-berry-600 text-white'
+                      ? 'bg-arandano-600 text-white'
                       : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                   }`}
                 >
@@ -1393,7 +1433,7 @@ export default function WaiterPage() {
                     setAmountPaid(value)
                   }}
                   placeholder="0 o vacío"
-                  className="w-full px-3 py-3 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-xl font-semibold text-center mb-2"
+                  className="w-full px-3 py-3 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500 text-xl font-semibold text-center mb-2"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -1412,7 +1452,7 @@ export default function WaiterPage() {
                         const current = parseFloat(amountPaid) || 0
                         setAmountPaid(String(current + amount))
                       }}
-                      className="px-2 py-1.5 bg-berry-100 hover:bg-berry-200 text-berry-700 font-medium rounded text-xs transition-colors active:scale-95"
+                      className="px-2 py-1.5 bg-arandano-100 hover:bg-arandano-200 text-arandano-700 font-medium rounded text-xs transition-colors active:scale-95"
                     >
                       ${(amount / 1000).toFixed(0)}k
                     </button>
@@ -1466,7 +1506,7 @@ export default function WaiterPage() {
                   getSelectedTotal() <= 0 ||
                   (paymentMethod === 'efectivo' && amountPaid !== '' && parseFloat(amountPaid) > 0 && parseFloat(amountPaid) < getSelectedTotal())
                 }
-                className="flex-1 px-4 py-2.5 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                className="flex-1 px-4 py-2.5 bg-arandano-600 hover:bg-arandano-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 {processing ? 'Procesando...' : '✅ Confirmar Pago'}
               </button>
@@ -1501,9 +1541,9 @@ export default function WaiterPage() {
       {/* Vista profunda de edición de venta: ancho fijo, capa profunda */}
       {editingSale && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 overflow-y-auto">
-          <div className="w-full max-w-2xl flex flex-col bg-white rounded-2xl shadow-2xl my-8 min-h-[85vh] max-h-[90vh] overflow-hidden">
+          <div className="w-full max-w-2xl flex flex-col bg-white rounded-2xl shadow-2xl my-8 min-h-[85vh] max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-stone-200 bg-stone-50 rounded-t-2xl">
-              <h3 className="text-xl font-bold text-berry-950">Editar Venta</h3>
+              <h3 className="text-xl font-bold text-arandano-950">Editar Venta</h3>
               <button
                 onClick={() => {
                   setEditingSale(null)
@@ -1524,15 +1564,16 @@ export default function WaiterPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-stone-700 mb-2">
-                  📅 Fecha y Hora:
+                  📅 Fecha y Hora (editable):
                 </label>
                 <input
                   type="datetime-local"
                   value={editSaleDateTime}
                   onChange={(e) => setEditSaleDateTime(e.target.value)}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent bg-white"
+                  aria-label="Fecha y hora de la venta"
                 />
-                <p className="text-xs text-stone-500 mt-1">Selecciona la fecha y hora de la venta</p>
+                <p className="text-xs text-stone-500 mt-1">Puedes cambiar la fecha y hora de la venta aquí</p>
               </div>
 
               {/* Productos de la venta */}
@@ -1543,7 +1584,7 @@ export default function WaiterPage() {
                   </label>
                   <button
                     onClick={() => setShowProductSelector(!showProductSelector)}
-                    className="px-3 py-1.5 bg-berry-600 hover:bg-berry-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    className="px-3 py-1.5 bg-arandano-600 hover:bg-arandano-700 text-white rounded-lg text-sm font-medium transition-colors"
                   >
                     {showProductSelector ? '✕ Cancelar' : '+ Agregar Producto'}
                   </button>
@@ -1557,17 +1598,17 @@ export default function WaiterPage() {
                       value={productSearch}
                       onChange={(e) => setProductSearch(e.target.value)}
                       placeholder="Buscar producto..."
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent mb-2"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent mb-2"
                     />
                     <div className="max-h-48 overflow-y-auto space-y-1">
                       {filteredAvailableProducts.map((product) => (
                         <button
                           key={product.id}
                           onClick={() => addProductToSale(product)}
-                          className="w-full text-left px-3 py-2 bg-white hover:bg-berry-50 border border-stone-200 rounded-lg transition-colors flex justify-between items-center"
+                          className="w-full text-left px-3 py-2 bg-white hover:bg-arandano-50 border border-stone-200 rounded-lg transition-colors flex justify-between items-center"
                         >
-                          <span className="text-sm font-medium text-berry-950">{product.name}</span>
-                          <span className="text-sm text-berry-600 font-semibold">${formatPrice(product.price)}</span>
+                          <span className="text-sm font-medium text-arandano-950">{product.name}</span>
+                          <span className="text-sm text-arandano-600 font-semibold">${formatPrice(product.price)}</span>
                         </button>
                       ))}
                       {filteredAvailableProducts.length === 0 && (
@@ -1584,7 +1625,7 @@ export default function WaiterPage() {
                     return (
                       <div key={index} className="flex items-center gap-2 p-3 bg-stone-50 rounded-lg border border-stone-200">
                         <div className="flex-1">
-                          <div className="font-medium text-sm text-berry-950">{item.productName}</div>
+                          <div className="font-medium text-sm text-arandano-950">{item.productName}</div>
                           <div className="text-xs text-stone-600">${formatPrice(item.unitPrice)} c/u</div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1597,11 +1638,11 @@ export default function WaiterPage() {
                           <span className="w-12 text-center font-semibold text-sm">{item.quantity}</span>
                           <button
                             onClick={() => updateProductQuantity(item.productId, item.quantity + 1)}
-                            className="w-8 h-8 flex items-center justify-center bg-berry-600 hover:bg-berry-700 text-white rounded text-sm font-bold"
+                            className="w-8 h-8 flex items-center justify-center bg-arandano-600 hover:bg-arandano-700 text-white rounded text-sm font-bold"
                           >
                             +
                           </button>
-                          <span className="w-20 text-right font-semibold text-berry-600">
+                          <span className="w-20 text-right font-semibold text-arandano-600">
                             ${formatPrice(item.totalPrice)}
                           </span>
                           <button
@@ -1622,23 +1663,25 @@ export default function WaiterPage() {
                 </div>
               </div>
 
-              <div>
+              <div onClick={(e) => e.stopPropagation()}>
                 <label className="block text-sm font-semibold text-stone-700 mb-2">
                   💬 Comentario:
                 </label>
                 <textarea
                   value={editSaleComment}
                   onChange={(e) => setEditSaleComment(e.target.value)}
+                  onKeyDown={(e) => e.stopPropagation()}
                   placeholder="Ej: Consumo propio, nota especial, etc."
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y min-h-[4.5rem]"
                   rows={3}
+                  autoComplete="off"
                 />
                 <p className="text-xs text-stone-500 mt-1">Opcional: agrega un comentario a esta venta</p>
               </div>
 
               <div className="bg-stone-50 rounded-lg p-3">
                 <p className="text-sm text-stone-600">
-                  <span className="font-semibold">Total:</span> <span className="text-lg font-bold text-berry-600">${formatPrice(getEditTotal())}</span>
+                  <span className="font-semibold">Total:</span> <span className="text-lg font-bold text-arandano-600">${formatPrice(getEditTotal())}</span>
                 </p>
                 <p className="text-sm text-stone-600">
                   <span className="font-semibold">Productos:</span> {editSaleItems.length}
@@ -1684,7 +1727,7 @@ export default function WaiterPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-lg p-4 sm:p-6 max-w-2xl w-full my-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4 sm:mb-6">
-              <h3 className="text-xl sm:text-2xl font-bold text-berry-950">Detalle de Venta</h3>
+              <h3 className="text-xl sm:text-2xl font-bold text-arandano-950">Detalle de Venta</h3>
               <button
                 onClick={() => {
                   setShowSaleDetail(false)
@@ -1703,12 +1746,12 @@ export default function WaiterPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <span className="block text-xs sm:text-sm font-semibold text-stone-700 mb-1">Código de Venta:</span>
-                    <p className="text-sm sm:text-base text-berry-600 font-mono font-semibold">{selectedSale.id}</p>
+                    <p className="text-sm sm:text-base text-arandano-600 font-mono font-semibold">{selectedSale.id}</p>
                   </div>
                   <div>
                     <span className="block text-xs sm:text-sm font-semibold text-stone-700 mb-1">Fecha y Hora:</span>
                     <p className="text-sm sm:text-base text-stone-600">
-                      {new Date(selectedSale.date).toLocaleDateString('es-CO', {
+                      {parseSaleDateLocal(selectedSale.date, selectedSale.hour ?? 0).toLocaleDateString('es-CO', {
                         day: '2-digit',
                         month: '2-digit',
                         year: 'numeric',
@@ -1740,7 +1783,7 @@ export default function WaiterPage() {
 
               {/* Productos - Mejorado para móvil */}
               <div>
-                <h4 className="font-semibold text-berry-950 mb-3 text-base sm:text-lg">Productos:</h4>
+                <h4 className="font-semibold text-arandano-950 mb-3 text-base sm:text-lg">Productos:</h4>
                 <div className="space-y-2">
                   {selectedSale.items.map((item, index) => (
                     <div
@@ -1749,7 +1792,7 @@ export default function WaiterPage() {
                     >
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                         <div className="flex-1">
-                          <div className="font-medium text-berry-950 text-sm sm:text-base mb-1">
+                          <div className="font-medium text-arandano-950 text-sm sm:text-base mb-1">
                             {item.productName}
                           </div>
                           <div className="text-xs sm:text-sm text-stone-600">
@@ -1757,7 +1800,7 @@ export default function WaiterPage() {
                           </div>
                         </div>
                         <div className="flex justify-between sm:justify-end items-center gap-4">
-                          <span className="font-semibold text-berry-600 text-base sm:text-lg">
+                          <span className="font-semibold text-arandano-600 text-base sm:text-lg">
                             ${formatPrice(item.totalPrice)}
                           </span>
                         </div>
@@ -1792,8 +1835,8 @@ export default function WaiterPage() {
                     </div>
                   )}
                   <div className="flex justify-between items-center pt-3 border-t-2 border-stone-300">
-                    <span className="text-base sm:text-lg font-semibold text-berry-950">Total:</span>
-                    <span className="text-xl sm:text-2xl font-bold text-berry-600">
+                    <span className="text-base sm:text-lg font-semibold text-arandano-950">Total:</span>
+                    <span className="text-xl sm:text-2xl font-bold text-arandano-600">
                       ${formatPrice(selectedSale.total)}
                     </span>
                   </div>
@@ -1804,12 +1847,13 @@ export default function WaiterPage() {
               <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-stone-200">
                 <button
                   onClick={() => {
-                    const saleDate = new Date(selectedSale.date)
-                    const year = saleDate.getFullYear()
-                    const month = String(saleDate.getMonth() + 1).padStart(2, '0')
-                    const day = String(saleDate.getDate()).padStart(2, '0')
-                    const hours = String(selectedSale.hour !== undefined ? selectedSale.hour : saleDate.getHours()).padStart(2, '0')
-                    const minutes = String(saleDate.getMinutes()).padStart(2, '0')
+                    const dateStr = selectedSale.date
+                    const datePart = typeof dateStr === 'string' && dateStr.length >= 10 && /^\d{4}-\d{2}-\d{2}$/.test(dateStr.slice(0, 10)) ? dateStr.slice(0, 10) : null
+                    const year = datePart ? datePart.slice(0, 4) : String(new Date(dateStr).getFullYear())
+                    const month = datePart ? datePart.slice(5, 7) : String(new Date(dateStr).getMonth() + 1).padStart(2, '0')
+                    const day = datePart ? datePart.slice(8, 10) : String(new Date(dateStr).getDate()).padStart(2, '0')
+                    const hours = String(selectedSale.hour !== undefined && selectedSale.hour !== null ? selectedSale.hour : 0).padStart(2, '0')
+                    const minutes = '00'
                     setEditingSale(selectedSale)
                     setEditSaleDateTime(`${year}-${month}-${day}T${hours}:${minutes}`)
                     setEditSaleComment(selectedSale.comment || '')
@@ -1837,10 +1881,10 @@ export default function WaiterPage() {
       {/* Botón flotante para volver al panel */}
       {!(showPaymentModal || showCategoriesModal || showSaleDetail || (cart.length > 0 && showFloatingCart)) && (
         <button
-          onClick={() => router.push('/admin')}
+          onClick={() => router.push('/sales')}
           className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-14 h-14 bg-stone-700 hover:bg-stone-800 text-white rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center z-40"
-          title="Volver al Panel de Administración"
-          aria-label="Volver al Panel de Administración"
+          title="Volver a Ventas"
+          aria-label="Volver a Ventas"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -1888,14 +1932,13 @@ export default function WaiterPage() {
                 </svg>
               </div>
               <div className="text-center">
-                <h3 className="text-xl font-bold text-berry-950 mb-2">¡Venta Registrada!</h3>
+                <h3 className="text-xl font-bold text-arandano-950 mb-2">¡Venta Registrada!</h3>
                 <p className="text-stone-600 text-sm">La venta se ha registrado exitosamente</p>
               </div>
             </div>
           </div>
         </>
       )}
-    </div>
     </WaiterLayout>
     )
     content = <CobrosScreen />

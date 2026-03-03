@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 /** Parsea YYYY-MM-DD como fecha local para que el día de la semana coincida. */
 function parseSaleDateLocal(dateStr: string, hour?: number): Date {
   const s = dateStr.split('T')[0]
@@ -51,6 +53,8 @@ interface DaySalesBlockProps {
   getSaleItemsSummary: (sale: Sale, maxItems?: number) => string
   getDayLabel: (dayKey: string) => string
   isEmpty?: boolean
+  /** URL para agregar una venta en este día (ej. /waiter?date=YYYY-MM-DD). Si se pasa, se muestra el botón. */
+  addSaleForDayUrl?: string
 }
 
 export function DaySalesBlock({
@@ -64,17 +68,18 @@ export function DaySalesBlock({
   getDayByPayment,
   getSaleItemsSummary,
   getDayLabel,
-  isEmpty = false
+  isEmpty = false,
+  addSaleForDayUrl
 }: DaySalesBlockProps) {
   const dayTotal = isEmpty ? 0 : getDayTotal(daySales)
   const dayLabel = getDayLabel(dayKey)
   const byPay = isEmpty ? { efectivo: 0, nequi: 0, sinPago: 0 } : getDayByPayment(daySales)
 
   return (
-    <div className="border border-berry-200 rounded-xl overflow-hidden bg-white shadow-md hover:shadow-lg transition-all mb-4">
+    <div className="border border-arandano-200 rounded-xl overflow-hidden bg-white shadow-md hover:shadow-lg transition-all mb-4">
       <button
         onClick={onToggleExpand}
-        className="w-full bg-gradient-to-r from-berry-600 to-purple-600 px-4 py-3 border-b border-berry-300 text-left hover:from-berry-700 hover:to-purple-700 transition-all"
+        className="w-full bg-arandano-600 px-4 py-3 border-b border-arandano-700 text-left hover:bg-arandano-700 transition-all"
       >
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2.5">
@@ -100,7 +105,7 @@ export function DaySalesBlock({
             </div>
           </div>
           <div className="bg-white/95 px-4 py-2 rounded-lg shadow-md border border-white/50">
-            <span className="text-sm font-bold text-berry-700">
+            <span className="text-sm font-bold text-arandano-700">
               ${formatPrice(dayTotal)}
             </span>
           </div>
@@ -116,10 +121,29 @@ export function DaySalesBlock({
 
       {isExpanded && (
         <div className="divide-y divide-stone-100">
+          {addSaleForDayUrl && (
+            <div className="p-3 bg-arandano-50/70 border-b border-arandano-100">
+              <Link
+                href={addSaleForDayUrl}
+                className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold text-arandano-700 hover:text-arandano-800 bg-white hover:bg-arandano-50 rounded-lg border border-arandano-200 transition-colors"
+              >
+                <span>➕</span>
+                Agregar venta este día
+              </Link>
+            </div>
+          )}
           {isEmpty ? (
             <div className="p-8 text-center text-stone-500">
               <div className="text-4xl mb-2">📭</div>
               <p className="text-sm font-medium">No hay ventas registradas este día</p>
+              {addSaleForDayUrl && (
+                <Link
+                  href={addSaleForDayUrl}
+                  className="inline-flex items-center gap-2 mt-3 px-4 py-2 text-sm font-semibold text-arandano-700 bg-arandano-50 hover:bg-arandano-100 rounded-lg border border-arandano-200"
+                >
+                  ➕ Agregar venta este día
+                </Link>
+              )}
             </div>
           ) : (
             daySales
@@ -127,16 +151,16 @@ export function DaySalesBlock({
               .map((sale) => {
                 const saleDate = parseSaleDateLocal(sale.date, sale.hour)
                 return (
-                  <div
-                    key={sale.id}
-                    className="p-4 hover:bg-berry-50/50 transition-all border-l-4 border-transparent hover:border-berry-300"
-                  >
+                    <div
+                      key={sale.id}
+                      className="p-4 hover:bg-arandano-50/50 transition-all border-l-4 border-transparent hover:border-arandano-300"
+                    >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                          <div className="flex items-center gap-1 px-2 py-1 bg-berry-100 rounded-lg border border-berry-200">
-                            <span className="text-xs text-berry-600">🕐</span>
-                            <span className="text-xs font-semibold text-berry-900">
+                          <div className="flex items-center gap-1 px-2 py-1 bg-arandano-50 rounded-lg border border-arandano-200">
+                            <span className="text-xs text-arandano-600">🕐</span>
+                            <span className="text-xs font-semibold text-arandano-900">
                               {saleDate.toLocaleTimeString('es-CO', {
                                 hour: '2-digit',
                                 minute: '2-digit'
@@ -164,7 +188,7 @@ export function DaySalesBlock({
                           {getSaleItemsSummary(sale)}
                         </p>
                         {(sale.mesa || sale.comment) && (
-                          <div className="text-[10px] text-stone-700 italic line-clamp-2 bg-berry-50 px-2.5 py-1 rounded-lg border-l-2 border-berry-400 space-y-0.5">
+                          <div className="text-[10px] text-stone-700 italic line-clamp-2 bg-arandano-50 px-2.5 py-1 rounded-lg border-l-2 border-arandano-400 space-y-0.5">
                             {sale.mesa && <span className="block">🪑 {sale.mesa}</span>}
                             {sale.comment && <span className="block">💬 {sale.comment}</span>}
                           </div>
@@ -173,12 +197,12 @@ export function DaySalesBlock({
                       <div className="flex flex-col items-end gap-2 flex-shrink-0">
                         <button
                           onClick={() => onSelectSale(sale)}
-                          className="px-2.5 py-1.5 text-xs font-semibold text-berry-700 hover:text-berry-800 bg-berry-100 hover:bg-berry-200 rounded-lg border border-berry-200 transition-colors"
+                          className="px-2.5 py-1.5 text-xs font-semibold text-arandano-700 hover:text-arandano-800 bg-arandano-50 hover:bg-arandano-100 rounded-lg border border-arandano-200 transition-colors"
                           title="Ver detalle y editar"
                         >
                           Ver detalle
                         </button>
-                        <div className="bg-gradient-to-br from-berry-500 to-purple-500 px-3.5 py-2 rounded-lg border border-berry-300 shadow-sm">
+                        <div className="bg-arandano-600 px-3.5 py-2 rounded-lg border border-arandano-700 shadow-sm">
                           <span className="text-sm font-bold text-white whitespace-nowrap">
                             ${formatPrice(sale.total)}
                           </span>
