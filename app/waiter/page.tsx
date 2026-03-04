@@ -98,13 +98,104 @@ function WaiterLayout ({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen bg-stone-50">{children}</div>
 }
 
+const CIGARETTES_PRODUCTS: Product[] = [
+  {
+    id: 'cig-marlboro-rojo',
+    name: 'Marlboro Rojo',
+    price: 1000,
+    description: 'Cigarrillo Marlboro rojo',
+    category: 'cigarrillos',
+    type: 'bebida'
+  },
+  {
+    id: 'cig-marlboro-sandia',
+    name: 'Marlboro Sandía',
+    price: 1000,
+    description: 'Cigarrillo Marlboro sabor sandía',
+    category: 'cigarrillos',
+    type: 'bebida'
+  },
+  {
+    id: 'cig-marlboro-morado',
+    name: 'Marlboro Morado',
+    price: 1000,
+    description: 'Cigarrillo Marlboro morado',
+    category: 'cigarrillos',
+    type: 'bebida'
+  }
+]
+
+const buildMediaBottleProducts = (products: Product[]): Product[] => {
+  const medias: Product[] = []
+
+  const amarillos = products.filter(
+    (p) =>
+      p.type === 'bebida' &&
+      p.category === 'aguardiente' &&
+      p.name.toLowerCase().includes('amarillo') &&
+      (p.size?.toLowerCase().includes('750') || p.size?.toLowerCase().includes('botella'))
+  )
+  const narinos = products.filter(
+    (p) =>
+      p.type === 'bebida' &&
+      p.category === 'aguardiente' &&
+      p.name.toLowerCase().includes('nariño') &&
+      (p.size?.toLowerCase().includes('750') || p.size?.toLowerCase().includes('botella'))
+  )
+  const rones = products.filter(
+    (p) =>
+      p.type === 'bebida' &&
+      p.category === 'ron' &&
+      (p.size?.toLowerCase().includes('750') || p.size?.toLowerCase().includes('botella'))
+  )
+
+  const pickCheapest = (arr: Product[]): Product | undefined =>
+    arr.length ? arr.reduce((min, p) => (p.price < min.price ? p : min), arr[0]) : undefined
+
+  const fullAmarillo = pickCheapest(amarillos)
+  if (fullAmarillo) {
+    medias.push({
+      ...fullAmarillo,
+      id: 'media-aguardiente-amarillo',
+      name: 'Media Aguardiente Amarillo',
+      price: Math.round(fullAmarillo.price / 2),
+      size: '1/2 botella'
+    })
+  }
+
+  const fullNarino = pickCheapest(narinos)
+  if (fullNarino) {
+    medias.push({
+      ...fullNarino,
+      id: 'media-aguardiente-narino',
+      name: 'Media Aguardiente Nariño',
+      price: Math.round(fullNarino.price / 2),
+      size: '1/2 botella'
+    })
+  }
+
+  const fullRon = pickCheapest(rones)
+  if (fullRon) {
+    medias.push({
+      ...fullRon,
+      id: 'media-ron',
+      name: 'Media Botella Ron',
+      price: Math.round(fullRon.price / 2),
+      size: '1/2 botella'
+    })
+  }
+
+  return medias
+}
+
 const CATEGORIES = [
   { id: 'cafes', name: 'Cafés', filter: (p: Product) => p.type === 'cafeteria' && (p.category === 'cafe-caliente' || p.category === 'cafe-frio') },
   { id: 'cocteles', name: 'Cócteles', filter: (p: Product) => p.type === 'bebida' && p.category === 'coctel' },
   { id: 'acompanantes', name: 'Acompañantes', filter: (p: Product) => p.type === 'cafeteria' && p.category === 'pasteleria' },
   { id: 'cervezas', name: 'Cervezas', filter: (p: Product) => p.type === 'bebida' && p.category === 'cerveza' },
   { id: 'bebidas', name: 'Bebidas', filter: (p: Product) => p.type === 'bebida' },
-  { id: 'shots', name: 'Shots', filter: (p: Product) => p.type === 'bebida' && (p.size?.toLowerCase().includes('shot') || p.size?.toLowerCase().includes('30ml') || p.name?.toLowerCase().includes('shot')) }
+  { id: 'shots', name: 'Shots', filter: (p: Product) => p.type === 'bebida' && (p.size?.toLowerCase().includes('shot') || p.size?.toLowerCase().includes('30ml') || p.name?.toLowerCase().includes('shot')) },
+  { id: 'cigarrillos', name: 'Cigarrillos', filter: (_p: Product) => false }
 ]
 
 export default function WaiterPage() {
@@ -112,7 +203,7 @@ export default function WaiterPage() {
   const searchParams = useSearchParams()
   const [products, setProducts] = useState<Product[]>([])
   const [cart, setCart] = useState<CartItem[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<string>('cafes')
+  const [selectedCategory, setSelectedCategory] = useState<string>('cervezas')
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [amountPaid, setAmountPaid] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'efectivo' | 'nequi'>('efectivo')
@@ -130,6 +221,8 @@ export default function WaiterPage() {
   const [discount, setDiscount] = useState<string>('')
   const [discountType, setDiscountType] = useState<'percentage' | 'amount'>('percentage')
   const [orderComment, setOrderComment] = useState<string>('')
+  const [debtName, setDebtName] = useState<string>('')
+  const [showDebtForm, setShowDebtForm] = useState(false)
   /** Mesa elegida para el cobro. Se selecciona desde un modal; la lista de precios se muestra siempre primero. */
   const [mesaElegida, setMesaElegida] = useState<string>('')
   const [mesaOtro, setMesaOtro] = useState<string>('')
@@ -329,9 +422,19 @@ export default function WaiterPage() {
     }
   }
 
-  const filteredProducts = products
-    .filter(CATEGORIES.find(c => c.id === selectedCategory)?.filter || (() => true))
-    .sort((a, b) => (b.totalSold || 0) - (a.totalSold || 0))
+  const filteredProducts =
+    selectedCategory === 'cigarrillos'
+      ? CIGARETTES_PRODUCTS
+      : selectedCategory === 'bebidas'
+        ? [
+            ...products
+              .filter(CATEGORIES.find(c => c.id === selectedCategory)?.filter || (() => true))
+              .sort((a, b) => (b.totalSold || 0) - (a.totalSold || 0)),
+            ...buildMediaBottleProducts(products)
+          ]
+        : products
+            .filter(CATEGORIES.find(c => c.id === selectedCategory)?.filter || (() => true))
+            .sort((a, b) => (b.totalSold || 0) - (a.totalSold || 0))
 
   const addToCart = (product: Product) => {
     const wasEmpty = cart.length === 0
@@ -346,9 +449,9 @@ export default function WaiterPage() {
       }
       return [...prevCart, { ...product, quantity: 1 }]
     })
-    // Si era el primer producto agregado, minimizar el carrito para mostrar el icono flotante
+    // Si era el primer producto agregado, asegurar que el carrito flotante esté visible
     if (wasEmpty) {
-      setShowFloatingCart(false)
+      setShowFloatingCart(true)
     }
   }
 
@@ -403,6 +506,12 @@ export default function WaiterPage() {
     return Math.max(0, getSelectedSubtotal() - getSelectedDiscountAmount())
   }
 
+  const getPendingAfterThisPayment = () => {
+    const totalCuenta = getTotal()
+    const totalQueSeCobraAhora = getSelectedTotal()
+    return Math.max(0, totalCuenta - totalQueSeCobraAhora)
+  }
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CO', {
       style: 'decimal',
@@ -423,11 +532,7 @@ export default function WaiterPage() {
 
     const total = getSelectedTotal()
     const paid = parseFloat(amountPaid) || 0
-
-    if (paymentMethod === 'efectivo' && amountPaid && paid > 0 && paid < total) {
-      alert('El monto pagado es menor al total a cobrar')
-      return
-    }
+    const isPartialCash = paymentMethod === 'efectivo' && amountPaid && paid > 0 && paid < total
 
     setProcessing(true)
 
@@ -451,9 +556,20 @@ export default function WaiterPage() {
           discount: getSelectedDiscountAmount(),
           discountType: discount ? discountType : undefined,
           discountValue: discount ? parseFloat(discount) : undefined,
-          comment: orderComment || undefined,
+          comment: (() => {
+            if (isPartialCash && paid > 0 && paid < total) {
+              const base = orderComment ? `${orderComment} ` : ''
+              const deuda = total - paid
+              const nombre = debtName?.trim()
+              const nombreTexto = nombre ? ` a nombre de ${nombre}` : ''
+              return `${base}[APORTE] Pagó $${formatPrice(paid)} de $${formatPrice(total)} (deuda $${formatPrice(
+                deuda
+              )}${nombreTexto})`
+            }
+            return orderComment || undefined
+          })(),
           channel: 'presencial',
-          paymentMethod: paymentMethod,
+          paymentMethod: isPartialCash ? 'efectivo-aporte' : paymentMethod,
           date: dateOnly,
           hour: saleHour,
           mesa: mesaElegida || undefined
@@ -476,6 +592,8 @@ export default function WaiterPage() {
         setDiscount('')
         setDiscountType('percentage')
         setPaymentAction('pay')
+        setDebtName('')
+        setShowDebtForm(false)
         const now = new Date()
         const year = now.getFullYear()
         const month = String(now.getMonth() + 1).padStart(2, '0')
@@ -948,19 +1066,16 @@ export default function WaiterPage() {
                   {/* Comentario / detalles de la mesa: fuera del scroll para escribir sin problemas */}
                   <div
                     className="px-3 sm:px-4 py-3 border-t border-stone-200 bg-amber-50/50 flex-shrink-0"
-                    onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => e.stopPropagation()}
                   >
                     <label htmlFor="waiter-order-comment" className="block text-sm font-semibold text-arandano-950 mb-1.5">
                       Detalles o comentario de la mesa (opcional)
                     </label>
                     <textarea
                       id="waiter-order-comment"
-                      value={orderComment}
-                      onChange={(e) => setOrderComment(e.target.value)}
-                      onKeyDown={(e) => e.stopPropagation()}
-                      onFocus={(e) => e.stopPropagation()}
-                      onBlur={(e) => e.stopPropagation()}
+                      defaultValue={orderComment}
+                      onBlur={(e) => {
+                        setOrderComment(e.target.value)
+                      }}
                       placeholder="Ej: Sin hielo, nombre del cliente, instrucciones..."
                       rows={3}
                       className="w-full px-3 py-2.5 border-2 border-stone-300 rounded-lg text-sm text-stone-900 bg-white focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500 focus:outline-none resize-y min-h-[4.5rem] touch-manipulation"
@@ -999,6 +1114,8 @@ export default function WaiterPage() {
                     <button
                       onClick={() => {
                         setPaymentSelection(cart.reduce<Record<string, number>>((acc, item) => ({ ...acc, [item.id]: item.quantity }), {}))
+                        setDebtName('')
+                        setShowDebtForm(false)
                         setShowPaymentModal(true)
                       }}
                       className="w-full bg-gradient-to-r from-arandano-600 to-purple-600 hover:from-arandano-700 hover:to-purple-700 text-white font-semibold py-3 sm:py-3.5 rounded-lg transition-all shadow-lg hover:shadow-xl text-sm sm:text-base"
@@ -1139,8 +1256,8 @@ export default function WaiterPage() {
 
       {/* Modal de pago */}
       {showPaymentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[50] p-4 pt-8 sm:pt-12 overflow-y-auto">
-          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full mt-0 mb-4 max-h-[85vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[50] p-3 sm:p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4 sm:mb-6">
               <h3 className="text-xl sm:text-2xl font-bold text-arandano-950">Procesar Venta</h3>
               <button
@@ -1150,6 +1267,8 @@ export default function WaiterPage() {
                   setAmountPaid('')
                   setPaymentMethod('efectivo')
                   setPaymentAction('pay')
+                  setDebtName('')
+                  setShowDebtForm(false)
                   setShowAdvancedOptions(false)
                   const now = new Date()
                   const year = now.getFullYear()
@@ -1238,6 +1357,17 @@ export default function WaiterPage() {
                       ${formatPrice(getSelectedTotal())}
                     </span>
                   </div>
+                  {getPendingAfterThisPayment() > 0 && (
+                    <div className="mt-1.5 pt-1.5 border-t border-dashed border-amber-300">
+                      <p className="text-[11px] text-amber-800">
+                        Saldo pendiente después de este pago:{' '}
+                        <span className="font-semibold">
+                          ${formatPrice(getPendingAfterThisPayment())}
+                        </span>
+                        . Queda registrado en la cuenta de la mesa.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1325,7 +1455,6 @@ export default function WaiterPage() {
                   {/* Comentario / detalles de la mesa */}
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => e.stopPropagation()}
                   >
                     <label htmlFor="waiter-payment-comment" className="block text-xs font-medium text-stone-700 mb-1.5">
                       Detalles / comentario de la mesa:
@@ -1334,9 +1463,6 @@ export default function WaiterPage() {
                       id="waiter-payment-comment"
                       value={orderComment}
                       onChange={(e) => setOrderComment(e.target.value)}
-                      onKeyDown={(e) => e.stopPropagation()}
-                      onFocus={(e) => e.stopPropagation()}
-                      onBlur={(e) => e.stopPropagation()}
                       placeholder="Ej: Consumo propio, instrucciones..."
                       className="w-full px-3 py-2.5 border-2 border-stone-300 rounded-lg text-sm text-stone-900 bg-white focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500 focus:outline-none resize-y min-h-[4rem] touch-manipulation"
                       rows={3}
@@ -1480,10 +1606,59 @@ export default function WaiterPage() {
                       </div>
                     )}
                     {parseFloat(amountPaid) > 0 && parseFloat(amountPaid) < getSelectedTotal() && (
-                      <div className="mt-2 p-2.5 bg-red-50 border-2 border-red-300 rounded-lg">
+                      <div className="mt-2 p-2.5 bg-red-50 border-2 border-red-300 rounded-lg space-y-2">
                         <p className="text-red-800 font-medium text-center text-sm">
                           ⚠️ Falta: ${formatPrice(getSelectedTotal() - parseFloat(amountPaid))}
                         </p>
+                        {!showDebtForm && (
+                          <div className="flex justify-center">
+                            <button
+                              type="button"
+                              onClick={() => setShowDebtForm(true)}
+                              className="px-3 py-1.5 text-xs font-semibold rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors"
+                            >
+                              Crear deuda con este saldo
+                            </button>
+                          </div>
+                        )}
+                        {showDebtForm && (
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-1 gap-1.5">
+                              <div>
+                                <label className="block text-[11px] font-medium text-red-900 mb-0.5">
+                                  A nombre de quién queda la deuda:
+                                </label>
+                                <input
+                                  type="text"
+                                  defaultValue={debtName}
+                                  onBlur={(e) => setDebtName(e.target.value)}
+                                  placeholder="Ej: Cliente, mesa, persona..."
+                                  className="w-full px-2 py-1.5 border border-red-300 rounded text-xs focus:ring-1 focus:ring-red-500 focus:border-red-500 bg-white"
+                                />
+                              </div>
+                            </div>
+                            <p className="text-[11px] text-red-900 mt-1">
+                              Saldo pendiente que quedará como deuda:{' '}
+                              <span className="font-semibold">
+                                ${formatPrice(getSelectedTotal() - parseFloat(amountPaid))}
+                              </span>
+                              .
+                            </p>
+                            <p className="text-[10px] text-red-800">
+                              Se registrará esta venta como <span className="font-semibold">aporte</span> y el saldo
+                              pendiente quedará asociado a este nombre y resaltado en rojo en el panel de ventas.
+                            </p>
+                            <div className="flex justify-center pt-1">
+                              <button
+                                type="button"
+                                onClick={handlePayment}
+                                className="px-3 py-1.5 text-xs font-semibold rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors"
+                              >
+                                Confirmar pago parcial
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                     {parseFloat(amountPaid) === 0 && (

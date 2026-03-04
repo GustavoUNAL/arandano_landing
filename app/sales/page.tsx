@@ -28,6 +28,8 @@ function getSaleDayKey(sale: { date: string }): string {
   return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`
 }
 
+const STORAGE_CERRADO_DAYS = 'sales-cerrado-days'
+
 interface Sale {
   id: string
   date: string
@@ -46,7 +48,7 @@ interface Sale {
   discountValue?: number
   comment?: string
   channel: 'presencial' | 'whatsapp'
-  paymentMethod?: 'efectivo' | 'nequi'
+  paymentMethod?: 'efectivo' | 'nequi' | 'efectivo-aporte'
   ticketNumber?: string
   mesa?: string
 }
@@ -81,11 +83,38 @@ export default function SalesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
   const [hasExpandedInitial, setHasExpandedInitial] = useState(false)
+  const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null)
+  const [dayCerrado, setDayCerrado] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     loadSales()
     loadProducts()
   }, [])
+
+  // Días marcados como cerrados (localStorage)
+  useEffect(() => {
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_CERRADO_DAYS) : null
+      const list: string[] = raw ? JSON.parse(raw) : []
+      setDayCerrado(new Set(Array.isArray(list) ? list : []))
+    } catch {
+      setDayCerrado(new Set())
+    }
+  }, [])
+
+  function toggleDayCerrado(dayKey: string) {
+    setDayCerrado((prev) => {
+      const next = new Set(prev)
+      if (next.has(dayKey)) next.delete(dayKey)
+      else next.add(dayKey)
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(STORAGE_CERRADO_DAYS, JSON.stringify([...next]))
+        }
+      } catch (_) {}
+      return next
+    })
+  }
 
   // Recargar ventas al volver a esta pestaña (p. ej. después de cobrar en mesero)
   useEffect(() => {
@@ -420,7 +449,15 @@ export default function SalesPage() {
   }, [allDayKeys])
 
   const getDayTotal = (sales: Sale[]) => {
-    return sales.reduce((sum, sale) => sum + sale.total, 0)
+    // No sumamos aportes/deudas para el total cobrado del día
+    return sales.reduce((sum, sale) => {
+      if (sale.paymentMethod === 'efectivo-aporte') return sum
+      return sum + sale.total
+    }, 0)
+  }
+
+  const dayHasDebt = (sales: Sale[]) => {
+    return sales.some((sale) => sale.paymentMethod === 'efectivo-aporte' || sale.comment?.includes('[APORTE]'))
   }
 
   const getDayByPayment = (sales: Sale[]) => {
@@ -497,6 +534,12 @@ export default function SalesPage() {
           >
             ← Volver
           </button>
+          <Link
+            href="/debts"
+            className="absolute right-0 top-1/2 -translate-y-1/2 px-3 py-1.5 text-[11px] font-semibold text-red-700 hover:text-red-800 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200"
+          >
+            💳 Ver deudas / préstamos
+          </Link>
           <div className="text-center">
             <h1 className="text-2xl sm:text-3xl font-bold text-arandano-950">Ventas</h1>
             <p className="text-xs text-stone-600 mt-0.5 font-medium">
@@ -537,6 +580,7 @@ export default function SalesPage() {
                 <option value="efectivo">Efectivo</option>
                 <option value="nequi">Nequi</option>
                 <option value="sin-pago">Sin pago</option>
+                <option value="efectivo-aporte">Efectivo (aporte)</option>
               </select>
             </div>
             <div className="flex items-center gap-1.5 px-3 py-2 bg-pink-50 rounded-lg border border-pink-200 hover:border-pink-300 hover:bg-pink-100 transition-all flex-shrink-0 min-w-[120px]">
@@ -594,6 +638,8 @@ export default function SalesPage() {
                     }
                     const daySales = salesByDay[key] ?? []
                     const total = getDayTotal(daySales)
+                    const cerrado = dayCerrado.has(key)
+                    const hasDebt = dayHasDebt(daySales)
                     const [d, m, y] = key.split('/').map(Number)
                     const date = new Date(y, m - 1, d)
                     const today = new Date()
@@ -604,31 +650,113 @@ export default function SalesPage() {
                       <button
                         key={key}
                         onClick={() => {
-                          toggleDayExpanded(key)
+                          setSelectedDayKey(key)
                           const el = document.getElementById(`day-${key.replace(/\//g, '-')}`)
                           el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                         }}
                         className={`flex flex-col items-start justify-between p-2.5 rounded-xl border text-left transition-colors hover:shadow-sm h-20 ${
-                          isToday
-                            ? 'bg-arandano-100 border-arandano-400'
-                            : total > 0
-                              ? 'bg-arandano-50 border-arandano-200 hover:bg-arandano-100'
-                              : 'bg-pink-50 border-pink-200'
+                          cerrado
+                            ? 'bg-amber-50 border-amber-300 hover:bg-amber-100'
+                            : hasDebt
+                              ? 'bg-red-50 border-red-300 hover:bg-red-100'
+                              : isToday
+                                ? 'bg-arandano-100 border-arandano-400'
+                                : total > 0
+                                  ? 'bg-arandano-50 border-arandano-200 hover:bg-arandano-100'
+                                  : 'bg-pink-50 border-pink-200'
                         }`}
                       >
-                        <span className="text-[11px] font-semibold text-arandano-800">
+                        <span className={`text-[11px] font-semibold ${
+                          cerrado ? 'text-amber-800' : hasDebt ? 'text-red-800' : 'text-arandano-800'
+                        }`}>
                           {d}
                         </span>
-                        <span className="mt-auto text-[11px] text-stone-600">Total</span>
-                        <span className="text-xs font-bold text-arandano-900">
-                          ${formatPrice(total)}
-                        </span>
+                        {cerrado ? (
+                          <span className="mt-auto text-[11px] font-medium text-amber-700">Cerrado</span>
+                        ) : hasDebt ? (
+                          <span className="mt-auto text-[11px] font-medium text-red-700">
+                            Deuda / aporte
+                          </span>
+                        ) : (
+                          <>
+                            <span className="mt-auto text-[11px] text-stone-600">Total</span>
+                            <span className="text-xs font-bold text-arandano-900">
+                              ${formatPrice(total)}
+                            </span>
+                          </>
+                        )}
                       </button>
                     )
                   })}
                 </div>
               </div>
             ))}
+          </div>
+        )}
+        {selectedDayKey && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-sm font-semibold text-arandano-900">
+                      Detalle de {getDayLabel(selectedDayKey)}
+                    </h2>
+                    {selectedDayKey && dayCerrado.has(selectedDayKey) && (
+                      <span className="px-2 py-0.5 text-xs font-medium rounded-md bg-amber-100 text-amber-800 border border-amber-300">
+                        Cerrado
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-stone-500">
+                    Puedes agregar nuevas ventas o ver/editar las existentes de este día.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedDayKey(null)}
+                  className="w-8 h-8 flex items-center justify-center text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors text-lg font-bold"
+                  aria-label="Cerrar detalle del día"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="px-4 pt-3 pb-1 border-b border-stone-100">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={selectedDayKey ? dayCerrado.has(selectedDayKey) : false}
+                    onChange={() => selectedDayKey && toggleDayCerrado(selectedDayKey)}
+                    className="rounded border-amber-400 text-amber-600 focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-stone-700">Este día estuvo cerrado</span>
+                </label>
+                <p className="text-[11px] text-stone-500 mt-0.5 ml-6">
+                  Si lo marcas, en el calendario se mostrará como cerrado (ventas en cero, fondo amarillo crema).
+                </p>
+              </div>
+              <div className="p-4 sm:p-5" id={`day-${selectedDayKey.replace(/\//g, '-')}`}>
+                <DaySalesBlock
+                  dayKey={selectedDayKey}
+                  daySales={salesByDay[selectedDayKey] ?? []}
+                  isExpanded={true}
+                  onToggleExpand={() => {}}
+                  onSelectSale={(sale) => {
+                    setSelectedSale(sale)
+                    setShowDetail(true)
+                  }}
+                  formatPrice={formatPrice}
+                  getDayTotal={getDayTotal}
+                  getDayByPayment={getDayByPayment}
+                  getSaleItemsSummary={getSaleItemsSummary}
+                  getDayLabel={getDayLabel}
+                  isEmpty={(salesByDay[selectedDayKey] ?? []).length === 0}
+                  addSaleForDayUrl={(() => {
+                    const [d, m, y] = selectedDayKey.split('/')
+                    return `/waiter?date=${y}-${m}-${d}`
+                  })()}
+                />
+              </div>
+            </div>
           </div>
         )}
       </div>
