@@ -33,7 +33,7 @@ const PRODUCTS = [
   ['cerveza-coronita', 'Cerveza Coronita', 5000, 'cerveza', 'bebida', '210 ml'],
   ['cerveza-heineken', 'Cerveza Heineken', 5000, 'cerveza', 'bebida', '330 ml'],
   ['prod-1770687422697-b37kcnnmy', 'Cerveza Poker botella grande', 7000, 'cerveza', 'bebida', '750 ml'],
-  ['prod-1770687422697-le373wgmo', 'Cerveza michelada', 7000, 'cerveza', 'bebida', '330 ml'],
+  ['prod-1770687422697-le373wgmo', 'Cerveza michelada', 5000, 'cerveza', 'bebida', '330 ml'],
   ['coctel-arandano', 'Cóctel de arándano', 15000, 'coctel', 'bebida', '250 ml'],
   ['bebida-1767478463497-c2aya0ta0', 'Cóctel de Campari', 15000, 'coctel', 'bebida', '250 ml'],
   ['bebida-1767479422734-8ofoa07j2', 'Cóctel de soda sin licor', 15000, 'coctel', 'bebida', '250 ml'],

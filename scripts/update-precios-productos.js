@@ -71,14 +71,14 @@ if (poker750) {
 
 const michelada = db.prepare("SELECT id, name FROM products WHERE LOWER(name) LIKE '%michelada%'").get()
 if (michelada) {
-  updateStmt.run(7000, now, michelada.id)
+  updateStmt.run(5000, now, michelada.id)
   console.log('  ✓', michelada.name, '→ $7.000')
 } else {
   const id2 = 'prod-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9)
   db.prepare(`
     INSERT INTO products (id, name, price, description, category, type, stock, size, createdAt, updatedAt)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id2, 'Cerveza michelada', 7000, null, 'cerveza', 'bebida', 999, null, now, now)
+  `).run(id2, 'Cerveza michelada', 5000, null, 'cerveza', 'bebida', 999, null, now, now)
   console.log('  + Creado: Cerveza michelada → $7.000')
 }
 

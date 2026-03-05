@@ -32,7 +32,7 @@ Configuración actual a la venta (base de datos).
 | Cerveza Coronita | $5.000 | cerveza | bebida | 210 ml |
 | Cerveza Heineken | $5.000 | cerveza | bebida | 330 ml |
 | Cerveza Poker botella grande | $7.000 | cerveza | bebida | 750 ml |
-| Cerveza michelada | $7.000 | cerveza | bebida | 330 ml |
+| Cerveza michelada | $5.000 | cerveza | bebida | 330 ml |
 | **Cócteles** | | **coctel** | bebida | |
 | Cóctel de arándano | $15.000 | coctel | bebida | 250 ml |
 | Cóctel de Campari | $15.000 | coctel | bebida | 250 ml |

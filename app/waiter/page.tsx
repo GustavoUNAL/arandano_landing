@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 const PLANTA_LAYOUT_KEY = 'waiter-planta-layout'
@@ -98,6 +98,44 @@ function WaiterLayout ({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen bg-stone-50">{children}</div>
 }
 
+/** Barra de búsqueda que mantiene su propio estado para no perder el texto al re-renderizar el padre. */
+function ProductSearchInput({
+  categoryKey,
+  onSearchChange,
+  resultCount,
+  showCount
+}: {
+  categoryKey: string
+  onSearchChange: (value: string) => void
+  resultCount: number
+  showCount: boolean
+}) {
+  const [value, setValue] = useState('')
+  useEffect(() => {
+    setValue('')
+  }, [categoryKey])
+  return (
+    <div className="mb-3">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => {
+          const v = e.target.value
+          setValue(v)
+          onSearchChange(v)
+        }}
+        placeholder="Buscar producto..."
+        className="w-full px-3 py-2 border-2 border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500 placeholder-stone-400"
+      />
+      {showCount && (
+        <p className="text-xs text-stone-500 mt-1">
+          {resultCount} {resultCount === 1 ? 'producto' : 'productos'}
+        </p>
+      )}
+    </div>
+  )
+}
+
 const CIGARETTES_PRODUCTS: Product[] = [
   {
     id: 'cig-marlboro-rojo',
@@ -188,14 +226,29 @@ const buildMediaBottleProducts = (products: Product[]): Product[] => {
   return medias
 }
 
+const AROMATICA_PRODUCT: Product = {
+  id: 'prod-aromatica',
+  name: 'Aromática',
+  price: 4000,
+  description: 'Aromática',
+  category: 'cafe-caliente',
+  type: 'cafeteria'
+}
+
+const ACCOMPANIMENT_EXTRAS: Product[] = [
+  { id: 'prod-suspiros', name: 'Suspiros', price: 1000, description: 'Suspiros', category: 'pasteleria', type: 'cafeteria' },
+  { id: 'prod-galletas-especiales', name: 'Galletas especiales', price: 2000, description: 'Galletas especiales', category: 'pasteleria', type: 'cafeteria' }
+]
+
 const CATEGORIES = [
+  { id: 'todos', name: 'Todos los productos', filter: (_p: Product) => true },
   { id: 'cafes', name: 'Cafés', filter: (p: Product) => p.type === 'cafeteria' && (p.category === 'cafe-caliente' || p.category === 'cafe-frio') },
   { id: 'cocteles', name: 'Cócteles', filter: (p: Product) => p.type === 'bebida' && p.category === 'coctel' },
   { id: 'acompanantes', name: 'Acompañantes', filter: (p: Product) => p.type === 'cafeteria' && p.category === 'pasteleria' },
   { id: 'cervezas', name: 'Cervezas', filter: (p: Product) => p.type === 'bebida' && p.category === 'cerveza' },
   { id: 'bebidas', name: 'Bebidas', filter: (p: Product) => p.type === 'bebida' },
   { id: 'shots', name: 'Shots', filter: (p: Product) => p.type === 'bebida' && (p.size?.toLowerCase().includes('shot') || p.size?.toLowerCase().includes('30ml') || p.name?.toLowerCase().includes('shot')) },
-  { id: 'cigarrillos', name: 'Cigarrillos', filter: (_p: Product) => false }
+  { id: 'cigarrillos', name: 'Cigarrillos', filter: (p: Product) => p.category === 'cigarrillos' || p.id.startsWith('cig-') }
 ]
 
 export default function WaiterPage() {
@@ -203,7 +256,7 @@ export default function WaiterPage() {
   const searchParams = useSearchParams()
   const [products, setProducts] = useState<Product[]>([])
   const [cart, setCart] = useState<CartItem[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<string>('cervezas')
+  const [selectedCategory, setSelectedCategory] = useState<string>('todos')
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [amountPaid, setAmountPaid] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'efectivo' | 'nequi'>('efectivo')
@@ -354,9 +407,16 @@ export default function WaiterPage() {
   const [editSaleItems, setEditSaleItems] = useState<Sale['items']>([])
   const [availableProducts, setAvailableProducts] = useState<Product[]>([])
   const [productSearch, setProductSearch] = useState<string>('')
+  const gridProductSearchRef = useRef<string>('')
+  const [gridSearchTrigger, setGridSearchTrigger] = useState(0)
   const [showProductSelector, setShowProductSelector] = useState(false)
   /** Por producto: cuántas unidades se pagan en este cobro (por defecto todas). */
   const [paymentSelection, setPaymentSelection] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    gridProductSearchRef.current = ''
+    setGridSearchTrigger((n) => n + 1)
+  }, [selectedCategory])
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -422,19 +482,42 @@ export default function WaiterPage() {
     }
   }
 
-  const filteredProducts =
-    selectedCategory === 'cigarrillos'
-      ? CIGARETTES_PRODUCTS
-      : selectedCategory === 'bebidas'
-        ? [
-            ...products
-              .filter(CATEGORIES.find(c => c.id === selectedCategory)?.filter || (() => true))
-              .sort((a, b) => (b.totalSold || 0) - (a.totalSold || 0)),
-            ...buildMediaBottleProducts(products)
-          ]
-        : products
-            .filter(CATEGORIES.find(c => c.id === selectedCategory)?.filter || (() => true))
-            .sort((a, b) => (b.totalSold || 0) - (a.totalSold || 0))
+  const allProductsList = useMemo(() => {
+    const list: Product[] = [
+      ...products,
+      ...CIGARETTES_PRODUCTS,
+      ...buildMediaBottleProducts(products),
+      AROMATICA_PRODUCT,
+      ...ACCOMPANIMENT_EXTRAS
+    ]
+    const byId = new Map<string, Product>()
+    list.forEach((p) => {
+      if (!byId.has(p.id)) byId.set(p.id, p)
+    })
+    return Array.from(byId.values()).sort((a, b) => (b.totalSold || 0) - (a.totalSold || 0))
+  }, [products])
+
+  const categoryFilter = CATEGORIES.find(c => c.id === selectedCategory)?.filter || (() => true)
+  const filteredByCategory =
+    selectedCategory === 'todos' ? allProductsList : allProductsList.filter(categoryFilter)
+
+  const filteredProducts = filteredByCategory
+  const searchTerm = (gridProductSearchRef.current || '').trim().toLowerCase()
+  const baseDisplayed = searchTerm
+    ? filteredProducts.filter(
+        (p) =>
+          p.name.toLowerCase().includes(searchTerm) ||
+          (p.description?.toLowerCase().includes(searchTerm) ?? false)
+      )
+    : filteredProducts
+  const aromaticMatchesSearch =
+    searchTerm &&
+    (AROMATICA_PRODUCT.name.toLowerCase().includes(searchTerm) ||
+      (AROMATICA_PRODUCT.description?.toLowerCase().includes(searchTerm) ?? false))
+  const displayedProducts =
+    aromaticMatchesSearch && !baseDisplayed.some((p) => p.id === AROMATICA_PRODUCT.id)
+      ? [AROMATICA_PRODUCT, ...baseDisplayed]
+      : baseDisplayed
 
   const addToCart = (product: Product) => {
     const wasEmpty = cart.length === 0
@@ -532,7 +615,7 @@ export default function WaiterPage() {
 
     const total = getSelectedTotal()
     const paid = parseFloat(amountPaid) || 0
-    const isPartialCash = paymentMethod === 'efectivo' && amountPaid && paid > 0 && paid < total
+    const isPartialCash = paymentMethod === 'efectivo' && paid < total
 
     setProcessing(true)
 
@@ -557,7 +640,7 @@ export default function WaiterPage() {
           discountType: discount ? discountType : undefined,
           discountValue: discount ? parseFloat(discount) : undefined,
           comment: (() => {
-            if (isPartialCash && paid > 0 && paid < total) {
+            if (isPartialCash) {
               const base = orderComment ? `${orderComment} ` : ''
               const deuda = total - paid
               const nombre = debtName?.trim()
@@ -792,7 +875,7 @@ export default function WaiterPage() {
       </div>
     )
   } else {
-    const CobrosScreen = () => (
+    content = (
     <WaiterLayout>
       <div className="container mx-auto px-4 py-6 max-w-7xl">
         <div className="mb-6 flex flex-col gap-3">
@@ -876,11 +959,20 @@ export default function WaiterPage() {
 
             {/* Lista de productos */}
             <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
-              <h2 className="text-lg font-semibold text-arandano-950 mb-3 text-center">
+              <h2 className="text-lg font-semibold text-arandano-950 mb-2 text-center">
                 {CATEGORIES.find(c => c.id === selectedCategory)?.name}
               </h2>
+              <ProductSearchInput
+                categoryKey={selectedCategory}
+                onSearchChange={(v) => {
+                  gridProductSearchRef.current = v
+                  setGridSearchTrigger((n) => n + 1)
+                }}
+                resultCount={displayedProducts.length}
+                showCount={searchTerm.length > 0}
+              />
               <div className="grid grid-cols-2 gap-3">
-                {filteredProducts.map((product) => {
+                {displayedProducts.map((product) => {
                   const cartItem = cart.find((item) => item.id === product.id)
                   const quantity = cartItem?.quantity || 0
 
@@ -1135,7 +1227,7 @@ export default function WaiterPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-arandano-950">Selecciona una Categoría</h3>
+              <h3 className="text-xl font-bold text-arandano-950">Filtrar por categoría</h3>
               <button
                 onClick={() => setShowCategoriesModal(false)}
                 className="w-8 h-8 flex items-center justify-center text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors text-xl font-bold"
@@ -1605,10 +1697,13 @@ export default function WaiterPage() {
                         </div>
                       </div>
                     )}
-                    {parseFloat(amountPaid) > 0 && parseFloat(amountPaid) < getSelectedTotal() && (
+                    {((parseFloat(amountPaid) > 0 && parseFloat(amountPaid) < getSelectedTotal()) ||
+                      (parseFloat(amountPaid) === 0 && getSelectedTotal() > 0)) && (
                       <div className="mt-2 p-2.5 bg-red-50 border-2 border-red-300 rounded-lg space-y-2">
                         <p className="text-red-800 font-medium text-center text-sm">
-                          ⚠️ Falta: ${formatPrice(getSelectedTotal() - parseFloat(amountPaid))}
+                          {parseFloat(amountPaid) === 0
+                            ? `💰 Monto recibido: $0 — Saldo como deuda: ${formatPrice(getSelectedTotal())}`
+                            : `⚠️ Falta: ${formatPrice(getSelectedTotal() - parseFloat(amountPaid))}`}
                         </p>
                         {!showDebtForm && (
                           <div className="flex justify-center">
@@ -1640,7 +1735,7 @@ export default function WaiterPage() {
                             <p className="text-[11px] text-red-900 mt-1">
                               Saldo pendiente que quedará como deuda:{' '}
                               <span className="font-semibold">
-                                ${formatPrice(getSelectedTotal() - parseFloat(amountPaid))}
+                                ${formatPrice(getSelectedTotal() - (parseFloat(amountPaid) || 0))}
                               </span>
                               .
                             </p>
@@ -1661,7 +1756,7 @@ export default function WaiterPage() {
                         )}
                       </div>
                     )}
-                    {parseFloat(amountPaid) === 0 && (
+                    {parseFloat(amountPaid) === 0 && getSelectedTotal() === 0 && (
                       <div className="mt-2 p-2.5 bg-amber-50 border-2 border-amber-300 rounded-lg">
                         <p className="text-amber-800 font-medium text-center text-xs">
                           ℹ️ Se registrará sin pago
@@ -2116,7 +2211,6 @@ export default function WaiterPage() {
       )}
     </WaiterLayout>
     )
-    content = <CobrosScreen />
   }
   return content
 }
