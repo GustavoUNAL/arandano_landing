@@ -109,7 +109,7 @@ export default function SalesPage() {
       else next.add(dayKey)
       try {
         if (typeof window !== 'undefined') {
-          localStorage.setItem(STORAGE_CERRADO_DAYS, JSON.stringify([...next]))
+          localStorage.setItem(STORAGE_CERRADO_DAYS, JSON.stringify(Array.from(next)))
         }
       } catch (_) {}
       return next
@@ -366,12 +366,15 @@ export default function SalesPage() {
   }
 
   // Agrupar ventas por día (fecha local para que jueves 5 = jueves)
-  const salesByDay: { [key: string]: Sale[] } = {}
-  filteredSales.forEach(sale => {
-    const dayKey = getSaleDayKey(sale)
-    if (!salesByDay[dayKey]) salesByDay[dayKey] = []
-    salesByDay[dayKey].push(sale)
-  })
+  const salesByDay = useMemo<{ [key: string]: Sale[] }>(() => {
+    const grouped: { [key: string]: Sale[] } = {}
+    filteredSales.forEach((sale) => {
+      const dayKey = getSaleDayKey(sale)
+      if (!grouped[dayKey]) grouped[dayKey] = []
+      grouped[dayKey].push(sale)
+    })
+    return grouped
+  }, [filteredSales])
 
   // Días disponibles según las ventas (todos los días con al menos una venta)
   const allDayKeys = useMemo(() => {
