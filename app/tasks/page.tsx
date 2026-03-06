@@ -34,22 +34,22 @@ interface Task {
 }
 
 const CATEGORY_LABELS: Record<TaskCategory, { label: string; icon: string; color: string }> = {
-  inventario: { label: 'Inventario', icon: '📦', color: 'bg-blue-100 text-blue-800 border-blue-300' },
-  compras: { label: 'Compras', icon: '🛒', color: 'bg-green-100 text-green-800 border-green-300' },
-  mantenimiento: { label: 'Mantenimiento', icon: '🔧', color: 'bg-orange-100 text-orange-800 border-orange-300' },
-  marketing: { label: 'Marketing', icon: '📢', color: 'bg-purple-100 text-purple-800 border-purple-300' },
-  finanzas: { label: 'Finanzas', icon: '💰', color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
-  personal: { label: 'Personal', icon: '👥', color: 'bg-pink-100 text-pink-800 border-pink-300' },
-  operaciones: { label: 'Operaciones', icon: '☕', color: 'bg-amber-100 text-amber-800 border-amber-300' },
-  limpieza: { label: 'Limpieza', icon: '🧹', color: 'bg-cyan-100 text-cyan-800 border-cyan-300' },
-  eventos: { label: 'Eventos', icon: '🎉', color: 'bg-rose-100 text-rose-800 border-rose-300' },
-  otro: { label: 'Otro', icon: '📝', color: 'bg-gray-100 text-gray-800 border-gray-300' }
+  inventario: { label: 'Inventario', icon: '📦', color: 'bg-arandano-100 text-arandano-800 border-arandano-200' },
+  compras: { label: 'Compras', icon: '🛒', color: 'bg-arandano-100 text-arandano-800 border-arandano-200' },
+  mantenimiento: { label: 'Mantenimiento', icon: '🔧', color: 'bg-arandano-100 text-arandano-800 border-arandano-200' },
+  marketing: { label: 'Marketing', icon: '📢', color: 'bg-arandano-100 text-arandano-800 border-arandano-200' },
+  finanzas: { label: 'Finanzas', icon: '💰', color: 'bg-arandano-100 text-arandano-800 border-arandano-200' },
+  personal: { label: 'Personal', icon: '👥', color: 'bg-arandano-100 text-arandano-800 border-arandano-200' },
+  operaciones: { label: 'Operaciones', icon: '☕', color: 'bg-arandano-100 text-arandano-800 border-arandano-200' },
+  limpieza: { label: 'Limpieza', icon: '🧹', color: 'bg-arandano-100 text-arandano-800 border-arandano-200' },
+  eventos: { label: 'Eventos', icon: '🎉', color: 'bg-arandano-100 text-arandano-800 border-arandano-200' },
+  otro: { label: 'Otro', icon: '📝', color: 'bg-stone-100 text-stone-700 border-stone-200' }
 }
 
 const PRIORITY_LABELS: Record<TaskPriority, { label: string; color: string }> = {
-  baja: { label: 'Baja', color: 'bg-gray-200 text-gray-700' },
-  media: { label: 'Media', color: 'bg-blue-200 text-blue-700' },
-  alta: { label: 'Alta', color: 'bg-orange-200 text-orange-700' },
+  baja: { label: 'Baja', color: 'bg-stone-200 text-stone-700' },
+  media: { label: 'Media', color: 'bg-arandano-200 text-arandano-800' },
+  alta: { label: 'Alta', color: 'bg-arandano-300 text-arandano-900' },
   urgente: { label: 'Urgente', color: 'bg-red-200 text-red-700' }
 }
 
@@ -244,7 +244,7 @@ export default function TasksPage() {
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="text-berry-600">Cargando...</div>
+        <div className="text-arandano-600">Cargando...</div>
       </div>
     )
   }
@@ -308,11 +308,11 @@ export default function TasksPage() {
           <div className="flex items-center justify-between mb-3">
             <Link
               href="/admin"
-              className="px-2 py-1.5 text-berry-600 hover:text-berry-800 text-base font-medium transition-colors"
+              className="px-2 py-1.5 text-arandano-600 hover:text-arandano-800 text-base font-medium transition-colors"
             >
               ←
             </Link>
-            <h1 className="flex-1 text-center text-xl sm:text-2xl font-bold text-berry-950">Lista de Tareas</h1>
+            <h1 className="flex-1 text-center text-xl sm:text-2xl font-bold text-arandano-950">Lista de Tareas</h1>
             <div className="w-8"></div>
           </div>
           <div className="flex items-center gap-2">
@@ -321,11 +321,11 @@ export default function TasksPage() {
               placeholder="Buscar tareas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-3 py-2 text-sm border border-stone-300 rounded-lg focus:ring-1 focus:ring-berry-500 focus:border-berry-500 transition-all bg-transparent"
+              className="flex-1 px-3 py-2 text-sm border border-stone-300 rounded-lg focus:ring-1 focus:ring-arandano-500 focus:border-arandano-500 transition-all bg-transparent"
             />
             <button
               onClick={() => setShowConfigModal(true)}
-              className="p-2 text-berry-600 hover:text-berry-700 hover:bg-berry-50 rounded-lg transition-all flex items-center justify-center"
+              className="p-2 text-arandano-600 hover:text-arandano-700 hover:bg-arandano-50 rounded-lg transition-all flex items-center justify-center"
               title="Configuraciones"
             >
               <span className="text-xl">⚙️</span>
@@ -336,8 +336,8 @@ export default function TasksPage() {
         {/* Resumen - 2 columnas con 2 filas */}
         <div className="grid grid-cols-2 gap-3 mb-6">
           <div className="bg-white rounded-xl shadow-lg p-4 border border-stone-200">
-            <div className="text-xs text-berry-600 mb-1 font-medium">Pendientes</div>
-            <div className="text-2xl font-bold text-berry-950">{pendingTasks.length}</div>
+            <div className="text-xs text-arandano-600 mb-1 font-medium">Pendientes</div>
+            <div className="text-2xl font-bold text-arandano-950">{pendingTasks.length}</div>
           </div>
           <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4">
             <div className="text-xs text-red-600 mb-1 font-medium">Vencidas</div>
@@ -348,8 +348,8 @@ export default function TasksPage() {
             <div className="text-2xl font-bold text-green-700">{completedTasks.length}</div>
           </div>
           <div className="bg-white rounded-xl shadow-lg p-4 border border-stone-200">
-            <div className="text-xs text-berry-600 mb-1 font-medium">Total</div>
-            <div className="text-2xl font-bold text-berry-950">{tasks.length}</div>
+            <div className="text-xs text-arandano-600 mb-1 font-medium">Total</div>
+            <div className="text-2xl font-bold text-arandano-950">{tasks.length}</div>
           </div>
         </div>
 
@@ -357,13 +357,13 @@ export default function TasksPage() {
 
         {/* Lista de Tareas */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-2xl font-bold text-berry-950 mb-4">
+          <h2 className="text-2xl font-bold text-arandano-950 mb-4">
             Tareas {filter.completed === 'pending' ? 'Pendientes' : filter.completed === 'completed' ? 'Completadas' : ''}
           </h2>
           {loading ? (
             <div className="text-center py-8">Cargando...</div>
           ) : filteredTasks.length === 0 ? (
-            <div className="text-center py-8 text-berry-600">
+            <div className="text-center py-8 text-arandano-600">
               {searchTerm ? 'No se encontraron tareas con ese término de búsqueda' : 'No hay tareas'}
             </div>
           ) : (
@@ -381,7 +381,7 @@ export default function TasksPage() {
                         ? 'bg-stone-50/50 border border-stone-200'
                         : overdue
                         ? 'bg-red-50/80 border-2 border-red-300 shadow-sm'
-                        : 'bg-white border border-stone-200 hover:shadow-lg hover:border-berry-300'
+                        : 'bg-white border border-stone-200 hover:shadow-lg hover:border-arandano-300'
                     }`}
                   >
                     {/* Header con botones de acción y título */}
@@ -403,7 +403,7 @@ export default function TasksPage() {
                       {/* Contenido principal */}
                       <div className="flex-1 min-w-0">
                         <h3 className={`font-semibold text-base mb-1.5 ${
-                          task.completed ? 'line-through text-stone-500' : 'text-berry-950'
+                          task.completed ? 'line-through text-stone-500' : 'text-arandano-950'
                         }`}>
                           {task.title}
                         </h3>
@@ -433,7 +433,7 @@ export default function TasksPage() {
                             </span>
                           )}
                           {task.assignedTo && (
-                            <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                            <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-arandano-50 text-arandano-700 border border-arandano-200">
                               {task.assignedTo}
                             </span>
                           )}
@@ -458,7 +458,7 @@ export default function TasksPage() {
                       <div className="flex flex-col gap-2 flex-shrink-0">
                         <button
                           onClick={() => handleEdit(task)}
-                          className="p-2.5 text-berry-600 hover:text-berry-700 hover:bg-berry-50 rounded-lg transition-colors"
+                          className="p-2.5 text-arandano-600 hover:text-arandano-700 hover:bg-arandano-50 rounded-lg transition-colors"
                           title="Editar tarea"
                           aria-label="Editar"
                         >
@@ -492,7 +492,7 @@ export default function TasksPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-bold text-berry-950">Configuraciones</h2>
+                <h2 className="text-lg font-bold text-arandano-950">Configuraciones</h2>
                 <button
                   onClick={() => setShowConfigModal(false)}
                   className="text-stone-500 hover:text-stone-700 text-xl leading-none w-7 h-7 flex items-center justify-center"
@@ -510,7 +510,7 @@ export default function TasksPage() {
                   resetForm()
                   setShowAddTaskModal(true)
                 }}
-                className="w-full px-3 py-2.5 rounded-lg font-semibold transition-all text-left bg-berry-600 text-white shadow-md hover:bg-berry-700 active:bg-berry-800 text-sm"
+                className="w-full px-3 py-2.5 rounded-lg font-semibold transition-all text-left bg-arandano-600 text-white shadow-md hover:bg-arandano-700 active:bg-arandano-800 text-sm"
               >
                 Nueva Tarea
               </button>
@@ -525,7 +525,7 @@ export default function TasksPage() {
                       <select
                         value={filter.category}
                         onChange={(e) => setFilter({ ...filter, category: e.target.value as TaskCategory | 'all' })}
-                        className="w-full px-2 py-1.5 text-xs border border-stone-300 rounded-md focus:ring-1 focus:ring-berry-500 focus:border-berry-500 bg-white"
+                        className="w-full px-2 py-1.5 text-xs border border-stone-300 rounded-md focus:ring-1 focus:ring-arandano-500 focus:border-arandano-500 bg-white"
                       >
                         <option value="all">Todas</option>
                         {Object.entries(CATEGORY_LABELS).map(([value, { label }]) => (
@@ -540,7 +540,7 @@ export default function TasksPage() {
                       <select
                         value={filter.priority}
                         onChange={(e) => setFilter({ ...filter, priority: e.target.value as TaskPriority | 'all' })}
-                        className="w-full px-2 py-1.5 text-xs border border-stone-300 rounded-md focus:ring-1 focus:ring-berry-500 focus:border-berry-500 bg-white"
+                        className="w-full px-2 py-1.5 text-xs border border-stone-300 rounded-md focus:ring-1 focus:ring-arandano-500 focus:border-arandano-500 bg-white"
                       >
                         <option value="all">Todas</option>
                         {Object.entries(PRIORITY_LABELS).map(([value, { label }]) => (
@@ -555,7 +555,7 @@ export default function TasksPage() {
                       <select
                         value={filter.completed}
                         onChange={(e) => setFilter({ ...filter, completed: e.target.value as 'all' | 'pending' | 'completed' })}
-                        className="w-full px-2 py-1.5 text-xs border border-stone-300 rounded-md focus:ring-1 focus:ring-berry-500 focus:border-berry-500 bg-white"
+                        className="w-full px-2 py-1.5 text-xs border border-stone-300 rounded-md focus:ring-1 focus:ring-arandano-500 focus:border-arandano-500 bg-white"
                       >
                         <option value="pending">Pendientes</option>
                         <option value="completed">Completadas</option>
@@ -586,7 +586,7 @@ export default function TasksPage() {
                   <div className="grid grid-cols-2 gap-1.5 text-xs bg-stone-50 rounded-md p-2">
                     <div className="flex justify-between">
                       <span className="text-stone-600">Pendientes:</span>
-                      <span className="font-semibold text-berry-700">{pendingTasks.length}</span>
+                      <span className="font-semibold text-arandano-700">{pendingTasks.length}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-stone-600">Completadas:</span>
@@ -598,7 +598,7 @@ export default function TasksPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-stone-600">Total:</span>
-                      <span className="font-semibold text-berry-700">{filteredTasks.length}</span>
+                      <span className="font-semibold text-arandano-700">{filteredTasks.length}</span>
                     </div>
                   </div>
                 </div>
@@ -620,7 +620,7 @@ export default function TasksPage() {
             resetForm()
             setShowAddTaskModal(true)
           }}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-berry-600 hover:bg-berry-700 text-white rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center z-40"
+          className="fixed bottom-6 right-6 w-14 h-14 bg-arandano-600 hover:bg-arandano-700 text-white rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center z-40"
           title="Nueva Tarea"
           aria-label="Crear nueva tarea"
         >
@@ -642,7 +642,7 @@ export default function TasksPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-berry-950">
+                <h2 className="text-lg font-bold text-arandano-950">
                   {editingTask ? 'Editar Tarea' : 'Nueva Tarea'}
                 </h2>
                 <button
@@ -657,32 +657,32 @@ export default function TasksPage() {
 
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-berry-700 mb-1.5">Título *</label>
+                  <label className="block text-xs font-semibold text-arandano-700 mb-1.5">Título *</label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                    className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-berry-700 mb-1.5">Descripción</label>
+                  <label className="block text-xs font-semibold text-arandano-700 mb-1.5">Descripción</label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={2}
-                    className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                    className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                     placeholder="Descripción breve..."
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs font-semibold text-berry-700 mb-1.5">Categoría *</label>
+                    <label className="block text-xs font-semibold text-arandano-700 mb-1.5">Categoría *</label>
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value as TaskCategory })}
-                      className="w-full px-2 py-2 text-xs border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                      className="w-full px-2 py-2 text-xs border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                       required
                     >
                       {Object.entries(CATEGORY_LABELS).map(([value, { label }]) => (
@@ -691,11 +691,11 @@ export default function TasksPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-berry-700 mb-1.5">Prioridad *</label>
+                    <label className="block text-xs font-semibold text-arandano-700 mb-1.5">Prioridad *</label>
                     <select
                       value={formData.priority}
                       onChange={(e) => setFormData({ ...formData, priority: e.target.value as TaskPriority })}
-                      className="w-full px-2 py-2 text-xs border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                      className="w-full px-2 py-2 text-xs border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                       required
                     >
                       {Object.entries(PRIORITY_LABELS).map(([value, { label }]) => (
@@ -706,33 +706,33 @@ export default function TasksPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs font-semibold text-berry-700 mb-1.5">Fecha Vencimiento</label>
+                    <label className="block text-xs font-semibold text-arandano-700 mb-1.5">Fecha Vencimiento</label>
                     <input
                       type="date"
                       value={formData.dueDate}
                       onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                      className="w-full px-2 py-2 text-xs border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                      className="w-full px-2 py-2 text-xs border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-berry-700 mb-1.5">Asignado a</label>
+                    <label className="block text-xs font-semibold text-arandano-700 mb-1.5">Asignado a</label>
                     <input
                       type="text"
                       value={formData.assignedTo}
                       onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
                       placeholder="Nombre"
-                      className="w-full px-2 py-2 text-xs border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                      className="w-full px-2 py-2 text-xs border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-berry-700 mb-1.5">Tags (separados por comas)</label>
+                  <label className="block text-xs font-semibold text-arandano-700 mb-1.5">Tags (separados por comas)</label>
                   <input
                     type="text"
                     value={formData.tags}
                     onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                     placeholder="tag1, tag2"
-                    className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                    className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                   />
                 </div>
                 <div className="flex gap-2 pt-2">
@@ -747,7 +747,7 @@ export default function TasksPage() {
                   <button
                     type="submit"
                     disabled={loading || !formData.title}
-                    className="flex-1 px-3 py-2.5 text-sm bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                    className="flex-1 px-3 py-2.5 text-sm bg-arandano-600 hover:bg-arandano-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
                   >
                     {loading ? 'Guardando...' : editingTask ? 'Actualizar' : 'Crear'}
                   </button>

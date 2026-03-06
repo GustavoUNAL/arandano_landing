@@ -915,23 +915,6 @@ export default function WaiterPage() {
                 <span>▼</span>
               </button>
               <button
-                onClick={() => {
-                  if (mesaElegida && (cart.length === 0 || confirm('¿Salir de esta mesa? La cuenta se guarda.'))) {
-                    setCuentasPorMesa((prev) => {
-                      const next = { ...prev, [mesaElegida]: { items: cart, comment: orderComment } }
-                      try { localStorage.setItem(CUENTAS_MESAS_STORAGE_KEY, JSON.stringify(next)) } catch (_) {}
-                      return next
-                    })
-                    setMesaElegida('')
-                    setCart([])
-                    setOrderComment('')
-                  } else if (!mesaElegida) setShowMesaSelectorModal(true)
-                }}
-                className="px-3 py-2 text-sm font-medium text-stone-600 hover:text-stone-800 hover:bg-stone-100 rounded-lg"
-              >
-                {mesaElegida ? 'Cambiar mesa' : 'Mesa'}
-              </button>
-              <button
                 onClick={() => setShowCategoriesModal(true)}
                 className="px-5 py-2.5 bg-arandano-600 hover:bg-arandano-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-2"
               >
@@ -1072,10 +1055,12 @@ export default function WaiterPage() {
             `}</style>
             <button
               onClick={() => setShowFloatingCart(true)}
-              className={`fixed bottom-8 sm:bottom-4 right-4 sm:right-4 cart-float w-16 h-16 bg-stone-600 hover:bg-stone-700 text-white rounded-full shadow-2xl hover:shadow-stone-500/50 flex items-center justify-center text-2xl font-bold transition-all duration-300 hover:scale-110 active:scale-95 z-40`}
+              className="fixed bottom-24 right-6 cart-float w-14 h-14 bg-[rgb(47,77,107)] hover:bg-arandano-700 text-white rounded-full shadow-xl hover:shadow-2xl flex items-center justify-center transition-all duration-200 z-40"
               aria-label="Ver carrito"
             >
-              <span>🛒</span>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
+              </svg>
               <div className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
                 {cart.reduce((sum, item) => sum + item.quantity, 0)}
               </div>
@@ -1085,9 +1070,9 @@ export default function WaiterPage() {
           <div className={`fixed bottom-8 sm:bottom-4 left-0 right-0 sm:left-auto sm:right-4 ${showPaymentModal ? 'z-30' : 'z-40'}`}>
             <div className="bg-white rounded-t-xl sm:rounded-xl shadow-2xl border-t-2 sm:border-2 border-stone-200 w-full sm:max-w-md sm:w-[28rem]">
               {/* Header del carrito */}
-              <div className="flex justify-between items-center p-3 sm:p-4 border-b border-stone-200 bg-gradient-to-r from-arandano-50 to-purple-50 rounded-t-xl">
+              <div className="flex justify-between items-center p-3 sm:p-4 border-b border-stone-200 bg-arandano-50 rounded-t-xl">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-stone-700 rounded-full flex items-center justify-center text-white font-bold">
+                  <div className="w-8 h-8 bg-[rgb(47,77,107)] rounded-full flex items-center justify-center text-white font-bold text-sm">
                     {cart.reduce((sum, item) => sum + item.quantity, 0)}
                   </div>
                   <h2 className="text-lg font-bold text-arandano-950">Carrito</h2>
@@ -1141,7 +1126,7 @@ export default function WaiterPage() {
                             <span className="w-8 text-center font-medium text-sm">{item.quantity}</span>
                             <button
                               onClick={() => addToCart(item)}
-                              className="w-7 h-7 flex items-center justify-center bg-stone-600 text-white rounded hover:bg-stone-700 text-sm font-bold"
+                              className="w-7 h-7 flex items-center justify-center bg-[rgb(47,77,107)] text-white rounded hover:bg-arandano-700 text-sm font-bold"
                             >
                               +
                             </button>
@@ -1212,7 +1197,7 @@ export default function WaiterPage() {
                         setShowDebtForm(false)
                         setShowPaymentModal(true)
                       }}
-                      className="w-full bg-gradient-to-r from-arandano-600 to-purple-600 hover:from-arandano-700 hover:to-purple-700 text-white font-semibold py-3 sm:py-3.5 rounded-lg transition-all shadow-lg hover:shadow-xl text-sm sm:text-base"
+                      className="w-full bg-[rgb(47,77,107)] hover:bg-arandano-700 text-white font-semibold py-3 sm:py-3.5 rounded-lg transition-all shadow-lg hover:shadow-xl text-sm sm:text-base"
                     >
                       💳 Cobrar ${formatPrice(getTotal())}
                     </button>
@@ -2148,20 +2133,6 @@ export default function WaiterPage() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Botón flotante para volver al panel */}
-      {!(showPaymentModal || showCategoriesModal || showSaleDetail || (cart.length > 0 && showFloatingCart)) && (
-        <button
-          onClick={() => router.push('/sales')}
-          className="fixed bottom-20 right-6 w-14 h-14 bg-arandano-600 hover:bg-arandano-700 text-white rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center z-40 ring-2 ring-white/20 hover:ring-arandano-300"
-          title="Ver ventas en calendario"
-          aria-label="Ver ventas en calendario"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </button>
       )}
 
       {/* Mensaje de confirmación de venta exitosa */}

@@ -940,7 +940,7 @@ export default function AdminPage() {
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="text-berry-600">Cargando...</div>
+        <div className="text-arandano-600">Cargando...</div>
       </div>
     )
   }
@@ -949,19 +949,19 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full">
-          <h1 className="text-2xl font-bold text-berry-950 mb-6 text-center">
+          <h1 className="text-2xl font-bold text-arandano-950 mb-6 text-center">
             Panel de Administración
           </h1>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-berry-700 mb-2">
+              <label className="block text-sm font-medium text-arandano-700 mb-2">
                 Contraseña
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent"
                 required
               />
             </div>
@@ -970,7 +970,7 @@ export default function AdminPage() {
             )}
             <button
               type="submit"
-              className="w-full bg-berry-600 hover:bg-berry-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+              className="w-full bg-arandano-600 hover:bg-arandano-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
             >
               Iniciar Sesión
             </button>
@@ -978,7 +978,7 @@ export default function AdminPage() {
           <div className="mt-4 flex justify-center gap-3 flex-wrap">
             <button
               onClick={() => router.back()}
-              className="flex items-center gap-1.5 px-3 py-2 text-berry-600 hover:text-berry-700 font-medium rounded-lg hover:bg-berry-50 transition-all text-sm"
+              className="flex items-center gap-1.5 px-3 py-2 text-arandano-600 hover:text-arandano-700 font-medium rounded-lg hover:bg-arandano-50 transition-all text-sm"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -987,7 +987,7 @@ export default function AdminPage() {
             </button>
             <button
               onClick={() => router.push('/')}
-              className="flex items-center gap-1.5 px-3 py-2 text-berry-600 hover:text-berry-700 font-medium rounded-lg hover:bg-berry-50 transition-all text-sm"
+              className="flex items-center gap-1.5 px-3 py-2 text-arandano-600 hover:text-arandano-700 font-medium rounded-lg hover:bg-arandano-50 transition-all text-sm"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -996,7 +996,7 @@ export default function AdminPage() {
             </button>
             <button
               onClick={() => router.push('/')}
-              className="flex items-center gap-1.5 px-3 py-2 text-berry-600 hover:text-berry-700 font-medium rounded-lg hover:bg-berry-50 transition-all text-sm"
+              className="flex items-center gap-1.5 px-3 py-2 text-arandano-600 hover:text-arandano-700 font-medium rounded-lg hover:bg-arandano-50 transition-all text-sm"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -1037,7 +1037,7 @@ export default function AdminPage() {
 
           {/* Título principal centrado - Solo en dashboard */}
           {currentView === 'dashboard' && (
-            <h1 className="text-2xl sm:text-3xl font-bold text-berry-950 text-center mb-2 pt-10 lg:pt-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-arandano-950 text-center mb-2 pt-10 lg:pt-0">
               Panel de Administración
             </h1>
           )}
@@ -1048,12 +1048,12 @@ export default function AdminPage() {
             {/* Tarjeta Sistema de Cobros - Primero */}
             <button
               onClick={() => router.push('/waiter')}
-              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-amber-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
+              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-arandano-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
             >
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-amber-200 transition-colors">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-arandano-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-arandano-200 transition-colors">
                 <span className="text-2xl sm:text-3xl">💳</span>
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-berry-950 mb-1.5 leading-tight">Cobros</h2>
+              <h2 className="text-base sm:text-lg font-bold text-arandano-950 mb-1.5 leading-tight">Cobros</h2>
               <p className="text-stone-600 text-xs sm:text-sm leading-relaxed flex-grow">
                 Registro de ventas y procesamiento de pagos
               </p>
@@ -1065,12 +1065,12 @@ export default function AdminPage() {
                 setCurrentView('products-for-sale')
                 loadSales()
               }}
-              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-berry-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
+              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-arandano-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
             >
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-berry-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-berry-200 transition-colors">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-arandano-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-arandano-200 transition-colors">
                 <span className="text-2xl sm:text-3xl">☕</span>
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-berry-950 mb-1.5 leading-tight">Productos a la venta</h2>
+              <h2 className="text-base sm:text-lg font-bold text-arandano-950 mb-1.5 leading-tight">Productos a la venta</h2>
               <p className="text-stone-600 text-xs sm:text-sm leading-relaxed flex-grow">
                 Calcula rentabilidad y gestiona stock
               </p>
@@ -1079,12 +1079,12 @@ export default function AdminPage() {
             {/* Tarjeta Inventario */}
             <button
               onClick={() => router.push('/inventory')}
-              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-emerald-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
+              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-arandano-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
             >
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-emerald-200 transition-colors">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-arandano-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-arandano-200 transition-colors">
                 <span className="text-2xl sm:text-3xl">📦</span>
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-berry-950 mb-1.5 leading-tight">Inventario</h2>
+              <h2 className="text-base sm:text-lg font-bold text-arandano-950 mb-1.5 leading-tight">Inventario</h2>
               <p className="text-stone-600 text-xs sm:text-sm leading-relaxed flex-grow">
                 Control de insumos, stock y proveedores
               </p>
@@ -1093,12 +1093,12 @@ export default function AdminPage() {
             {/* Tarjeta Tareas */}
             <button
               onClick={() => router.push('/tasks')}
-              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-indigo-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
+              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-arandano-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
             >
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-indigo-200 transition-colors">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-arandano-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-arandano-200 transition-colors">
                 <span className="text-2xl sm:text-3xl">✅</span>
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-berry-950 mb-1.5 leading-tight">Tareas</h2>
+              <h2 className="text-base sm:text-lg font-bold text-arandano-950 mb-1.5 leading-tight">Tareas</h2>
               <p className="text-stone-600 text-xs sm:text-sm leading-relaxed flex-grow">
                 Organiza y gestiona tareas pendientes
               </p>
@@ -1110,12 +1110,12 @@ export default function AdminPage() {
                 setCurrentView('recipes')
                 // loadRecipes se cargará automáticamente con el useEffect
               }}
-              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-orange-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
+              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-arandano-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
             >
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-orange-200 transition-colors">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-arandano-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-arandano-200 transition-colors">
                 <span className="text-2xl sm:text-3xl">📝</span>
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-berry-950 mb-1.5 leading-tight">Recetas</h2>
+              <h2 className="text-base sm:text-lg font-bold text-arandano-950 mb-1.5 leading-tight">Recetas</h2>
               <p className="text-stone-600 text-xs sm:text-sm leading-relaxed flex-grow">
                 Gestiona recetas de cócteles y cafés
               </p>
@@ -1124,12 +1124,12 @@ export default function AdminPage() {
             {/* Tarjeta Gastos */}
             <button
               onClick={() => router.push('/expenses')}
-              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-purple-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
+              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-arandano-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
             >
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-purple-200 transition-colors">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-arandano-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-arandano-200 transition-colors">
                 <span className="text-2xl sm:text-3xl">💰</span>
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-berry-950 mb-1.5 leading-tight">Gastos</h2>
+              <h2 className="text-base sm:text-lg font-bold text-arandano-950 mb-1.5 leading-tight">Gastos</h2>
               <p className="text-stone-600 text-xs sm:text-sm leading-relaxed flex-grow">
                 Registra y controla gastos fijos y variables
               </p>
@@ -1138,12 +1138,12 @@ export default function AdminPage() {
             {/* Tarjeta Analytics */}
             <button
               onClick={() => router.push('/analytics')}
-              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-blue-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
+              className="group bg-white rounded-xl border-2 border-stone-200 hover:border-arandano-300 p-4 sm:p-5 hover:shadow-lg transition-all duration-200 flex flex-col h-full items-center text-center"
             >
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-blue-200 transition-colors">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-arandano-100 rounded-xl flex items-center justify-center flex-shrink-0 mb-3 group-hover:bg-arandano-200 transition-colors">
                 <span className="text-2xl sm:text-3xl">📊</span>
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-berry-950 mb-1.5 leading-tight">Analytics</h2>
+              <h2 className="text-base sm:text-lg font-bold text-arandano-950 mb-1.5 leading-tight">Analytics</h2>
               <p className="text-stone-600 text-xs sm:text-sm leading-relaxed flex-grow">
                 Métricas, KPIs y análisis de ventas
               </p>
@@ -1162,7 +1162,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('products')}
               className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'products'
-                  ? 'border-berry-600 text-berry-600'
+                  ? 'border-arandano-600 text-arandano-600'
                   : 'border-transparent text-stone-500'
               }`}
             >
@@ -1172,7 +1172,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('inventory')}
               className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'inventory'
-                  ? 'border-berry-600 text-berry-600'
+                  ? 'border-arandano-600 text-arandano-600'
                   : 'border-transparent text-stone-500'
               }`}
             >
@@ -1185,40 +1185,40 @@ export default function AdminPage() {
             <form onSubmit={handleSubmit} className="space-y-4 mb-6 sm:mb-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-arandano-700 mb-2">
                   Nombre del Producto *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-arandano-700 mb-2">
                   Precio (COP) *
                 </label>
                 <input
                   type="number"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent"
                   required
                   min="0"
                 />
               </div>
 
               <div>
-                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-arandano-700 mb-2">
                   Tipo *
                 </label>
                 <select
                   value={formData.type}
                   onChange={(e) => handleTypeChange(e.target.value as Product['type'])}
-                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent"
                   required
                 >
                   <option value="cafeteria">Cafetería</option>
@@ -1228,13 +1228,13 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-arandano-700 mb-2">
                   Categoría *
                 </label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value as Product['category'] })}
-                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent"
                   required
                 >
                   {CATEGORIES[formData.type].map(cat => (
@@ -1246,20 +1246,20 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-arandano-700 mb-2">
                   Stock
                 </label>
                 <input
                   type="number"
                   value={formData.stock}
                   onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent"
                   min="0"
                 />
               </div>
 
               <div>
-                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-arandano-700 mb-2">
                   Tamaño (opcional)
                 </label>
                 <input
@@ -1267,12 +1267,12 @@ export default function AdminPage() {
                   value={formData.size}
                   onChange={(e) => setFormData({ ...formData, size: e.target.value })}
                   placeholder="Ej: Copa 150ml, Botella 750ml"
-                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-arandano-700 mb-2">
                   URL de la Imagen
                 </label>
                 <input
@@ -1280,29 +1280,29 @@ export default function AdminPage() {
                   value={formData.imageUrl}
                   onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
                   placeholder="https://ejemplo.com/imagen.jpg"
-                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-arandano-700 mb-2">
                   Descripción
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
-                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent"
                 />
               </div>
 
               {/* Sección de Inventario Inteligente */}
               <div className="md:col-span-2 border-t border-stone-300 pt-4 mt-4">
-                <h3 className="text-base sm:text-lg font-semibold text-berry-950 mb-4">📦 Inventario Inteligente</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-arandano-950 mb-4">📦 Inventario Inteligente</h3>
               </div>
 
               <div>
-                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-arandano-700 mb-2">
                   Stock Mínimo (para alertas)
                 </label>
                 <input
@@ -1310,13 +1310,13 @@ export default function AdminPage() {
                   value={formData.minStock}
                   onChange={(e) => setFormData({ ...formData, minStock: e.target.value })}
                   placeholder="Ej: 10"
-                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent"
                   min="0"
                 />
               </div>
 
               <div>
-                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-arandano-700 mb-2">
                   Costo Unitario (COP)
                 </label>
                 <input
@@ -1324,25 +1324,25 @@ export default function AdminPage() {
                   value={formData.cost}
                   onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
                   placeholder="Ej: 2000"
-                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent"
                   min="0"
                 />
               </div>
 
               <div>
-                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-arandano-700 mb-2">
                   Fecha de Compra
                 </label>
                 <input
                   type="date"
                   value={formData.purchaseDate}
                   onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent"
                 />
               </div>
 
               <div>
-                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-arandano-700 mb-2">
                   Lote / Número de Lote
                 </label>
                 <input
@@ -1350,12 +1350,12 @@ export default function AdminPage() {
                   value={formData.lot}
                   onChange={(e) => setFormData({ ...formData, lot: e.target.value })}
                   placeholder="Ej: LOTE-2024-001"
-                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent"
                 />
               </div>
 
               <div>
-                <label className="block text-sm sm:text-base font-medium text-berry-700 mb-2">
+                <label className="block text-sm sm:text-base font-medium text-arandano-700 mb-2">
                   Proveedor
                 </label>
                 <input
@@ -1363,7 +1363,7 @@ export default function AdminPage() {
                   value={formData.supplier}
                   onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
                   placeholder="Ej: Distribuidora XYZ"
-                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent"
+                  className="w-full px-4 py-3 sm:py-2 text-base sm:text-sm border border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -1372,7 +1372,7 @@ export default function AdminPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-6 py-3 sm:py-2 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 text-base sm:text-sm"
+                  className="flex-1 px-6 py-3 sm:py-2 bg-arandano-600 hover:bg-arandano-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 text-base sm:text-sm"
                 >
                   {editingProduct ? 'Actualizar Producto' : 'Crear Producto'}
                 </button>
@@ -1466,7 +1466,7 @@ export default function AdminPage() {
           {/* Vista de Inventario (Móvil) */}
           {activeTab === 'inventory' && (
             <div className="sm:hidden space-y-4 mb-6">
-              <h2 className="text-xl font-bold text-berry-950 mb-4">📦 Inventario Rápido</h2>
+              <h2 className="text-xl font-bold text-arandano-950 mb-4">📦 Inventario Rápido</h2>
               <div className="space-y-3">
                 {products
                   .filter(p => p.stock !== undefined)
@@ -1488,7 +1488,7 @@ export default function AdminPage() {
                       >
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex-1">
-                            <h3 className="font-semibold text-base text-berry-950 mb-1">
+                            <h3 className="font-semibold text-base text-arandano-950 mb-1">
                               {product.name}
                             </h3>
                             <div className="flex items-center gap-2 mb-2">
@@ -1501,13 +1501,13 @@ export default function AdminPage() {
                             </div>
                             <div className="flex items-center justify-between">
                               <div>
-                                <div className="text-sm text-stone-600">Stock: <span className={`font-bold ${isLowStock ? 'text-red-600' : 'text-berry-700'}`}>{product.stock}</span></div>
+                                <div className="text-sm text-stone-600">Stock: <span className={`font-bold ${isLowStock ? 'text-red-600' : 'text-arandano-700'}`}>{product.stock}</span></div>
                                 {product.minStock && (
                                   <div className="text-xs text-stone-500">Mín: {product.minStock}</div>
                                 )}
                               </div>
                               <div className="text-right">
-                                <div className="text-sm font-semibold text-berry-700">
+                                <div className="text-sm font-semibold text-arandano-700">
                                   ${product.price.toLocaleString('es-CO')}
                                 </div>
                                 {product.cost && (
@@ -1522,7 +1522,7 @@ export default function AdminPage() {
                         <div className="flex gap-2 mt-3">
                           <button
                             onClick={() => handleEdit(product)}
-                            className="flex-1 px-3 py-2 bg-berry-600 hover:bg-berry-700 text-white rounded text-sm font-medium transition-colors"
+                            className="flex-1 px-3 py-2 bg-arandano-600 hover:bg-arandano-700 text-white rounded text-sm font-medium transition-colors"
                           >
                             Editar
                           </button>
@@ -1542,13 +1542,13 @@ export default function AdminPage() {
 
           {/* Lista de Productos */}
           <div className={activeTab === 'inventory' ? 'hidden sm:block' : ''}>
-            <h2 className="text-xl sm:text-2xl font-bold text-berry-950 mb-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-arandano-950 mb-4">
               Productos ({products.length})
             </h2>
             {loading && !products.length ? (
-              <div className="text-center py-8 text-berry-600">Cargando...</div>
+              <div className="text-center py-8 text-arandano-600">Cargando...</div>
             ) : products.length === 0 ? (
-              <div className="text-center py-8 text-berry-600">No hay productos</div>
+              <div className="text-center py-8 text-arandano-600">No hay productos</div>
             ) : (
               <>
                 {/* Vista Cards (Móvil) */}
@@ -1560,7 +1560,7 @@ export default function AdminPage() {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-base text-berry-950 mb-1">
+                          <h3 className="font-semibold text-base text-arandano-950 mb-1">
                             {product.name}
                           </h3>
                           <div className="flex items-center gap-2 mb-2">
@@ -1571,7 +1571,7 @@ export default function AdminPage() {
                             </span>
                             <span className="text-xs text-stone-500">{product.category}</span>
                           </div>
-                          <div className="text-sm font-semibold text-berry-700 mb-1">
+                          <div className="text-sm font-semibold text-arandano-700 mb-1">
                             ${product.price.toLocaleString('es-CO')}
                           </div>
                           <div className="text-sm text-stone-600">
@@ -1582,7 +1582,7 @@ export default function AdminPage() {
                       <div className="flex gap-2 mt-3">
                         <button
                           onClick={() => handleEdit(product)}
-                          className="flex-1 px-3 py-2 bg-berry-600 hover:bg-berry-700 text-white rounded text-sm font-medium transition-colors"
+                          className="flex-1 px-3 py-2 bg-arandano-600 hover:bg-arandano-700 text-white rounded text-sm font-medium transition-colors"
                         >
                           Editar
                         </button>
@@ -1607,7 +1607,7 @@ export default function AdminPage() {
                         placeholder="Buscar producto por nombre, tipo o categoría..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full px-4 py-3 pl-12 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-transparent text-base"
+                        className="w-full px-4 py-3 pl-12 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-transparent text-base"
                       />
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -1643,7 +1643,7 @@ export default function AdminPage() {
                   </div>
 
                   <table className="w-full border-collapse bg-white rounded-lg overflow-hidden">
-                    <thead className="bg-berry-600 text-white">
+                    <thead className="bg-arandano-600 text-white">
                       <tr>
                         <th className="px-4 py-3 text-left text-sm font-semibold">Nombre</th>
                         <th className="px-4 py-3 text-left text-sm font-semibold">Tipo</th>
@@ -1723,7 +1723,7 @@ export default function AdminPage() {
                             <div className="flex gap-2">
                               <button
                                 onClick={() => handleEdit(product)}
-                                className="px-3 py-1 bg-berry-600 hover:bg-berry-700 text-white rounded text-xs transition-colors"
+                                className="px-3 py-1 bg-arandano-600 hover:bg-arandano-700 text-white rounded text-xs transition-colors"
                               >
                                 Editar
                               </button>
@@ -1751,7 +1751,7 @@ export default function AdminPage() {
           <>
             {/* Título y botones */}
             <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-4">
-              <h2 className="text-xl sm:text-2xl font-bold text-berry-950 text-center sm:text-left">
+              <h2 className="text-xl sm:text-2xl font-bold text-arandano-950 text-center sm:text-left">
                 Productos a la venta
               </h2>
               <div className="flex gap-3">
@@ -1780,7 +1780,7 @@ export default function AdminPage() {
                 </button>
                 <button
                   onClick={() => setCurrentView('shop-preview')}
-                  className="flex items-center gap-2 px-4 py-2 bg-berry-600 hover:bg-berry-700 text-white rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                  className="flex items-center gap-2 px-4 py-2 bg-arandano-600 hover:bg-arandano-700 text-white rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -1792,13 +1792,13 @@ export default function AdminPage() {
             </div>
 
             {loading ? (
-              <div className="text-center py-8 text-berry-600">Cargando...</div>
+              <div className="text-center py-8 text-arandano-600">Cargando...</div>
             ) : (
               <>
                 {/* Filtro de tipo de producto */}
                 <div className="mb-6 bg-white rounded-lg p-4 border-2 border-stone-200 shadow-sm">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    <label className="text-sm font-semibold text-berry-950 whitespace-nowrap">
+                    <label className="text-sm font-semibold text-arandano-950 whitespace-nowrap">
                       Filtrar por tipo:
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -1806,7 +1806,7 @@ export default function AdminPage() {
                         onClick={() => setProductTypeFilter('all')}
                         className={`px-4 py-2 rounded-lg font-medium transition-all ${
                           productTypeFilter === 'all'
-                            ? 'bg-berry-600 text-white shadow-md'
+                            ? 'bg-arandano-600 text-white shadow-md'
                             : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                         }`}
                       >
@@ -1854,7 +1854,7 @@ export default function AdminPage() {
                 {/* Filtro por categoría */}
                 <div className="mb-6 bg-white rounded-lg p-4 border-2 border-stone-200 shadow-sm">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    <label className="text-sm font-semibold text-berry-950 whitespace-nowrap">
+                    <label className="text-sm font-semibold text-arandano-950 whitespace-nowrap">
                       Filtrar por categoría:
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -1862,7 +1862,7 @@ export default function AdminPage() {
                         onClick={() => setProductCategoryFilter('all')}
                         className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                           productCategoryFilter === 'all'
-                            ? 'bg-berry-600 text-white shadow-md'
+                            ? 'bg-arandano-600 text-white shadow-md'
                             : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                         }`}
                       >
@@ -1874,7 +1874,7 @@ export default function AdminPage() {
                           onClick={() => setProductCategoryFilter(value)}
                           className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                             productCategoryFilter === value
-                              ? 'bg-berry-600 text-white shadow-md'
+                              ? 'bg-arandano-600 text-white shadow-md'
                               : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                           }`}
                         >
@@ -1930,7 +1930,7 @@ export default function AdminPage() {
                     }
                     return ALL_CATEGORIES.filter(c => byCategory.has(c.value)).map(cat => (
                       <div key={cat.value} className="mb-8">
-                        <h3 className="text-lg font-bold text-berry-800 border-b-2 border-berry-200 pb-2 mb-4">{cat.label}</h3>
+                        <h3 className="text-lg font-bold text-arandano-800 border-b-2 border-arandano-200 pb-2 mb-4">{cat.label}</h3>
                         <div className="grid grid-cols-1 gap-4">
                         {byCategory.get(cat.value)!.map(({ product, totalSold, cost, realCost, price, margin, marginPercent, totalProfit }) => {
                           const productStock = getProductStock(product)
@@ -1943,16 +1943,16 @@ export default function AdminPage() {
                           return (
                       <div
                         key={product.id}
-                        className="bg-gradient-to-br from-white to-stone-50 border-2 border-stone-200 rounded-xl p-5 hover:shadow-xl hover:border-berry-300 transition-all duration-300"
+                        className="bg-gradient-to-br from-white to-stone-50 border-2 border-stone-200 rounded-xl p-5 hover:shadow-xl hover:border-arandano-300 transition-all duration-300"
                       >
                         {/* Header con nombre y precio */}
                         <div className="mb-4 pb-4 border-b border-stone-200">
-                          <h3 className="font-bold text-berry-950 text-lg mb-2 leading-tight">
+                          <h3 className="font-bold text-arandano-950 text-lg mb-2 leading-tight">
                             {product.name}
                           </h3>
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-stone-600">Precio de venta:</span>
-                            <span className="text-xl font-bold text-berry-600">
+                            <span className="text-xl font-bold text-arandano-600">
                               ${price.toLocaleString('es-CO')}
                             </span>
                           </div>
@@ -2055,7 +2055,7 @@ export default function AdminPage() {
 
                         {/* Información de rentabilidad */}
                         {cost > 0 && (
-                          <div className="mb-4 p-4 bg-gradient-to-r from-berry-50 via-berry-100 to-purple-50 rounded-lg border-2 border-berry-200">
+                          <div className="mb-4 p-4 bg-gradient-to-r from-arandano-50 via-arandano-100 to-arandano-50 rounded-lg border-2 border-arandano-200">
                             <div className="flex justify-between items-center mb-2">
                               <span className="text-xs font-semibold text-stone-700">Margen de ganancia:</span>
                               <span className={`font-bold text-base ${
@@ -2067,7 +2067,7 @@ export default function AdminPage() {
                               </span>
                             </div>
                             {margin > 0 && (
-                              <div className="flex justify-between items-center pt-2 border-t-2 border-berry-200">
+                              <div className="flex justify-between items-center pt-2 border-t-2 border-arandano-200">
                                 <span className="text-xs font-semibold text-stone-700">Rentabilidad por unidad:</span>
                                 <span className="font-bold text-lg text-green-600">
                                   ${margin.toLocaleString('es-CO')}
@@ -2092,7 +2092,7 @@ export default function AdminPage() {
                           )}
                           <button
                             onClick={() => setSelectedProductDetail(product)}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-berry-600 to-berry-700 hover:from-berry-700 hover:to-berry-800 text-white rounded-lg text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r bg-arandano-600 hover:bg-arandano-700 text-white rounded-lg text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -2114,16 +2114,16 @@ export default function AdminPage() {
                 <div className="hidden sm:block overflow-x-auto bg-white rounded-xl shadow-lg border border-stone-200">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b-2 border-berry-200 bg-berry-50">
-                        <th className="px-4 py-3 text-left text-sm font-bold text-berry-950">Producto</th>
-                        <th className="px-4 py-3 text-center text-sm font-bold text-berry-950">Precio</th>
-                        <th className="px-4 py-3 text-center text-sm font-bold text-berry-950">Costo</th>
-                        <th className="px-4 py-3 text-center text-sm font-bold text-berry-950">Margen</th>
-                        <th className="px-4 py-3 text-center text-sm font-bold text-berry-950">Margen %</th>
-                        <th className="px-4 py-3 text-center text-sm font-bold text-berry-950">Vendidos</th>
-                        <th className="px-4 py-3 text-center text-sm font-bold text-berry-950">Stock</th>
-                        <th className="px-4 py-3 text-center text-sm font-bold text-berry-950">Rentabilidad</th>
-                        <th className="px-4 py-3 text-center text-sm font-bold text-berry-950">Acción</th>
+                      <tr className="border-b-2 border-arandano-200 bg-arandano-50">
+                        <th className="px-4 py-3 text-left text-sm font-bold text-arandano-950">Producto</th>
+                        <th className="px-4 py-3 text-center text-sm font-bold text-arandano-950">Precio</th>
+                        <th className="px-4 py-3 text-center text-sm font-bold text-arandano-950">Costo</th>
+                        <th className="px-4 py-3 text-center text-sm font-bold text-arandano-950">Margen</th>
+                        <th className="px-4 py-3 text-center text-sm font-bold text-arandano-950">Margen %</th>
+                        <th className="px-4 py-3 text-center text-sm font-bold text-arandano-950">Vendidos</th>
+                        <th className="px-4 py-3 text-center text-sm font-bold text-arandano-950">Stock</th>
+                        <th className="px-4 py-3 text-center text-sm font-bold text-arandano-950">Rentabilidad</th>
+                        <th className="px-4 py-3 text-center text-sm font-bold text-arandano-950">Acción</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2180,7 +2180,7 @@ export default function AdminPage() {
                                                   product.category === 'cafe-frio'
                           return (
                           <tr key={product.id} className="border-b border-stone-200 hover:bg-stone-50 transition-colors">
-                            <td className="px-4 py-3 text-sm font-semibold text-berry-950">
+                            <td className="px-4 py-3 text-sm font-semibold text-arandano-950">
                               {product.name}
                             </td>
                             <td className="px-4 py-3 text-sm text-center font-medium">
@@ -2248,7 +2248,7 @@ export default function AdminPage() {
                                       type="number"
                                       value={editingStock.stock}
                                       onChange={(e) => setEditingStock({ id: product.id, stock: parseInt(e.target.value) || 0 })}
-                                      className="w-20 px-2 py-1 border-2 border-berry-300 rounded-lg text-center text-xs focus:ring-2 focus:ring-berry-500"
+                                      className="w-20 px-2 py-1 border-2 border-arandano-300 rounded-lg text-center text-xs focus:ring-2 focus:ring-arandano-500"
                                       autoFocus
                                       onBlur={() => {
                                         if (editingStock) {
@@ -2340,7 +2340,7 @@ export default function AdminPage() {
                                           setSelectedProductDetail(product)
                                           setOpenMenuId(null)
                                         }}
-                                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 hover:bg-berry-50 hover:text-berry-700 transition-colors"
+                                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 hover:bg-arandano-50 hover:text-arandano-700 transition-colors"
                                       >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                           <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -2371,8 +2371,8 @@ export default function AdminPage() {
                           )
                           }
                     return ALL_CATEGORIES.filter(c => desktopByCategory.has(c.value)).flatMap(cat => [
-                      <tr key={`cat-${cat.value}`} className="bg-berry-100 border-b-2 border-berry-200">
-                        <td colSpan={9} className="px-4 py-2 font-bold text-berry-950 text-sm">{cat.label}</td>
+                      <tr key={`cat-${cat.value}`} className="bg-arandano-100 border-b-2 border-arandano-200">
+                        <td colSpan={9} className="px-4 py-2 font-bold text-arandano-950 text-sm">{cat.label}</td>
                       </tr>,
                       ...desktopByCategory.get(cat.value)!.map(renderRow)
                     ])
@@ -2382,8 +2382,8 @@ export default function AdminPage() {
                 </div>
 
                 {/* Nota informativa */}
-                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-berry-50 rounded-lg">
-                  <p className="text-xs sm:text-sm text-berry-700">
+                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-arandano-50 rounded-lg">
+                  <p className="text-xs sm:text-sm text-arandano-700">
                     <strong>Nota:</strong> El stock se puede ajustar manualmente haciendo clic en el número. 
                     El botón &quot;Ajustar&quot; resta automáticamente las ventas del día actual del stock.
                   </p>
@@ -2398,7 +2398,7 @@ export default function AdminPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
             <div className="bg-white rounded-lg p-4 sm:p-6 max-w-2xl w-full my-4 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl sm:text-2xl font-bold text-berry-950">
+                <h3 className="text-xl sm:text-2xl font-bold text-arandano-950">
                   {editingProductForSale === 'new' 
                     ? 'Nuevo Producto'
                     : editingProductForSale !== null 
@@ -2433,12 +2433,12 @@ export default function AdminPage() {
                 <form onSubmit={(e) => { e.preventDefault(); handleSaveProductForSale() }} className="space-y-4">
                   {/* Nombre */}
                   <div>
-                    <label className="block text-sm font-semibold text-berry-950 mb-1">Nombre del Producto</label>
+                    <label className="block text-sm font-semibold text-arandano-950 mb-1">Nombre del Producto</label>
                     <input
                       type="text"
                       value={productEditForm.name}
                       onChange={(e) => setProductEditForm({ ...productEditForm, name: e.target.value })}
-                      className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                      className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                       required
                     />
                   </div>
@@ -2446,23 +2446,23 @@ export default function AdminPage() {
                   {/* Precio y Stock */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-berry-950 mb-1">Precio</label>
+                      <label className="block text-sm font-semibold text-arandano-950 mb-1">Precio</label>
                       <input
                         type="number"
                         value={productEditForm.price}
                         onChange={(e) => setProductEditForm({ ...productEditForm, price: e.target.value })}
-                        className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                        className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                         required
                         min="0"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-berry-950 mb-1">Stock</label>
+                      <label className="block text-sm font-semibold text-arandano-950 mb-1">Stock</label>
                       <input
                         type="number"
                         value={productEditForm.stock}
                         onChange={(e) => setProductEditForm({ ...productEditForm, stock: e.target.value })}
-                        className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                        className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                         required
                         min="0"
                       />
@@ -2472,11 +2472,11 @@ export default function AdminPage() {
                   {/* Tipo y Categoría */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-berry-950 mb-1">Tipo</label>
+                      <label className="block text-sm font-semibold text-arandano-950 mb-1">Tipo</label>
                       <select
                         value={productEditForm.type}
                         onChange={(e) => setProductEditForm({ ...productEditForm, type: e.target.value as Product['type'] })}
-                        className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                        className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                         required
                       >
                         <option value="cafeteria">Cafetería</option>
@@ -2485,11 +2485,11 @@ export default function AdminPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-berry-950 mb-1">Categoría</label>
+                      <label className="block text-sm font-semibold text-arandano-950 mb-1">Categoría</label>
                       <select
                         value={productEditForm.category}
                         onChange={(e) => setProductEditForm({ ...productEditForm, category: e.target.value as Product['category'] })}
-                        className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                        className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                         required
                       >
                         {CATEGORIES[productEditForm.type].map(cat => (
@@ -2501,12 +2501,12 @@ export default function AdminPage() {
 
                   {/* URL de Imagen */}
                   <div>
-                    <label className="block text-sm font-semibold text-berry-950 mb-1">URL de Imagen (para carrito de compras)</label>
+                    <label className="block text-sm font-semibold text-arandano-950 mb-1">URL de Imagen (para carrito de compras)</label>
                     <input
                       type="url"
                       value={productEditForm.imageUrl}
                       onChange={(e) => setProductEditForm({ ...productEditForm, imageUrl: e.target.value })}
-                      className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                      className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                       placeholder="https://ejemplo.com/imagen.jpg"
                     />
                     {productEditForm.imageUrl && (
@@ -2524,11 +2524,11 @@ export default function AdminPage() {
 
                   {/* Descripción */}
                   <div>
-                    <label className="block text-sm font-semibold text-berry-950 mb-1">Descripción</label>
+                    <label className="block text-sm font-semibold text-arandano-950 mb-1">Descripción</label>
                     <textarea
                       value={productEditForm.description}
                       onChange={(e) => setProductEditForm({ ...productEditForm, description: e.target.value })}
-                      className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                      className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                       rows={3}
                     />
                   </div>
@@ -2536,33 +2536,33 @@ export default function AdminPage() {
                   {/* Tamaño, Costo y Stock Mínimo */}
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-berry-950 mb-1">Tamaño</label>
+                      <label className="block text-sm font-semibold text-arandano-950 mb-1">Tamaño</label>
                       <input
                         type="text"
                         value={productEditForm.size}
                         onChange={(e) => setProductEditForm({ ...productEditForm, size: e.target.value })}
-                        className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                        className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                         placeholder="Ej: Grande"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-berry-950 mb-1">Costo</label>
+                      <label className="block text-sm font-semibold text-arandano-950 mb-1">Costo</label>
                       <input
                         type="number"
                         value={productEditForm.cost}
                         onChange={(e) => setProductEditForm({ ...productEditForm, cost: e.target.value })}
-                        className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                        className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                         placeholder="0"
                         min="0"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-berry-950 mb-1">Stock Mínimo</label>
+                      <label className="block text-sm font-semibold text-arandano-950 mb-1">Stock Mínimo</label>
                       <input
                         type="number"
                         value={productEditForm.minStock}
                         onChange={(e) => setProductEditForm({ ...productEditForm, minStock: e.target.value })}
-                        className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                        className="w-full px-4 py-2 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                         placeholder="0"
                         min="0"
                       />
@@ -2574,7 +2574,7 @@ export default function AdminPage() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="flex-1 px-4 py-2 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 px-4 py-2 bg-arandano-600 hover:bg-arandano-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading ? 'Guardando...' : 'Guardar Cambios'}
                     </button>
@@ -2612,7 +2612,7 @@ export default function AdminPage() {
                 return (
                   <div className="space-y-4">
                     <div>
-                      <h4 className="font-semibold text-berry-950 text-lg mb-2">{product.name}</h4>
+                      <h4 className="font-semibold text-arandano-950 text-lg mb-2">{product.name}</h4>
                       {product.imageUrl && (
                         <div className="mb-3 relative w-full max-w-xs h-48 mx-auto">
                           <Image 
@@ -2641,7 +2641,7 @@ export default function AdminPage() {
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="block text-xs text-stone-600 mb-1">Precio de venta:</span>
-                          <span className="font-semibold text-berry-600 text-base">
+                          <span className="font-semibold text-arandano-600 text-base">
                             ${price.toLocaleString('es-CO')}
                           </span>
                         </div>
@@ -2671,7 +2671,7 @@ export default function AdminPage() {
                             <>
                               <div>
                                 <span className="block text-xs text-stone-600 mb-1">Margen:</span>
-                                <span className="font-semibold text-berry-600 text-base">
+                                <span className="font-semibold text-arandano-600 text-base">
                                   ${realMargin.toLocaleString('es-CO')}
                                 </span>
                               </div>
@@ -2691,11 +2691,11 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    <div className="bg-berry-50 rounded-lg p-4">
+                    <div className="bg-arandano-50 rounded-lg p-4">
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="block text-xs text-stone-600 mb-1">Total vendido:</span>
-                          <span className="font-semibold text-berry-950 text-base">{totalSold} unidades</span>
+                          <span className="font-semibold text-arandano-950 text-base">{totalSold} unidades</span>
                         </div>
                         <div>
                           <span className="block text-xs text-stone-600 mb-1">Stock actual:</span>
@@ -2719,7 +2719,7 @@ export default function AdminPage() {
                             const realStock = productStock !== null ? productStock : 0
                             return (
                               <span className={`font-semibold text-base ${
-                                realStock <= (product.minStock || 0) ? 'text-red-600' : 'text-berry-600'
+                                realStock <= (product.minStock || 0) ? 'text-red-600' : 'text-arandano-600'
                               }`}>
                                 {realStock} unidades
                               </span>
@@ -2727,10 +2727,10 @@ export default function AdminPage() {
                           })()}
                         </div>
                         {productStockDetail && (
-                          <div className="col-span-2 mt-3 pt-3 border-t border-berry-200">
-                            <span className="block text-xs font-semibold text-berry-800 mb-2">Stock detallado (inventario enlazado)</span>
+                          <div className="col-span-2 mt-3 pt-3 border-t border-arandano-200">
+                            <span className="block text-xs font-semibold text-arandano-800 mb-2">Stock detallado (inventario enlazado)</span>
                             <div className="text-sm text-stone-600 mb-2">
-                              Total actual: <span className="font-bold text-berry-700">{productStockDetail.totalStock}</span> unidades
+                              Total actual: <span className="font-bold text-arandano-700">{productStockDetail.totalStock}</span> unidades
                               {productStockDetail.source === 'linked' && productStockDetail.breakdown && productStockDetail.breakdown.length > 0 && (
                                 <span className="ml-2 text-xs text-stone-500">
                                   (desglose por ítem de inventario)
@@ -2753,7 +2753,7 @@ export default function AdminPage() {
                                     {productStockDetail.breakdown.map((row, i) => (
                                       <tr key={i} className="border-b border-stone-100">
                                         <td className="px-2 py-1.5 text-stone-800">{row.inventoryItemName}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-berry-700">{row.quantity}</td>
+                                        <td className="px-2 py-1.5 text-right font-medium text-arandano-700">{row.quantity}</td>
                                         <td className="px-2 py-1.5 text-stone-600">{row.unit}</td>
                                         <td className="px-2 py-1.5 text-stone-500">{row.lot || '-'}</td>
                                         <td className="px-2 py-1.5 text-stone-500">{row.supplier || '-'}</td>
@@ -2785,7 +2785,7 @@ export default function AdminPage() {
                     <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-stone-200">
                       <button
                         onClick={() => handleEditProductForSale(product)}
-                        className="flex-1 px-4 py-2 bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 px-4 py-2 bg-arandano-600 hover:bg-arandano-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -2828,7 +2828,7 @@ export default function AdminPage() {
         {currentView === 'shop-preview' && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-              <h2 className="text-xl sm:text-2xl font-bold text-berry-950 text-center sm:text-left">
+              <h2 className="text-xl sm:text-2xl font-bold text-arandano-950 text-center sm:text-left">
                 Vista de Tienda
               </h2>
               <div className="flex gap-3">
@@ -2868,18 +2868,18 @@ export default function AdminPage() {
             </div>
 
             {loading ? (
-              <div className="text-center py-8 text-berry-600">Cargando...</div>
+              <div className="text-center py-8 text-arandano-600">Cargando...</div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {products.map((product) => (
                   <div
                     key={product.id}
-                    className="bg-white border-2 border-stone-200 rounded-xl p-4 hover:shadow-lg transition-all hover:border-berry-300 relative group"
+                    className="bg-white border-2 border-stone-200 rounded-xl p-4 hover:shadow-lg transition-all hover:border-arandano-300 relative group"
                   >
                     {/* Botón de edición rápida */}
                     <button
                       onClick={() => handleEditProductForSale(product)}
-                      className="absolute top-2 right-2 w-8 h-8 bg-berry-600 hover:bg-berry-700 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg z-10"
+                      className="absolute top-2 right-2 w-8 h-8 bg-arandano-600 hover:bg-arandano-700 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg z-10"
                       title="Editar producto"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -2906,7 +2906,7 @@ export default function AdminPage() {
 
                     {/* Información del producto */}
                     <div className="space-y-2">
-                      <h3 className="font-bold text-berry-950 text-sm leading-tight line-clamp-2">
+                      <h3 className="font-bold text-arandano-950 text-sm leading-tight line-clamp-2">
                         {product.name}
                       </h3>
                       {product.description && (
@@ -2915,7 +2915,7 @@ export default function AdminPage() {
                         </p>
                       )}
                       <div className="flex items-center justify-between pt-2 border-t border-stone-200">
-                        <span className="text-lg font-bold text-berry-600">
+                        <span className="text-lg font-bold text-arandano-600">
                           ${product.price.toLocaleString('es-CO')}
                         </span>
                         {product.stock > 0 ? (
@@ -2940,7 +2940,7 @@ export default function AdminPage() {
         {currentView === 'recipes' && (
           <>
             <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-berry-950 text-center sm:text-left order-2 sm:order-1">
+              <h2 className="text-xl sm:text-2xl font-bold text-arandano-950 text-center sm:text-left order-2 sm:order-1">
                 Gestión de Recetas
               </h2>
               <button
@@ -2965,7 +2965,7 @@ export default function AdminPage() {
             {editingRecipe ? (
               /* Formulario de receta - compacto y claro */
               <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-4 sm:p-5 mb-4">
-                <h3 className="text-base font-bold text-berry-950 mb-3">
+                <h3 className="text-base font-bold text-arandano-950 mb-3">
                   {editingRecipe === 'new' ? 'Nueva Receta' : 'Editar Receta'}
                 </h3>
                 
@@ -2973,7 +2973,7 @@ export default function AdminPage() {
                   {/* Producto final + Categoría en fila en desktop */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-berry-950 mb-1">
+                      <label className="block text-xs font-semibold text-arandano-950 mb-1">
                         Producto Final (Cóctel/Café)
                       </label>
                       <select
@@ -2991,7 +2991,7 @@ export default function AdminPage() {
                             })
                           }
                         }}
-                        className="w-full px-3 py-2 border-2 border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-berry-500 focus:border-berry-500 min-h-[40px]"
+                        className="w-full px-3 py-2 border-2 border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500 min-h-[40px]"
                       >
                         <option value="">Seleccionar producto...</option>
                         {products
@@ -3004,13 +3004,13 @@ export default function AdminPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-berry-950 mb-1">
+                      <label className="block text-xs font-semibold text-arandano-950 mb-1">
                         Categoría
                       </label>
                       <select
                         value={recipeForm.category}
                         onChange={(e) => setRecipeForm({ ...recipeForm, category: e.target.value as any })}
-                        className="w-full px-3 py-2 border-2 border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-berry-500 focus:border-berry-500 min-h-[40px]"
+                        className="w-full px-3 py-2 border-2 border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500 min-h-[40px]"
                       >
                         <option value="coctel">Cóctel</option>
                         <option value="cafe-caliente">Café Caliente</option>
@@ -3021,7 +3021,7 @@ export default function AdminPage() {
 
                   {/* Ingredientes */}
                   <div>
-                    <label className="block text-xs font-semibold text-berry-950 mb-1">
+                    <label className="block text-xs font-semibold text-arandano-950 mb-1">
                       Ingredientes
                     </label>
                     <div className="space-y-2">
@@ -3155,7 +3155,7 @@ export default function AdminPage() {
                   const product = products.find(p => p.id === recipe.productId)
                   const availability = getProductAvailability(product || recipe as any)
                   return (
-                    <div key={recipe.id} className="bg-white rounded-lg shadow border border-stone-200 overflow-hidden hover:shadow-md hover:border-berry-200 transition-all flex flex-col min-w-0">
+                    <div key={recipe.id} className="bg-white rounded-lg shadow border border-stone-200 overflow-hidden hover:shadow-md hover:border-arandano-200 transition-all flex flex-col min-w-0">
                       {/* Imagen pequeña */}
                       <div className="relative flex-shrink-0">
                         {product?.imageUrl ? (
@@ -3172,14 +3172,14 @@ export default function AdminPage() {
                             />
                           </div>
                         ) : (
-                          <div className="w-full aspect-[4/3] max-h-28 bg-gradient-to-br from-berry-100 to-berry-200 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-berry-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <div className="w-full aspect-[4/3] max-h-28 bg-gradient-to-br from-arandano-100 to-arandano-200 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-arandano-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
                           </div>
                         )}
                         <div className="absolute top-1 left-1 flex items-center gap-1 flex-wrap">
-                          <span className="px-1.5 py-0.5 bg-white/95 rounded text-[10px] font-semibold text-berry-950 capitalize">
+                          <span className="px-1.5 py-0.5 bg-white/95 rounded text-[10px] font-semibold text-arandano-950 capitalize">
                             {recipe.category.replace('-', ' ')}
                           </span>
                           {availability !== null && typeof availability === 'number' && (
@@ -3191,16 +3191,16 @@ export default function AdminPage() {
                       </div>
                       {/* Contenido compacto */}
                       <div className="p-2.5 sm:p-3 flex-1 flex flex-col min-w-0">
-                        <h3 className="text-sm font-bold text-berry-950 line-clamp-2 leading-tight mb-0.5">{recipe.productName}</h3>
+                        <h3 className="text-sm font-bold text-arandano-950 line-clamp-2 leading-tight mb-0.5">{recipe.productName}</h3>
                         {product?.price && (
-                          <p className="text-base font-bold text-berry-700 mb-1.5">${product.price.toLocaleString('es-CO')}</p>
+                          <p className="text-base font-bold text-arandano-700 mb-1.5">${product.price.toLocaleString('es-CO')}</p>
                         )}
                         {availability === 'no-recipe' && (
                           <p className="text-[10px] text-amber-600 font-medium mb-1">Sin receta</p>
                         )}
                         {/* Ingredientes en lista compacta */}
                         <div className="flex-1 min-h-0 mb-2">
-                          <p className="text-[10px] font-semibold text-berry-800 uppercase tracking-wide mb-1">Ingredientes</p>
+                          <p className="text-[10px] font-semibold text-arandano-800 uppercase tracking-wide mb-1">Ingredientes</p>
                           <ul className="space-y-0.5 text-[11px] text-stone-600">
                             {recipe.ingredients.slice(0, 4).map((ingredient: any, idx: number) => {
                               const inventoryItem = inventory.find(i => i.id === ingredient.productId)

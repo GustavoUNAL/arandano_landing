@@ -14,6 +14,14 @@ export type { Task, TaskCategory, TaskPriority } from './tasks'
 import { getTasks as getTasksJSON, saveTasks as saveTasksJSON, createTask as createTaskJSON, updateTask as updateTaskJSON, deleteTask as deleteTaskJSON, getTasksByCategory as getTasksByCategoryJSON, getTasksByPriority as getTasksByPriorityJSON, getOverdueTasks as getOverdueTasksJSON } from './tasks'
 
 function rowToTask(row: any): Task {
+  let parsedTags: string[] | undefined
+  if (row.tags) {
+    try {
+      parsedTags = JSON.parse(row.tags)
+    } catch {
+      parsedTags = undefined
+    }
+  }
   return {
     id: row.id,
     title: row.title,
@@ -23,7 +31,9 @@ function rowToTask(row: any): Task {
     completed: Boolean(row.completed),
     createdAt: row.createdAt,
     completedAt: row.completedAt || undefined,
-    dueDate: row.dueDate || undefined
+    dueDate: row.dueDate || undefined,
+    assignedTo: row.assignedTo || undefined,
+    tags: parsedTags
   }
 }
 
@@ -54,8 +64,8 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'complete
   
   const db = getDatabase()
   db.prepare(`
-    INSERT INTO tasks (id, title, description, category, priority, completed, createdAt, dueDate)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO tasks (id, title, description, category, priority, completed, createdAt, dueDate, assignedTo, tags)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     newTask.id,
     newTask.title,
@@ -64,7 +74,9 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'complete
     newTask.priority,
     0, // completed as integer
     newTask.createdAt,
-    newTask.dueDate || null
+    newTask.dueDate || null,
+    newTask.assignedTo || null,
+    newTask.tags ? JSON.stringify(newTask.tags) : null
   )
   
   return newTask
@@ -87,7 +99,7 @@ export async function updateTask(id: string, updates: Partial<Task>): Promise<Ta
   }
   // Si se desmarca como completada, quitar fecha de completado
   if (updates.completed === false) {
-    updates.completedAt = undefined
+    updates.completedAt = null as any
   }
   
   Object.entries(updates).forEach(([key, value]) => {
@@ -95,6 +107,14 @@ export async function updateTask(id: string, updates: Partial<Task>): Promise<Ta
       if (key === 'completed') {
         fields.push('completed = ?')
         values.push(value ? 1 : 0) // Convertir boolean a integer
+      } else if (key === 'tags') {
+        fields.push('tags = ?')
+        if (Array.isArray(value)) values.push(JSON.stringify(value))
+        else if (typeof value === 'string') values.push(value)
+        else values.push(null)
+      } else if (key === 'completedAt' && value === null) {
+        fields.push('completedAt = ?')
+        values.push(null)
       } else {
         fields.push(`${key} = ?`)
         values.push(value)

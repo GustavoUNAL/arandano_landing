@@ -223,7 +223,7 @@ export default function ExpensesPage() {
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="text-berry-600">Cargando...</div>
+        <div className="text-arandano-600">Cargando...</div>
       </div>
     )
   }
@@ -269,7 +269,7 @@ export default function ExpensesPage() {
 
         {/* Header con título centrado */}
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-berry-950 text-center mb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-arandano-950 text-center mb-4">
             Gestión de Gastos
           </h1>
 
@@ -280,11 +280,11 @@ export default function ExpensesPage() {
               placeholder="Buscar gastos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-sm"
+              className="flex-1 px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500 text-sm"
             />
             <button
               onClick={() => setShowConfigModal(true)}
-              className="p-3 bg-berry-600 hover:bg-berry-700 text-white rounded-xl transition-colors"
+              className="p-3 bg-arandano-600 hover:bg-arandano-700 text-white rounded-xl transition-colors"
               aria-label="Configuración"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -298,28 +298,28 @@ export default function ExpensesPage() {
         {/* Resumen mejorado - Grid 2x2 */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
           {/* Fila 1 */}
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border-2 border-blue-200 p-4 sm:p-5">
-            <div className="text-xs sm:text-sm text-blue-700 font-medium mb-1">Gastos Fijos</div>
-            <div className="text-xl sm:text-2xl font-bold text-blue-950">
+          <div className="bg-arandano-50 rounded-xl border-2 border-arandano-200 p-4 sm:p-5">
+            <div className="text-xs sm:text-sm text-arandano-700 font-medium mb-1">Gastos Fijos</div>
+            <div className="text-xl sm:text-2xl font-bold text-arandano-950">
               ${totalFixed.toLocaleString('es-CO')}
             </div>
           </div>
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl border-2 border-green-200 p-4 sm:p-5">
-            <div className="text-xs sm:text-sm text-green-700 font-medium mb-1">Gastos Variables</div>
-            <div className="text-xl sm:text-2xl font-bold text-green-950">
+          <div className="bg-arandano-50 rounded-xl border-2 border-arandano-200 p-4 sm:p-5">
+            <div className="text-xs sm:text-sm text-arandano-700 font-medium mb-1">Gastos Variables</div>
+            <div className="text-xl sm:text-2xl font-bold text-arandano-950">
               ${totalVariable.toLocaleString('es-CO')}
             </div>
           </div>
           {/* Fila 2 */}
-          <div className="bg-gradient-to-br from-berry-50 to-berry-100 rounded-xl border-2 border-berry-200 p-4 sm:p-5">
-            <div className="text-xs sm:text-sm text-berry-700 font-medium mb-1">Total</div>
-            <div className="text-xl sm:text-2xl font-bold text-berry-950">
+          <div className="bg-arandano-50 rounded-xl border-2 border-arandano-200 p-4 sm:p-5">
+            <div className="text-xs sm:text-sm text-arandano-700 font-medium mb-1">Total</div>
+            <div className="text-xl sm:text-2xl font-bold text-arandano-950">
               ${totalExpenses.toLocaleString('es-CO')}
             </div>
           </div>
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border-2 border-purple-200 p-4 sm:p-5">
-            <div className="text-xs sm:text-sm text-purple-700 font-medium mb-1">Este Mes</div>
-            <div className="text-xl sm:text-2xl font-bold text-purple-950">
+          <div className="bg-arandano-50 rounded-xl border-2 border-arandano-200 p-4 sm:p-5">
+            <div className="text-xs sm:text-sm text-arandano-700 font-medium mb-1">Este Mes</div>
+            <div className="text-xl sm:text-2xl font-bold text-arandano-950">
               ${totalCurrentMonth.toLocaleString('es-CO')}
             </div>
           </div>
@@ -328,14 +328,14 @@ export default function ExpensesPage() {
         {/* Lista de Gastos */}
         <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl sm:text-2xl font-bold text-berry-950">
+            <h2 className="text-xl sm:text-2xl font-bold text-arandano-950">
               Gastos Registrados {filteredExpenses.length !== expenses.length && `(${filteredExpenses.length} de ${expenses.length})`}
             </h2>
           </div>
           {loading ? (
-            <div className="text-center py-8 text-berry-600">Cargando...</div>
+            <div className="text-center py-8 text-arandano-600">Cargando...</div>
           ) : filteredExpenses.length === 0 ? (
-            <div className="text-center py-8 text-berry-600">
+            <div className="text-center py-8 text-arandano-600">
               {hasActiveFilters ? 'No se encontraron gastos con los filtros aplicados' : 'No hay gastos registrados'}
             </div>
           ) : (
@@ -343,14 +343,14 @@ export default function ExpensesPage() {
               {filteredExpenses.map((expense) => (
                 <div
                   key={expense.id}
-                  className="bg-gradient-to-br from-white to-stone-50 border-2 border-stone-200 rounded-xl p-5 sm:p-6 hover:shadow-lg transition-all hover:border-berry-300 hover:shadow-berry-100"
+                  className="bg-gradient-to-br from-white to-stone-50 border-2 border-stone-200 rounded-xl p-5 sm:p-6 hover:shadow-lg transition-all hover:border-arandano-300 hover:shadow-berry-100"
                 >
                   {/* Header: Descripción y Monto */}
                   <div className="flex items-start justify-between gap-4 mb-4 pb-4 border-b border-stone-200">
-                    <h3 className="font-bold text-berry-950 text-lg sm:text-xl flex-1 leading-tight">
+                    <h3 className="font-bold text-arandano-950 text-lg sm:text-xl flex-1 leading-tight">
                       {expense.description}
                     </h3>
-                    <div className="text-2xl sm:text-3xl font-bold text-berry-600 whitespace-nowrap">
+                    <div className="text-2xl sm:text-3xl font-bold text-arandano-600 whitespace-nowrap">
                       ${expense.amount.toLocaleString('es-CO')}
                     </div>
                   </div>
@@ -359,8 +359,8 @@ export default function ExpensesPage() {
                   <div className="flex flex-wrap items-center gap-2 mb-4">
                     <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
                       expense.type === 'fixed' 
-                        ? 'bg-blue-100 text-blue-800 border-2 border-blue-300' 
-                        : 'bg-green-100 text-green-800 border-2 border-green-300'
+? 'bg-arandano-100 text-arandano-800 border-2 border-arandano-300'
+                        : 'bg-arandano-100 text-arandano-800 border-2 border-arandano-300'
                     }`}>
                       {expense.type === 'fixed' ? 'Fijo' : 'Variable'}
                     </span>
@@ -385,7 +385,7 @@ export default function ExpensesPage() {
                   <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-200">
                     <button
                       onClick={() => handleEdit(expense)}
-                      className="w-11 h-11 flex items-center justify-center bg-berry-600 hover:bg-berry-700 text-white rounded-lg transition-all shadow-md hover:shadow-lg hover:scale-110 active:scale-95"
+                      className="w-11 h-11 flex items-center justify-center bg-arandano-600 hover:bg-arandano-700 text-white rounded-lg transition-all shadow-md hover:shadow-lg hover:scale-110 active:scale-95"
                       title="Editar"
                       aria-label="Editar gasto"
                     >
@@ -421,7 +421,7 @@ export default function ExpensesPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg sm:text-xl font-bold text-berry-950">Configuración</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-arandano-950">Configuración</h2>
                 <button
                   onClick={() => setShowConfigModal(false)}
                   className="text-stone-500 hover:text-stone-700 text-2xl leading-none w-7 h-7 flex items-center justify-center"
@@ -439,7 +439,7 @@ export default function ExpensesPage() {
                     resetForm()
                     setShowAddModal(true)
                   }}
-                  className="w-full px-4 py-3 rounded-lg font-semibold transition-all text-left bg-berry-600 text-white shadow-md hover:bg-berry-700 active:bg-berry-800 text-sm"
+                  className="w-full px-4 py-3 rounded-lg font-semibold transition-all text-left bg-arandano-600 text-white shadow-md hover:bg-arandano-700 active:bg-arandano-800 text-sm"
                 >
                   Nuevo Gasto
                 </button>
@@ -453,7 +453,7 @@ export default function ExpensesPage() {
                       <select
                         value={filter.type}
                         onChange={(e) => setFilter({ ...filter, type: e.target.value as '' | ExpenseType })}
-                        className="w-full px-3 py-2 text-xs border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500"
+                        className="w-full px-3 py-2 text-xs border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500"
                       >
                         <option value="">Todos</option>
                         <option value="fixed">Fijo</option>
@@ -465,7 +465,7 @@ export default function ExpensesPage() {
                       <select
                         value={filter.category}
                         onChange={(e) => setFilter({ ...filter, category: e.target.value as '' | ExpenseCategory })}
-                        className="w-full px-3 py-2 text-xs border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500"
+                        className="w-full px-3 py-2 text-xs border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500"
                       >
                         <option value="">Todas</option>
                         {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
@@ -480,7 +480,7 @@ export default function ExpensesPage() {
                           type="date"
                           value={filter.dateFrom}
                           onChange={(e) => setFilter({ ...filter, dateFrom: e.target.value })}
-                          className="w-full px-2 py-2 text-xs border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500"
+                          className="w-full px-2 py-2 text-xs border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500"
                         />
                       </div>
                       <div>
@@ -489,7 +489,7 @@ export default function ExpensesPage() {
                           type="date"
                           value={filter.dateTo}
                           onChange={(e) => setFilter({ ...filter, dateTo: e.target.value })}
-                          className="w-full px-2 py-2 text-xs border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500"
+                          className="w-full px-2 py-2 text-xs border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500"
                         />
                       </div>
                     </div>
@@ -512,15 +512,15 @@ export default function ExpensesPage() {
                   <div className="space-y-1.5 text-xs">
                     <div className="flex justify-between">
                       <span className="text-stone-600">Total gastos:</span>
-                      <span className="font-semibold text-berry-950">{expenses.length}</span>
+                      <span className="font-semibold text-arandano-950">{expenses.length}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-stone-600">Fijos:</span>
-                      <span className="font-semibold text-blue-700">{fixedExpenses.length}</span>
+                      <span className="font-semibold text-arandano-700">{fixedExpenses.length}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-stone-600">Variables:</span>
-                      <span className="font-semibold text-green-700">{variableExpenses.length}</span>
+                      <span className="font-semibold text-arandano-700">{variableExpenses.length}</span>
                     </div>
                   </div>
                 </div>
@@ -551,7 +551,7 @@ export default function ExpensesPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg sm:text-xl font-bold text-berry-950">
+                <h2 className="text-lg sm:text-xl font-bold text-arandano-950">
                   {editingExpense ? 'Editar Gasto' : 'Nuevo Gasto'}
                 </h2>
                 <button
@@ -567,21 +567,21 @@ export default function ExpensesPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-berry-700 mb-1.5">Fecha *</label>
+                    <label className="block text-xs font-semibold text-arandano-700 mb-1.5">Fecha *</label>
                     <input
                       type="date"
                       value={formData.date}
                       onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                      className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-berry-700 mb-1.5">Tipo *</label>
+                    <label className="block text-xs font-semibold text-arandano-700 mb-1.5">Tipo *</label>
                     <select
                       value={formData.type}
                       onChange={(e) => setFormData({ ...formData, type: e.target.value as ExpenseType })}
-                      className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                      className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                       required
                     >
                       <option value="fixed">Fijo</option>
@@ -591,11 +591,11 @@ export default function ExpensesPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-berry-700 mb-1.5">Categoría *</label>
+                    <label className="block text-xs font-semibold text-arandano-700 mb-1.5">Categoría *</label>
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value as ExpenseCategory })}
-                      className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                      className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                       required
                     >
                       {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
@@ -604,34 +604,34 @@ export default function ExpensesPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-berry-700 mb-1.5">Monto (COP) *</label>
+                    <label className="block text-xs font-semibold text-arandano-700 mb-1.5">Monto (COP) *</label>
                     <input
                       type="number"
                       value={formData.amount}
                       onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                      className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                      className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                       required
                       min="0"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-berry-700 mb-1.5">Descripción *</label>
+                  <label className="block text-xs font-semibold text-arandano-700 mb-1.5">Descripción *</label>
                   <input
                     type="text"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                    className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-berry-700 mb-1.5">Notas</label>
+                  <label className="block text-xs font-semibold text-arandano-700 mb-1.5">Notas</label>
                   <textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     rows={3}
-                    className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                    className="w-full px-3 py-2.5 text-sm border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                   />
                 </div>
                 <div className="flex gap-3 pt-2">
@@ -646,7 +646,7 @@ export default function ExpensesPage() {
                   <button
                     type="submit"
                     disabled={loading || !formData.description || !formData.amount}
-                    className="flex-1 px-4 py-2.5 text-sm bg-berry-600 hover:bg-berry-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                    className="flex-1 px-4 py-2.5 text-sm bg-arandano-600 hover:bg-arandano-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
                   >
                     {loading ? 'Guardando...' : editingExpense ? 'Actualizar' : 'Crear'}
                   </button>
@@ -662,7 +662,7 @@ export default function ExpensesPage() {
             resetForm()
             setShowAddModal(true)
           }}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-berry-600 hover:bg-berry-700 text-white rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center z-40"
+          className="fixed bottom-6 right-6 w-14 h-14 bg-arandano-600 hover:bg-arandano-700 text-white rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center z-40"
           title="Registrar Nuevo Gasto"
           aria-label="Registrar Nuevo Gasto"
         >

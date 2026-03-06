@@ -224,6 +224,35 @@ function initializeDatabase() {
       dueDate TEXT
     )
   `)
+  // Migraciones para tareas (bases de datos existentes)
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN completedAt TEXT`)
+  } catch (e: any) {
+    if (!e.message?.includes('duplicate column')) {
+      console.warn('Error adding completedAt column:', e.message)
+    }
+  }
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN dueDate TEXT`)
+  } catch (e: any) {
+    if (!e.message?.includes('duplicate column')) {
+      console.warn('Error adding dueDate column:', e.message)
+    }
+  }
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN assignedTo TEXT`)
+  } catch (e: any) {
+    if (!e.message?.includes('duplicate column')) {
+      console.warn('Error adding assignedTo column:', e.message)
+    }
+  }
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN tags TEXT`)
+  } catch (e: any) {
+    if (!e.message?.includes('duplicate column')) {
+      console.warn('Error adding tags column:', e.message)
+    }
+  }
 
   // Tabla de gastos
   db.exec(`

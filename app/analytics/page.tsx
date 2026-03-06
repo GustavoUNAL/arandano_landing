@@ -332,11 +332,11 @@ export default function AnalyticsPage() {
 
   const getClassificationColor = (classification: string) => {
     switch (classification) {
-      case 'estrella': return 'bg-green-100 text-green-800 border-green-300'
-      case 'volumen': return 'bg-yellow-100 text-yellow-800 border-yellow-300'
-      case 'premium': return 'bg-blue-100 text-blue-800 border-blue-300'
+      case 'estrella': return 'bg-arandano-100 text-arandano-800 border-arandano-300'
+      case 'volumen': return 'bg-arandano-100 text-arandano-800 border-arandano-200'
+      case 'premium': return 'bg-arandano-200 text-arandano-900 border-arandano-300'
       case 'problema': return 'bg-red-100 text-red-800 border-red-300'
-      default: return 'bg-gray-100 text-gray-800 border-gray-300'
+      default: return 'bg-stone-100 text-stone-700 border-stone-200'
     }
   }
 
@@ -353,7 +353,7 @@ export default function AnalyticsPage() {
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="text-berry-600">Cargando...</div>
+        <div className="text-arandano-600">Cargando...</div>
       </div>
     )
   }
@@ -370,7 +370,7 @@ export default function AnalyticsPage() {
         <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-berry-950 text-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-arandano-950 text-center mb-6">
             Dashboard de Análisis
           </h1>
 
@@ -378,13 +378,13 @@ export default function AnalyticsPage() {
           <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border-2 border-stone-200">
             <div className="flex flex-wrap gap-4 items-end">
               <div className="flex-1 min-w-[150px]">
-                <label className="block text-sm font-semibold text-berry-700 mb-2">
+                <label className="block text-sm font-semibold text-arandano-700 mb-2">
                   Agrupar por
                 </label>
                 <select
                   value={groupBy}
                   onChange={(e) => setGroupBy(e.target.value as 'range' | 'week' | 'month')}
-                  className="w-full px-4 py-2.5 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-sm"
+                  className="w-full px-4 py-2.5 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500 text-sm"
                 >
                   <option value="week">Semana</option>
                   <option value="month">Mes (4 semanas)</option>
@@ -394,7 +394,7 @@ export default function AnalyticsPage() {
               {groupBy !== 'range' && (
                 <>
                   <div className="min-w-[120px]">
-                    <label className="block text-sm font-semibold text-berry-700 mb-2">
+                    <label className="block text-sm font-semibold text-arandano-700 mb-2">
                       Año
                     </label>
                     <input
@@ -404,18 +404,18 @@ export default function AnalyticsPage() {
                         setYear(parseInt(e.target.value))
                         setSelectedWeek(null) // Reset al cambiar año
                       }}
-                      className="w-full px-4 py-2.5 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                      className="w-full px-4 py-2.5 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                     />
                   </div>
                   {groupBy === 'week' && weeklyKPIs.length > 0 && (
                     <div className="flex-1 min-w-[200px]">
-                      <label className="block text-sm font-semibold text-berry-700 mb-2">
+                      <label className="block text-sm font-semibold text-arandano-700 mb-2">
                         Seleccionar Semana
                       </label>
                       <select
                         value={selectedWeek || ''}
                         onChange={(e) => setSelectedWeek(parseInt(e.target.value))}
-                        className="w-full px-4 py-2.5 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500 text-sm"
+                        className="w-full px-4 py-2.5 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500 text-sm"
                       >
                         <option value="">Seleccionar...</option>
                         {weeklyKPIs.map((week) => (
@@ -431,25 +431,25 @@ export default function AnalyticsPage() {
               {groupBy === 'range' && (
                 <>
                   <div className="flex-1 min-w-[150px]">
-                    <label className="block text-sm font-semibold text-berry-700 mb-2">
+                    <label className="block text-sm font-semibold text-arandano-700 mb-2">
                       Fecha Inicio
                     </label>
                     <input
                       type="date"
                       value={dateRange.startDate}
                       onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                      className="w-full px-4 py-2.5 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                      className="w-full px-4 py-2.5 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                     />
                   </div>
                   <div className="flex-1 min-w-[150px]">
-                    <label className="block text-sm font-semibold text-berry-700 mb-2">
+                    <label className="block text-sm font-semibold text-arandano-700 mb-2">
                       Fecha Fin
                     </label>
                     <input
                       type="date"
                       value={dateRange.endDate}
                       onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                      className="w-full px-4 py-2.5 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-berry-500 focus:border-berry-500"
+                      className="w-full px-4 py-2.5 border-2 border-stone-300 rounded-lg focus:ring-2 focus:ring-arandano-500 focus:border-arandano-500"
                     />
                   </div>
                 </>
@@ -460,14 +460,14 @@ export default function AnalyticsPage() {
 
         {loading ? (
           <div className="text-center py-12 bg-white rounded-xl shadow-lg">
-            <div className="text-berry-600 text-lg">Cargando análisis...</div>
+            <div className="text-arandano-600 text-lg">Cargando análisis...</div>
           </div>
         ) : groupBy === 'week' ? (
           weeklyKPIs.length > 0 && selectedWeek ? (() => {
             const week = weeklyKPIs.find(w => w.weekNumber === selectedWeek)
             if (!week) return (
               <div className="text-center py-12 bg-white rounded-xl shadow-lg border-2 border-stone-200">
-                <div className="text-berry-600">Selecciona una semana</div>
+                <div className="text-arandano-600">Selecciona una semana</div>
               </div>
             )
             
@@ -476,11 +476,11 @@ export default function AnalyticsPage() {
             return (
               <div className="space-y-6">
                 {/* Header de la semana */}
-                <div className="bg-gradient-to-r from-berry-600 to-berry-700 rounded-xl shadow-xl p-6 text-white">
+                <div className="bg-gradient-to-r bg-arandano-600 rounded-xl shadow-xl p-6 text-white">
                   <h2 className="text-2xl font-bold text-center">
                     Semana {week.weekNumber} - {week.year}
                   </h2>
-                  <p className="text-center text-berry-100 text-sm mt-2">
+                  <p className="text-center text-arandano-100 text-sm mt-2">
                     {new Date(week.startDate).toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })} 
                     {' - '}
                     {new Date(week.endDate).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -489,7 +489,7 @@ export default function AnalyticsPage() {
 
                 {/* Gráfica principal: Compras vs Ventas por día */}
                 <div className="bg-white rounded-xl shadow-xl p-6 border-2 border-stone-200">
-                  <h3 className="text-xl font-bold text-berry-950 mb-6 text-center">
+                  <h3 className="text-xl font-bold text-arandano-950 mb-6 text-center">
                     Ventas vs Compras por Día
                   </h3>
                   {week.dailyKPIs && week.dailyKPIs.length > 0 ? (() => {
@@ -530,7 +530,7 @@ export default function AnalyticsPage() {
                         />
                         <div className="mt-6 pt-6 border-t border-stone-200 flex justify-center gap-6">
                           <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded bg-purple-600"></div>
+                            <div className="w-5 h-5 rounded bg-arandano-600"></div>
                             <span className="text-sm font-semibold text-stone-700">Ventas</span>
                           </div>
                           <div className="flex items-center gap-2">
@@ -541,7 +541,7 @@ export default function AnalyticsPage() {
                         <div className="mt-6 pt-6 border-t border-stone-200 grid grid-cols-2 gap-6">
                           <div className="text-center">
                             <div className="text-sm text-stone-600 mb-2">Total Ventas Semana</div>
-                            <div className="text-3xl font-bold text-purple-600">
+                            <div className="text-3xl font-bold text-arandano-600">
                               ${week.totalRevenue.toLocaleString('es-CO')}
                             </div>
                           </div>
@@ -569,11 +569,11 @@ export default function AnalyticsPage() {
 
                 {/* Resumen de KPIs */}
                 <div className="bg-white rounded-xl shadow-xl p-6 border-2 border-stone-200">
-                  <h3 className="text-lg font-bold text-berry-950 mb-5 text-center">Resumen Semanal</h3>
+                  <h3 className="text-lg font-bold text-arandano-950 mb-5 text-center">Resumen Semanal</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <div className="bg-gradient-to-br from-berry-50 to-berry-100 rounded-lg p-4 border border-berry-200">
-                      <div className="text-xs text-berry-700 font-medium mb-1">Ingresos</div>
-                      <div className="text-lg font-bold text-berry-950">
+                    <div className="bg-gradient-to-br from-arandano-50 to-arandano-100 rounded-lg p-4 border border-arandano-200">
+                      <div className="text-xs text-arandano-700 font-medium mb-1">Ingresos</div>
+                      <div className="text-lg font-bold text-arandano-950">
                         ${week.totalRevenue.toLocaleString('es-CO')}
                       </div>
                     </div>
@@ -601,9 +601,9 @@ export default function AnalyticsPage() {
                         ${week.netMargin.toLocaleString('es-CO')}
                       </div>
                     </div>
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
-                      <div className="text-xs text-blue-700 font-medium mb-1">Ticket Promedio</div>
-                      <div className="text-lg font-bold text-blue-950">
+                    <div className="bg-gradient-to-br from-arandano-50 to-arandano-100 rounded-lg p-4 border border-arandano-200">
+                      <div className="text-xs text-arandano-700 font-medium mb-1">Ticket Promedio</div>
+                      <div className="text-lg font-bold text-arandano-950">
                         ${week.averageTicket.toLocaleString('es-CO')}
                       </div>
                     </div>
@@ -613,7 +613,7 @@ export default function AnalyticsPage() {
             )
           })() : (
             <div className="text-center py-12 bg-white rounded-xl shadow-lg border-2 border-stone-200">
-              <div className="text-berry-600">No hay datos de semanas para el año {year}</div>
+              <div className="text-arandano-600">No hay datos de semanas para el año {year}</div>
             </div>
           )
         ) : groupBy === 'month' ? (
@@ -621,7 +621,7 @@ export default function AnalyticsPage() {
           <>
             {/* Gráfica de tendencias mensuales */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border-2 border-stone-200">
-              <h2 className="text-xl font-bold text-berry-950 mb-4 text-center">Tendencias Mensuales</h2>
+              <h2 className="text-xl font-bold text-arandano-950 mb-4 text-center">Tendencias Mensuales</h2>
               <LineChart
                 data={monthlyKPIs.map(m => m.totalRevenue)}
                 labels={monthlyKPIs.map(m => new Date(m.year, m.month, 1).toLocaleDateString('es-CO', { month: 'short' }))}
@@ -635,9 +635,9 @@ export default function AnalyticsPage() {
               {monthlyKPIs.map((month) => (
                 <div key={`${month.year}-${month.month}`} className="bg-white rounded-xl shadow-lg p-6 border-2 border-stone-200">
                   <div className="mb-4">
-                    <h3 className="text-xl font-bold text-berry-950 text-center">
+                    <h3 className="text-xl font-bold text-arandano-950 text-center">
                       {new Date(month.year, month.month, 1).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}
-                      <span className="text-sm font-normal text-berry-600 ml-2">
+                      <span className="text-sm font-normal text-arandano-600 ml-2">
                         (Semanas: {month.weeks.join(', ')})
                       </span>
                     </h3>
@@ -645,7 +645,7 @@ export default function AnalyticsPage() {
                   
                   {/* Gráfica de ingresos vs gastos */}
                   <div className="mb-6">
-                    <h4 className="text-sm font-semibold text-berry-700 mb-3 text-center">Ingresos vs Gastos</h4>
+                    <h4 className="text-sm font-semibold text-arandano-700 mb-3 text-center">Ingresos vs Gastos</h4>
                     <BarChart
                       data={[month.totalRevenue, month.fixedExpenses, month.variableExpenses, month.grossMargin]}
                       labels={['Ingresos', 'Fijos', 'Variables', 'Margen']}
@@ -655,9 +655,9 @@ export default function AnalyticsPage() {
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <div className="bg-gradient-to-br from-berry-50 to-berry-100 rounded-lg p-4 border border-berry-200">
-                      <div className="text-xs text-berry-700 font-medium mb-1">Ingresos</div>
-                      <div className="text-lg font-bold text-berry-950">
+                    <div className="bg-gradient-to-br from-arandano-50 to-arandano-100 rounded-lg p-4 border border-arandano-200">
+                      <div className="text-xs text-arandano-700 font-medium mb-1">Ingresos</div>
+                      <div className="text-lg font-bold text-arandano-950">
                         ${month.totalRevenue.toLocaleString('es-CO')}
                       </div>
                     </div>
@@ -685,9 +685,9 @@ export default function AnalyticsPage() {
                         ${month.netMargin.toLocaleString('es-CO')}
                       </div>
                     </div>
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
-                      <div className="text-xs text-blue-700 font-medium mb-1">Ticket Promedio</div>
-                      <div className="text-lg font-bold text-blue-950">
+                    <div className="bg-gradient-to-br from-arandano-50 to-arandano-100 rounded-lg p-4 border border-arandano-200">
+                      <div className="text-xs text-arandano-700 font-medium mb-1">Ticket Promedio</div>
+                      <div className="text-lg font-bold text-arandano-950">
                         ${month.averageTicket.toLocaleString('es-CO')}
                       </div>
                     </div>
@@ -698,22 +698,22 @@ export default function AnalyticsPage() {
           </>
           ) : (
             <div className="text-center py-12 bg-white rounded-xl shadow-lg border-2 border-stone-200">
-              <div className="text-berry-600">No hay meses con 4 semanas completas para el año {year}</div>
+              <div className="text-arandano-600">No hay meses con 4 semanas completas para el año {year}</div>
             </div>
           )
         ) : kpis ? (
           <>
             {/* KPIs Principales mejorados */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-gradient-to-br from-berry-50 to-berry-100 rounded-xl border-2 border-berry-200 shadow-lg p-5 sm:p-6">
-                <div className="text-sm text-berry-700 font-medium mb-2">Ingresos Totales</div>
-                <div className="text-2xl sm:text-3xl font-bold text-berry-950">
+              <div className="bg-gradient-to-br from-arandano-50 to-arandano-100 rounded-xl border-2 border-arandano-200 shadow-lg p-5 sm:p-6">
+                <div className="text-sm text-arandano-700 font-medium mb-2">Ingresos Totales</div>
+                <div className="text-2xl sm:text-3xl font-bold text-arandano-950">
                   ${kpis.totalRevenue.toLocaleString('es-CO')}
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border-2 border-blue-200 shadow-lg p-5 sm:p-6">
-                <div className="text-sm text-blue-700 font-medium mb-2">Ticket Promedio</div>
-                <div className="text-2xl sm:text-3xl font-bold text-blue-950">
+              <div className="bg-gradient-to-br from-arandano-50 to-arandano-100 rounded-xl border-2 border-arandano-200 shadow-lg p-5 sm:p-6">
+                <div className="text-sm text-arandano-700 font-medium mb-2">Ticket Promedio</div>
+                <div className="text-2xl sm:text-3xl font-bold text-arandano-950">
                   ${kpis.averageTicket.toLocaleString('es-CO')}
                 </div>
               </div>
@@ -745,7 +745,7 @@ export default function AnalyticsPage() {
 
             {/* Gráfica de Ingresos vs Gastos */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border-2 border-stone-200">
-              <h2 className="text-xl font-bold text-berry-950 mb-4 text-center">Ingresos vs Gastos</h2>
+              <h2 className="text-xl font-bold text-arandano-950 mb-4 text-center">Ingresos vs Gastos</h2>
               <BarChart
                 data={[kpis.totalRevenue, kpis.fixedExpenses || 0, kpis.variableExpenses || 0, kpis.grossMargin]}
                 labels={['Ingresos', 'Fijos', 'Variables', 'Margen']}
@@ -756,11 +756,11 @@ export default function AnalyticsPage() {
 
             {/* Inventario mejorado */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border-2 border-stone-200">
-              <h2 className="text-xl font-bold text-berry-950 mb-4 text-center">Inventario</h2>
+              <h2 className="text-xl font-bold text-arandano-950 mb-4 text-center">Inventario</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-berry-50 to-berry-100 rounded-lg p-4 border-2 border-berry-200">
-                  <div className="text-xs text-berry-700 font-medium mb-1">Valor Total Inventario</div>
-                  <div className="text-lg sm:text-xl font-bold text-berry-950">
+                <div className="bg-gradient-to-br from-arandano-50 to-arandano-100 rounded-lg p-4 border-2 border-arandano-200">
+                  <div className="text-xs text-arandano-700 font-medium mb-1">Valor Total Inventario</div>
+                  <div className="text-lg sm:text-xl font-bold text-arandano-950">
                     ${kpis.totalInventoryValue.toLocaleString('es-CO')}
                   </div>
                 </div>
@@ -781,7 +781,7 @@ export default function AnalyticsPage() {
 
             {/* Ventas por Horario mejorado */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border-2 border-stone-200">
-              <h2 className="text-xl font-bold text-berry-950 mb-4 text-center">Ventas por Horario</h2>
+              <h2 className="text-xl font-bold text-arandano-950 mb-4 text-center">Ventas por Horario</h2>
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg p-4 border-2 border-amber-200">
                   <div className="text-sm text-amber-700 font-medium mb-1">Ventas Día (6am-6pm)</div>
@@ -797,7 +797,7 @@ export default function AnalyticsPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <div className="text-sm text-berry-700 font-semibold mb-3 text-center">Ingreso por Hora</div>
+                <div className="text-sm text-arandano-700 font-semibold mb-3 text-center">Ingreso por Hora</div>
                 <div className="bg-stone-50 rounded-lg p-4 border-2 border-stone-200">
                   <div className="grid grid-cols-12 gap-1 sm:gap-2">
                     {kpis.revenuePerHour.map((revenue, hour) => {
@@ -808,7 +808,7 @@ export default function AnalyticsPage() {
                         <div key={hour} className="flex flex-col items-center">
                           <div className="w-full bg-stone-200 rounded-t" style={{ height: '120px', position: 'relative' }}>
                             <div
-                              className="bg-berry-600 rounded-t transition-all hover:bg-berry-700"
+                              className="bg-arandano-600 rounded-t transition-all hover:bg-arandano-700"
                               style={{
                                 height: `${Math.max(5, heightPercent)}%`,
                                 position: 'absolute',
@@ -821,7 +821,7 @@ export default function AnalyticsPage() {
                           </div>
                           <div className="text-xs text-stone-600 mt-1 font-medium">{hour}h</div>
                           {revenue > 0 && (
-                            <div className="text-[10px] text-berry-600 font-semibold mt-0.5">
+                            <div className="text-[10px] text-arandano-600 font-semibold mt-0.5">
                               ${(revenue / 1000).toFixed(0)}k
                             </div>
                           )}
@@ -835,7 +835,7 @@ export default function AnalyticsPage() {
 
             {/* Clasificación de Productos mejorado */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border-2 border-stone-200">
-              <h2 className="text-xl font-bold text-berry-950 mb-4 text-center">Clasificación de Productos</h2>
+              <h2 className="text-xl font-bold text-arandano-950 mb-4 text-center">Clasificación de Productos</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border-2 border-green-300">
                   <div className="text-sm text-green-700 font-medium mb-1">Estrella</div>
@@ -847,9 +847,9 @@ export default function AnalyticsPage() {
                   <div className="text-2xl font-bold text-yellow-950">{kpis.volumeProducts}</div>
                   <div className="text-xs text-yellow-600 mt-1">Alta rotación + Bajo margen</div>
                 </div>
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border-2 border-blue-300">
-                  <div className="text-sm text-blue-700 font-medium mb-1">Premium</div>
-                  <div className="text-2xl font-bold text-blue-950">{kpis.premiumProducts}</div>
+                <div className="bg-gradient-to-br from-arandano-50 to-arandano-100 rounded-lg p-4 border-2 border-blue-300">
+                  <div className="text-sm text-arandano-700 font-medium mb-1">Premium</div>
+                  <div className="text-2xl font-bold text-arandano-950">{kpis.premiumProducts}</div>
                   <div className="text-xs text-blue-600 mt-1">Baja rotación + Alto margen</div>
                 </div>
                 <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4 border-2 border-red-300">
@@ -861,7 +861,7 @@ export default function AnalyticsPage() {
 
               {/* Gráfica de clasificación */}
               <div className="mb-6">
-                <h4 className="text-sm font-semibold text-berry-700 mb-3 text-center">Distribución de Productos</h4>
+                <h4 className="text-sm font-semibold text-arandano-700 mb-3 text-center">Distribución de Productos</h4>
                 <BarChart
                   data={[kpis.starProducts, kpis.volumeProducts, kpis.premiumProducts, kpis.problemProducts]}
                   labels={['Estrella', 'Volumen', 'Premium', 'Problema']}
@@ -872,11 +872,11 @@ export default function AnalyticsPage() {
 
               {/* Tabla de Productos mejorada */}
               <div className="mt-6">
-                <h3 className="text-lg font-bold text-berry-950 mb-4 text-center">Productos a la venta</h3>
+                <h3 className="text-lg font-bold text-arandano-950 mb-4 text-center">Productos a la venta</h3>
                 {/* Filtro por categoría */}
                 <div className="mb-4 p-4 bg-white rounded-lg border-2 border-stone-200 shadow-sm">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    <label className="text-sm font-semibold text-berry-950 whitespace-nowrap">
+                    <label className="text-sm font-semibold text-arandano-950 whitespace-nowrap">
                       Filtrar por categoría:
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -885,7 +885,7 @@ export default function AnalyticsPage() {
                         onClick={() => setProductCategoryFilter('all')}
                         className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                           productCategoryFilter === 'all'
-                            ? 'bg-berry-600 text-white shadow-md'
+                            ? 'bg-arandano-600 text-white shadow-md'
                             : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                         }`}
                       >
@@ -898,7 +898,7 @@ export default function AnalyticsPage() {
                           onClick={() => setProductCategoryFilter(value)}
                           className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                             productCategoryFilter === value
-                              ? 'bg-berry-600 text-white shadow-md'
+                              ? 'bg-arandano-600 text-white shadow-md'
                               : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                           }`}
                         >
@@ -911,8 +911,8 @@ export default function AnalyticsPage() {
                 <div className="overflow-x-auto rounded-lg border-2 border-stone-200 shadow-sm">
                   <table className="w-full border-collapse bg-white">
                     <thead>
-                      <tr className="bg-gradient-to-r from-berry-600 to-berry-700">
-                        <th className="px-6 py-4 text-left text-sm font-bold text-white sticky left-0 bg-gradient-to-r from-berry-600 to-berry-700 z-10">Producto</th>
+                      <tr className="bg-gradient-to-r bg-arandano-600">
+                        <th className="px-6 py-4 text-left text-sm font-bold text-white sticky left-0 bg-gradient-to-r bg-arandano-600 z-10">Producto</th>
                         <th className="px-6 py-4 text-center text-sm font-bold text-white">Clasificación</th>
                         <th className="px-6 py-4 text-center text-sm font-bold text-white">Vendidos</th>
                         <th className="px-6 py-4 text-right text-sm font-bold text-white">Ingresos</th>
@@ -949,8 +949,8 @@ export default function AnalyticsPage() {
                         }
                         const getCatLabel = (value: string) => value === 'otros' ? 'Otros' : (ANALYTICS_CATEGORIES.find(c => c.value === value)?.label ?? value)
                         return allCats.flatMap(cat => [
-                          <tr key={`cat-${cat}`} className="bg-berry-100 border-b-2 border-berry-200">
-                            <td colSpan={9} className="px-6 py-2 font-bold text-berry-950 text-sm">
+                          <tr key={`cat-${cat}`} className="bg-arandano-100 border-b-2 border-arandano-200">
+                            <td colSpan={9} className="px-6 py-2 font-bold text-arandano-950 text-sm">
                               {getCatLabel(cat)}
                             </td>
                           </tr>,
@@ -959,7 +959,7 @@ export default function AnalyticsPage() {
                               key={analytics.product.id}
                               className={`border-b border-stone-200 transition-all ${
                                 index % 2 === 0 ? 'bg-white' : 'bg-stone-50'
-                              } hover:bg-berry-50 hover:shadow-sm`}
+                              } hover:bg-arandano-50 hover:shadow-sm`}
                             >
                               <td className="px-6 py-4 text-sm font-semibold text-stone-900 sticky left-0 z-10 bg-inherit">
                                 {analytics.product.name}
@@ -972,7 +972,7 @@ export default function AnalyticsPage() {
                               <td className="px-6 py-4 text-center text-sm font-semibold text-stone-700">
                                 {analytics.totalSold.toLocaleString('es-CO')}
                               </td>
-                              <td className="px-6 py-4 text-right text-sm font-bold text-berry-600">
+                              <td className="px-6 py-4 text-right text-sm font-bold text-arandano-600">
                                 ${analytics.totalRevenue.toLocaleString('es-CO')}
                               </td>
                               <td className="px-6 py-4 text-right text-sm font-semibold text-red-600">
@@ -1014,7 +1014,7 @@ export default function AnalyticsPage() {
           </>
         ) : (
           <div className="text-center py-12 bg-white rounded-xl shadow-lg border-2 border-stone-200">
-            <div className="text-berry-600">No hay datos disponibles</div>
+            <div className="text-arandano-600">No hay datos disponibles</div>
           </div>
         )}
 

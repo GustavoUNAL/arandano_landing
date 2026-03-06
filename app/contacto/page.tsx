@@ -5,7 +5,7 @@ import LocationSchedule from '@/components/LocationSchedule'
 export default function Contacto() {
   const whatsappNumber = '573207909835' // +57 3207909835
   const whatsappUrl = `https://wa.me/${whatsappNumber}`
-  const instagramUrl = 'https://www.instagram.com/arandano.cafe?igsh=MTg3dmpwa3FqZGwxNA%3D%3D&utm_source=qr'
+  const instagramUrl = 'https://www.instagram.com/arandano.caf/'
   const mapsUrl = 'https://maps.google.com/?q=1.223624,-77.284434'
 
   return (

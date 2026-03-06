@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import AdminSidebar from '@/components/AdminSidebar'
 import { DaySalesBlock } from '@/components/sales/DaySalesBlock'
 
 /** Parsea fecha tipo YYYY-MM-DD como fecha local para que el día de la semana coincida (evita UTC). */
@@ -539,49 +540,22 @@ export default function SalesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="text-arandano-600 text-xl">Cargando ventas...</div>
+      <div className="min-h-screen bg-stone-50 flex">
+        <AdminSidebar />
+        <main className="flex-1 min-w-0 flex items-center justify-center">
+          <div className="text-arandano-600 text-xl">Cargando ventas...</div>
+        </main>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-stone-50 flex">
+      <AdminSidebar />
+      <main className="flex-1 min-w-0 overflow-auto">
       <div className="container mx-auto px-3 sm:px-4 py-4 max-w-6xl">
-        {/* Header: Regreso | Home | Menú (estilo unificado con admin) */}
         <div className="mb-5 relative">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => router.back()}
-                className="flex items-center gap-1.5 px-3 py-2 text-berry-600 hover:text-berry-700 font-medium rounded-lg hover:bg-berry-50 transition-all text-sm border border-transparent hover:border-berry-200"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Regreso
-              </button>
-              <span className="text-stone-300">|</span>
-              <button
-                onClick={() => router.push('/')}
-                className="flex items-center gap-1.5 px-3 py-2 text-berry-600 hover:text-berry-700 font-medium rounded-lg hover:bg-berry-50 transition-all text-sm"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                Home
-              </button>
-              <span className="text-stone-300">|</span>
-              <Link
-                href="/admin"
-                className="flex items-center gap-1.5 px-3 py-2 text-berry-600 hover:text-berry-700 font-medium rounded-lg hover:bg-berry-50 transition-all text-sm"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-                Menú
-              </Link>
-            </div>
+          <div className="flex flex-wrap items-center justify-end gap-2 mb-3">
             <Link
               href="/debts"
               className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-semibold text-red-700 hover:text-red-800 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200"
@@ -616,8 +590,8 @@ export default function SalesPage() {
                 className="text-xs font-medium border-0 focus:ring-0 focus:outline-none bg-transparent text-stone-700 min-w-[125px]"
               />
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-2 bg-purple-50 rounded-lg border border-purple-200 hover:border-purple-300 hover:bg-purple-100 transition-all flex-shrink-0">
-              <span className="text-xs text-purple-600">💳</span>
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-arandano-50 rounded-lg border border-arandano-200 hover:border-arandano-300 hover:bg-arandano-100 transition-all flex-shrink-0">
+              <span className="text-xs text-arandano-600">💳</span>
               <select
                 value={filterPaymentMethod}
                 onChange={(e) => {
@@ -632,8 +606,8 @@ export default function SalesPage() {
                 <option value="efectivo-aporte">Efectivo (aporte)</option>
               </select>
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-2 bg-pink-50 rounded-lg border border-pink-200 hover:border-pink-300 hover:bg-pink-100 transition-all flex-shrink-0 min-w-[120px]">
-              <span className="text-xs text-pink-600">🔍</span>
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-arandano-50 rounded-lg border border-arandano-200 hover:border-arandano-300 hover:bg-arandano-100 transition-all flex-shrink-0 min-w-[120px]">
+              <span className="text-xs text-arandano-600">🔍</span>
               <input
                 type="text"
                 placeholder="Producto o comentario..."
@@ -712,7 +686,7 @@ export default function SalesPage() {
                                 ? 'bg-arandano-100 border-arandano-400'
                                 : total > 0
                                   ? 'bg-arandano-50 border-arandano-200 hover:bg-arandano-100'
-                                  : 'bg-pink-50 border-pink-200'
+                                  : 'bg-arandano-50 border-arandano-200'
                         }`}
                       >
                         <span className={`text-[11px] font-semibold ${
@@ -1191,7 +1165,7 @@ export default function SalesPage() {
         <button
           type="button"
           onClick={() => setNotesOpen(true)}
-          className="w-14 h-14 bg-amber-500 hover:bg-amber-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center"
+          className="w-14 h-14 bg-[rgb(47,77,107)] hover:bg-arandano-700 text-white rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center"
           title="Abrir notas"
           aria-label="Abrir notas"
         >
@@ -1205,7 +1179,7 @@ export default function SalesPage() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50" onClick={() => setNotesOpen(false)}>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-4 border-b border-stone-200">
-              <h3 className="text-lg font-bold text-berry-950">Notas (Markdown)</h3>
+              <h3 className="text-lg font-bold text-arandano-950">Notas (Markdown)</h3>
               <div className="flex items-center gap-2">
                 {notesSavedAt && (
                   <span className="text-xs text-stone-500">
@@ -1232,6 +1206,7 @@ export default function SalesPage() {
           </div>
         </div>
       )}
+      </main>
     </div>
   )
 }
