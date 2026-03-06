@@ -80,16 +80,25 @@ export default function Footer() {
           
           <div className="text-center pt-3 sm:pt-4 border-t border-stone-300">
             <p className="text-berry-600 text-xs mb-1">
-              © {new Date().getFullYear()} Arándano Café Bar. Todos los derechos reservados.
+              © {new Date().getFullYear()} Arándano Inc. All rights reserved.
             </p>
-            <p className="text-berry-500 text-xs">
-              Desarrollado por{' '}
+            <p className="text-berry-500 text-xs mb-1">
+              Cra 35 calle17 - 86 div - arandanocafebar@gmail.com
+            </p>
+            <p className="text-berry-500 text-xs mb-1">
+              Power by{' '}
               <a
-                href="mailto:info@grap-ingenieria.tech"
+                href="https://www.linkedin.com/in/gustavo-arteaga/"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="font-semibold hover:text-berry-700 transition-colors"
               >
-                GRAP SAS
+                Gustavo Arteaga
               </a>
+              .
+            </p>
+            <p className="text-berry-500 text-xs">
+              Made with 💙 in LATAM
             </p>
           </div>
         </div>
