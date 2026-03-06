@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import AdminSidebar from '@/components/AdminSidebar'
 
 type TaskCategory = 
   | 'inventario'
@@ -286,8 +287,10 @@ export default function TasksPage() {
   const overdueTasks = tasks.filter(t => isOverdue(t.dueDate) && !t.completed)
 
   return (
-    <div className="min-h-screen bg-stone-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-stone-50 flex">
+      <AdminSidebar />
+      <main className="flex-1 min-w-0 py-8 px-4">
+        <div className="max-w-7xl mx-auto">
         {alert && (
           <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-xl flex items-center gap-3 ${
             alert.type === 'success' 
@@ -754,18 +757,8 @@ export default function TasksPage() {
           </div>
         )}
 
-        {/* Botón flotante para volver al panel */}
-        <button
-          onClick={() => router.push('/admin')}
-          className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-14 h-14 bg-berry-600 hover:bg-berry-700 text-white rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center z-40"
-          title="Volver al Panel de Administración"
-          aria-label="Volver al Panel de Administración"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-        </button>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

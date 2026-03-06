@@ -36,7 +36,7 @@ export interface Sale {
   discountValue?: number
   comment?: string
   channel: 'presencial' | 'whatsapp'
-  paymentMethod?: 'efectivo' | 'nequi'
+  paymentMethod?: 'efectivo' | 'nequi' | 'efectivo-aporte'
   ticketNumber?: string
   mesa?: string
 }

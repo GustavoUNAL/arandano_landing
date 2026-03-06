@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
+import AdminSidebar from '@/components/AdminSidebar'
 
 interface Product {
   id: string
@@ -61,7 +62,23 @@ export default function AdminPage() {
   const [alert, setAlert] = useState<{ type: 'success' | 'error', message: string } | null>(null)
   const [pendingTasks, setPendingTasks] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<'products' | 'inventory'>('products')
-  const [currentView, setCurrentView] = useState<'dashboard' | 'products' | 'products-for-sale' | 'shop-preview' | 'recipes'>('dashboard')
+  const searchParams = useSearchParams()
+  const [currentView, setCurrentViewState] = useState<'dashboard' | 'products' | 'products-for-sale' | 'shop-preview' | 'recipes'>('dashboard')
+
+  const setCurrentView = (view: 'dashboard' | 'products' | 'products-for-sale' | 'shop-preview' | 'recipes') => {
+    setCurrentViewState(view)
+    const q = view === 'dashboard' ? '' : `?view=${view}`
+    router.replace(`/admin${q}`, { scroll: false })
+  }
+
+  useEffect(() => {
+    const v = searchParams.get('view') as 'dashboard' | 'products' | 'products-for-sale' | 'shop-preview' | 'recipes' | null
+    if (v && ['products', 'products-for-sale', 'shop-preview', 'recipes'].includes(v)) {
+      setCurrentViewState(v)
+    } else {
+      setCurrentViewState('dashboard')
+    }
+  }, [searchParams])
   const [editingProductInShop, setEditingProductInShop] = useState<Product | null>(null)
   const [sales, setSales] = useState<any[]>([])
   const [inventory, setInventory] = useState<any[]>([])
@@ -958,12 +975,33 @@ export default function AdminPage() {
               Iniciar Sesión
             </button>
           </form>
-          <div className="mt-4 text-center">
+          <div className="mt-4 flex justify-center gap-3 flex-wrap">
+            <button
+              onClick={() => router.back()}
+              className="flex items-center gap-1.5 px-3 py-2 text-berry-600 hover:text-berry-700 font-medium rounded-lg hover:bg-berry-50 transition-all text-sm"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Regreso
+            </button>
             <button
               onClick={() => router.push('/')}
-              className="text-berry-600 hover:text-berry-800 text-sm"
+              className="flex items-center gap-1.5 px-3 py-2 text-berry-600 hover:text-berry-700 font-medium rounded-lg hover:bg-berry-50 transition-all text-sm"
             >
-              ← Volver al inicio
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              Home
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="flex items-center gap-1.5 px-3 py-2 text-berry-600 hover:text-berry-700 font-medium rounded-lg hover:bg-berry-50 transition-all text-sm"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              Menú
             </button>
           </div>
         </div>
@@ -972,77 +1010,37 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Alertas */}
-        {alert && (
-          <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-xl flex items-center gap-3 transform transition-all duration-300 ease-in-out ${
-            alert.type === 'success' 
-              ? 'bg-green-500 text-white' 
-              : 'bg-red-500 text-white'
-          } animate-fade-in-up`}>
-            <span className="text-xl font-bold">
-              {alert.type === 'success' ? '✓' : '✕'}
-            </span>
-            <span className="font-medium">{alert.message}</span>
-            <button
-              onClick={() => setAlert(null)}
-              className="ml-4 text-white hover:text-stone-200 transition-colors"
-              aria-label="Cerrar alerta"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-
-        {/* Botones de acción en esquinas superiores - Ocultos en products-for-sale */}
-        {currentView !== 'products-for-sale' && (
-          <div className="relative mb-4 sm:mb-6">
-            <div className="flex justify-between items-start mb-4">
-              {/* Botón Ver sitio - Esquina superior izquierda */}
+    <div className="min-h-screen bg-stone-50 flex">
+      <AdminSidebar />
+      <main className="flex-1 min-w-0 py-8 px-4 lg:pl-4">
+        <div className="max-w-7xl mx-auto">
+          {/* Alertas */}
+          {alert && (
+            <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-xl flex items-center gap-3 transform transition-all duration-300 ease-in-out ${
+              alert.type === 'success' 
+                ? 'bg-green-500 text-white' 
+                : 'bg-red-500 text-white'
+            } animate-fade-in-up`}>
+              <span className="text-xl font-bold">
+                {alert.type === 'success' ? '✓' : '✕'}
+              </span>
+              <span className="font-medium">{alert.message}</span>
               <button
-                onClick={() => router.push('/')}
-                className="group flex items-center gap-2 px-3 py-2 text-berry-600 hover:text-berry-700 font-medium rounded-lg hover:bg-berry-50 transition-all duration-200 text-sm"
+                onClick={() => setAlert(null)}
+                className="ml-4 text-white hover:text-stone-200 transition-colors"
+                aria-label="Cerrar alerta"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                <span>Ver sitio</span>
-              </button>
-
-              {/* Botón Salir - Esquina superior derecha */}
-              <button
-                onClick={handleLogout}
-                className="group flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-700 font-medium rounded-lg hover:bg-red-50 transition-all duration-200 text-sm"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 group-hover:rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                <span>Salir</span>
+                ✕
               </button>
             </div>
+          )}
 
-            {/* Título principal centrado - Solo en dashboard */}
-            {currentView === 'dashboard' && (
-              <h1 className="text-2xl sm:text-3xl font-bold text-berry-950 text-center">
-                Panel de Administración
-              </h1>
-            )}
-
-            {/* Botón Volver a Admin - Solo cuando está en products */}
-            {currentView === 'products' && (
-              <div className="flex justify-center mt-3">
-                <button
-                  onClick={() => setCurrentView('dashboard')}
-                  className="px-4 py-2 text-berry-600 hover:text-berry-800 text-sm font-medium"
-                >
-                  ← Volver a Admin
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+          {/* Título principal centrado - Solo en dashboard */}
+          {currentView === 'dashboard' && (
+            <h1 className="text-2xl sm:text-3xl font-bold text-berry-950 text-center mb-2 pt-10 lg:pt-0">
+              Panel de Administración
+            </h1>
+          )}
 
         {/* Dashboard con tarjetas */}
         {currentView === 'dashboard' && (
@@ -2938,20 +2936,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Botón flotante para volver al panel - Solo cuando no está en dashboard */}
-        {currentView !== 'dashboard' && currentView !== 'shop-preview' && (
-          <button
-            onClick={() => setCurrentView('dashboard')}
-            className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-14 h-14 bg-stone-700 hover:bg-stone-800 text-white rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center z-40"
-            title="Volver al Panel de Administración"
-            aria-label="Volver al Panel de Administración"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-          </button>
-        )}
-
         {/* Vista de Gestión de Recetas */}
         {currentView === 'recipes' && (
           <>
@@ -3274,7 +3258,8 @@ export default function AdminPage() {
             </div>
           </>
         )}
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

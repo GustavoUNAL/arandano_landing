@@ -85,6 +85,25 @@ export default function SalesPage() {
   const [hasExpandedInitial, setHasExpandedInitial] = useState(false)
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null)
   const [dayCerrado, setDayCerrado] = useState<Set<string>>(new Set())
+  const [adminNotes, setAdminNotes] = useState<string>('')
+  const [notesOpen, setNotesOpen] = useState(false)
+  const [notesSavedAt, setNotesSavedAt] = useState<Date | null>(null)
+
+  const NOTES_STORAGE_KEY = 'arandano_admin_notes'
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(NOTES_STORAGE_KEY)
+      if (saved != null) setAdminNotes(saved)
+    }
+  }, [])
+
+  const saveNotes = (content: string) => {
+    setAdminNotes(content)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(NOTES_STORAGE_KEY, content)
+      setNotesSavedAt(new Date())
+    }
+  }
 
   useEffect(() => {
     loadSales()
@@ -250,7 +269,7 @@ export default function SalesPage() {
       setProductSearch('')
 
       const newDayKey = getSaleDayKey(updatedSale)
-      setExpandedDays((prev) => new Set([...prev, newDayKey]))
+      setExpandedDays((prev) => new Set(Array.from(prev).concat([newDayKey])))
       setSelectedSale(updatedSale)
       setShowDetail(true)
 
@@ -529,20 +548,47 @@ export default function SalesPage() {
   return (
     <div className="min-h-screen bg-stone-50">
       <div className="container mx-auto px-3 sm:px-4 py-4 max-w-6xl">
-        {/* Header con paleta de la app */}
+        {/* Header: Regreso | Home | Menú (estilo unificado con admin) */}
         <div className="mb-5 relative">
-          <button
-            onClick={() => router.back()}
-            className="absolute left-0 top-1/2 -translate-y-1/2 px-3 py-1.5 text-xs font-medium text-arandano-700 hover:text-arandano-800 hover:bg-arandano-50 rounded-lg transition-colors border border-arandano-200"
-          >
-            ← Volver
-          </button>
-          <Link
-            href="/debts"
-            className="absolute right-0 top-1/2 -translate-y-1/2 px-3 py-1.5 text-[11px] font-semibold text-red-700 hover:text-red-800 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200"
-          >
-            💳 Ver deudas / préstamos
-          </Link>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => router.back()}
+                className="flex items-center gap-1.5 px-3 py-2 text-berry-600 hover:text-berry-700 font-medium rounded-lg hover:bg-berry-50 transition-all text-sm border border-transparent hover:border-berry-200"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Regreso
+              </button>
+              <span className="text-stone-300">|</span>
+              <button
+                onClick={() => router.push('/')}
+                className="flex items-center gap-1.5 px-3 py-2 text-berry-600 hover:text-berry-700 font-medium rounded-lg hover:bg-berry-50 transition-all text-sm"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Home
+              </button>
+              <span className="text-stone-300">|</span>
+              <Link
+                href="/admin"
+                className="flex items-center gap-1.5 px-3 py-2 text-berry-600 hover:text-berry-700 font-medium rounded-lg hover:bg-berry-50 transition-all text-sm"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                Menú
+              </Link>
+            </div>
+            <Link
+              href="/debts"
+              className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-semibold text-red-700 hover:text-red-800 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200"
+            >
+              💳 Ver deudas / préstamos
+            </Link>
+          </div>
           <div className="text-center">
             <h1 className="text-2xl sm:text-3xl font-bold text-arandano-950">Ventas</h1>
             <p className="text-xs text-stone-600 mt-0.5 font-medium">
@@ -1135,6 +1181,53 @@ export default function SalesPage() {
                   Cerrar
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Botones flotantes en columna (vertical) */}
+      <div className="fixed bottom-6 right-6 flex flex-col-reverse gap-3 z-40">
+        <button
+          type="button"
+          onClick={() => setNotesOpen(true)}
+          className="w-14 h-14 bg-amber-500 hover:bg-amber-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center"
+          title="Abrir notas"
+          aria-label="Abrir notas"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        </button>
+      </div>
+
+      {notesOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50" onClick={() => setNotesOpen(false)}>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-stone-200">
+              <h3 className="text-lg font-bold text-berry-950">Notas (Markdown)</h3>
+              <div className="flex items-center gap-2">
+                {notesSavedAt && (
+                  <span className="text-xs text-stone-500">
+                    Guardado {notesSavedAt.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                )}
+                <button type="button" onClick={() => setNotesOpen(false)} className="p-2 text-stone-500 hover:text-stone-700 rounded-lg hover:bg-stone-100" aria-label="Cerrar">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <textarea
+              value={adminNotes}
+              onChange={(e) => saveNotes(e.target.value)}
+              placeholder="Escribe aquí tus notas en Markdown. Se guardan automáticamente."
+              className="flex-1 min-h-[280px] p-4 text-stone-800 font-mono text-sm border-0 focus:ring-0 focus:outline-none resize-none rounded-b-xl"
+              spellCheck="false"
+            />
+            <div className="px-4 py-2 bg-stone-50 border-t border-stone-200 rounded-b-xl text-xs text-stone-500">
+              Soporta Markdown: **negrita**, *cursiva*, listas con -, encabezados con #, etc.
             </div>
           </div>
         </div>

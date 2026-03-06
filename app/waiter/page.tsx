@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import AdminSidebar from '@/components/AdminSidebar'
 
 const PLANTA_LAYOUT_KEY = 'waiter-planta-layout'
 
@@ -876,21 +877,22 @@ export default function WaiterPage() {
     )
   } else {
     content = (
-    <WaiterLayout>
+    <div className="min-h-screen bg-stone-50 flex">
+      <AdminSidebar />
+      <main className="flex-1 min-w-0 overflow-auto">
+        <WaiterLayout>
       <div className="container mx-auto px-4 py-6 max-w-7xl">
         <div className="mb-6 flex flex-col gap-3">
-          <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center justify-end">
             <button
               onClick={() => router.push('/sales')}
-              className="flex items-center gap-2 text-stone-600 hover:text-arandano-600 font-medium text-sm"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-stone-600 hover:text-arandano-600 hover:bg-arandano-50 transition-colors"
+              title="Ver ventas en calendario"
             >
-              ← Volver
-            </button>
-            <button
-              onClick={() => router.push('/sales')}
-              className="px-3 py-1.5 rounded-lg text-sm font-medium text-stone-600 hover:text-arandano-600"
-            >
-              📊 Ver Ventas ({totalSalesCount})
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>Ver Ventas ({totalSalesCount})</span>
             </button>
           </div>
           {/* Título y lista primero; mesa como selector secundario */}
@@ -2152,12 +2154,12 @@ export default function WaiterPage() {
       {!(showPaymentModal || showCategoriesModal || showSaleDetail || (cart.length > 0 && showFloatingCart)) && (
         <button
           onClick={() => router.push('/sales')}
-          className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-14 h-14 bg-stone-700 hover:bg-stone-800 text-white rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center z-40"
-          title="Volver a Ventas"
-          aria-label="Volver a Ventas"
+          className="fixed bottom-20 right-6 w-14 h-14 bg-arandano-600 hover:bg-arandano-700 text-white rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center z-40 ring-2 ring-white/20 hover:ring-arandano-300"
+          title="Ver ventas en calendario"
+          aria-label="Ver ventas en calendario"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </button>
       )}
@@ -2209,7 +2211,9 @@ export default function WaiterPage() {
           </div>
         </>
       )}
-    </WaiterLayout>
+        </WaiterLayout>
+      </main>
+    </div>
     )
   }
   return content
