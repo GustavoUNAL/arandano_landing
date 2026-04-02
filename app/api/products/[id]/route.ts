@@ -52,6 +52,12 @@ export async function PUT(
 
     return NextResponse.json(updatedProduct)
   } catch (error: any) {
+    if (error?.message === 'DUPLICATE_PRODUCT' || error?.code === 'DUPLICATE_PRODUCT') {
+      return NextResponse.json(
+        { error: 'Ya existe un producto con el mismo nombre y presentación (tamaño).' },
+        { status: 409 }
+      )
+    }
     console.error('[API] Error actualizando producto:', error)
     return NextResponse.json(
       { error: error?.message || 'Error al actualizar producto' },

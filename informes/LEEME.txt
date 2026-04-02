@@ -1,0 +1,6 @@
+Carpeta de lógica de informes consolidados.
+
+- aggregates.ts — agregaciones (ventas, ingresos, deudas, gastos).
+- markdown.ts — genera el texto Markdown completo (mismo detalle que /informes).
+- INFORME.md — exportación generada; actualízalo con: npm run export:informe
+- Vista web: /informes (sesión de administrador).

@@ -1,14 +1,17 @@
 'use client'
 
-export default function LocationSchedule() {
-  const latitude = 1.223624
-  const longitude = -77.284434
-  
-  // Google Maps embed URL - sin API key (usando el formato básico)
-  const mapsEmbedUrl = `https://maps.google.com/maps?q=${latitude},${longitude}&hl=es&z=15&output=embed`
-  
-  // Google Maps link para abrir en la app
-  const mapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`
+import {
+  GOOGLE_MAPS_PLACE_URL,
+  MAP_EMBED_SEARCH_QUERY
+} from '@/lib/site-location'
+
+export default function LocationSchedule () {
+  // Embed: búsqueda por nombre + dirección (evita coordenadas incorrectas).
+  const mapsEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(
+    MAP_EMBED_SEARCH_QUERY
+  )}&hl=es&z=17&output=embed`
+
+  const mapsLink = GOOGLE_MAPS_PLACE_URL
 
   return (
     <section className="py-6 sm:py-8 md:py-10 bg-white px-4">
@@ -53,7 +56,7 @@ export default function LocationSchedule() {
                   Ubicación
                 </h3>
                 <p className="text-stone-700 text-sm sm:text-base font-medium">
-                  Cra 35 calle17 - 86 div
+                  Carrera 35 #17-86
                 </p>
                 <p className="text-stone-600 text-xs sm:text-sm">
                   Pasto, Nariño, Colombia

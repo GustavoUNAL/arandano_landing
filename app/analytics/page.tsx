@@ -62,7 +62,24 @@ interface MonthlyKPIs extends KPIs {
   weeks: number[]
 }
 
-type ProductCategory = 'cafe-caliente' | 'cafe-frio' | 'pasteleria' | 'combo' | 'coctel' | 'cerveza' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky'
+type ProductCategory =
+  | 'cafe-caliente'
+  | 'cafe-frio'
+  | 'pasteleria'
+  | 'combo'
+  | 'combo-dia'
+  | 'coctel'
+  | 'cerveza'
+  | 'vino'
+  | 'vodka'
+  | 'ginebra'
+  | 'tequila'
+  | 'whisky'
+  | 'aguardiente'
+  | 'brandy'
+  | 'ron'
+  | 'shot'
+  | 'otros'
 
 interface ProductAnalytics {
   product: {
@@ -87,15 +104,21 @@ interface ProductAnalytics {
 const ANALYTICS_CATEGORIES: { value: ProductCategory; label: string }[] = [
   { value: 'cafe-caliente', label: 'Cafés Calientes' },
   { value: 'cafe-frio', label: 'Cafés Fríos' },
-  { value: 'pasteleria', label: 'Pastelería' },
+  { value: 'pasteleria', label: 'Panadería' },
   { value: 'combo', label: 'Combos' },
+  { value: 'combo-dia', label: 'Combos del día' },
   { value: 'cerveza', label: 'Cervezas' },
   { value: 'coctel', label: 'Cócteles' },
+  { value: 'shot', label: 'Shots' },
   { value: 'vino', label: 'Vinos' },
   { value: 'vodka', label: 'Vodka' },
   { value: 'ginebra', label: 'Ginebra' },
   { value: 'tequila', label: 'Tequila' },
-  { value: 'whisky', label: 'Whisky' }
+  { value: 'whisky', label: 'Whisky' },
+  { value: 'aguardiente', label: 'Aguardiente' },
+  { value: 'brandy', label: 'Brandy' },
+  { value: 'ron', label: 'Ron' },
+  { value: 'otros', label: 'Otros' }
 ]
 
 // Componente de gráfica de barras
@@ -934,7 +957,7 @@ export default function AnalyticsPage() {
                           if (!byCategory.has(cat)) byCategory.set(cat, [])
                           byCategory.get(cat)!.push(a)
                         }
-                        const categoryOrder = ['cafe-caliente', 'cafe-frio', 'pasteleria', 'combo', 'cerveza', 'coctel', 'vino', 'vodka', 'ginebra', 'tequila', 'whisky', 'aguardiente', 'brandy', 'ron', 'otros']
+                        const categoryOrder = ['cafe-caliente', 'cafe-frio', 'pasteleria', 'combo', 'combo-dia', 'cerveza', 'coctel', 'shot', 'vino', 'vodka', 'ginebra', 'tequila', 'whisky', 'aguardiente', 'brandy', 'ron', 'otros']
                         const sortedCats = categoryOrder.filter(c => byCategory.has(c))
                         const restCats = Array.from(byCategory.keys()).filter(c => !categoryOrder.includes(c))
                         const allCats = [...sortedCats, ...restCats]

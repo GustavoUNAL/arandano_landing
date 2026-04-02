@@ -1,6 +1,6 @@
 /**
  * Configuración de SQLite para base de datos local
- * Fácil de migrar a PostgreSQL/MySQL en servidor cloud
+ * Productos: nombre, descripción y precio obligatorios; sin duplicados (name + size).
  */
 
 import Database from 'better-sqlite3'
@@ -8,6 +8,7 @@ import path from 'path'
 import fs from 'fs'
 
 const dbPath = path.join(process.cwd(), 'data', 'arandano.db')
+const productsJsonPath = path.join(process.cwd(), 'data', 'products.json')
 const dbDir = path.dirname(dbPath)
 
 // Asegurar que el directorio existe
@@ -29,23 +30,76 @@ export function getDatabase(): Database.Database {
 }
 
 /**
+ * Carga productos desde data/products.json: deduplica por (name, size),
+ * garantiza nombre, descripción (no vacía cuando hay nombre) y precio.
+ */
+function seedProductsFromJson(database: Database.Database) {
+  if (!fs.existsSync(productsJsonPath)) return
+  try {
+    const raw = JSON.parse(fs.readFileSync(productsJsonPath, 'utf8')) as any[]
+    const key = (p: any) => `${(p.name || '').toString().trim().toLowerCase()}\n${(p.size ?? '').toString().trim().toLowerCase()}`
+    const seen = new Set<string>()
+    const normalized = raw
+      .filter((p) => {
+        const n = (p.name || '').toString().trim()
+        if (!n) return false
+        const k = key(p)
+        if (seen.has(k)) return false
+        seen.add(k)
+        return true
+      })
+      .map((p) => ({
+        id: p.id || `prod-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+        name: (p.name || '').toString().trim(),
+        price: Number(p.price) || 0,
+        description: (p.description != null && p.description !== '') ? String(p.description).trim() : `Producto: ${(p.name || '').toString().trim()}`,
+        category: (p.category || 'otros').toString().trim(),
+        type: (p.type || 'bebida').toString().trim(),
+        stock: Number(p.stock) ?? 0,
+        imageUrl: p.imageUrl || null,
+        size: (p.size != null ? String(p.size) : '').trim(),
+        minStock: p.minStock != null ? Number(p.minStock) : null,
+        cost: p.cost != null ? Number(p.cost) : null,
+        purchaseDate: p.purchaseDate || null,
+        lot: p.lot || null,
+        supplier: p.supplier || null,
+        lastSaleDate: p.lastSaleDate || null,
+        totalSold: Number(p.totalSold) || 0
+      }))
+    const now = new Date().toISOString()
+    const insert = database.prepare(`
+      INSERT INTO products (id, name, price, description, category, type, stock, imageUrl, size, minStock, cost, purchaseDate, lot, supplier, lastSaleDate, totalSold, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    const run = database.transaction((items: any[]) => {
+      for (const p of items) {
+        insert.run(p.id, p.name, p.price, p.description, p.category, p.type, p.stock, p.imageUrl || null, p.size || '', p.minStock, p.cost, p.purchaseDate, p.lot, p.supplier, p.lastSaleDate, p.totalSold, now, now)
+      }
+    })
+    run(normalized)
+  } catch (e) {
+    console.warn('Seed productos desde JSON:', e)
+  }
+}
+
+/**
  * Inicializa las tablas si no existen
  */
 function initializeDatabase() {
   if (!db) return
 
-  // Tabla de productos
+  // Tabla de productos (nombre, descripción y precio son los datos de carta)
   db.exec(`
     CREATE TABLE IF NOT EXISTS products (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       price REAL NOT NULL,
-      description TEXT,
+      description TEXT NOT NULL DEFAULT '',
       category TEXT NOT NULL,
       type TEXT NOT NULL,
       stock INTEGER DEFAULT 0,
       imageUrl TEXT,
-      size TEXT,
+      size TEXT DEFAULT '',
       minStock INTEGER,
       cost REAL,
       purchaseDate TEXT,
@@ -57,6 +111,38 @@ function initializeDatabase() {
       updatedAt TEXT
     )
   `)
+
+  // Migraciones productos: normalizar y evitar duplicados
+  try {
+    db.exec(`UPDATE products SET description = COALESCE(description, '') WHERE description IS NULL`)
+    db.exec(`UPDATE products SET size = COALESCE(size, '') WHERE size IS NULL`)
+  } catch (e: any) {
+    if (!e.message?.includes('duplicate')) console.warn('Migración productos (normalizar):', e.message)
+  }
+  try {
+    // Eliminar duplicados: conservar uno por (name, size)
+    db.exec(`
+      DELETE FROM products WHERE id NOT IN (
+        SELECT id FROM (
+          SELECT id, ROW_NUMBER() OVER (PARTITION BY name, COALESCE(size,'') ORDER BY id) AS rn
+          FROM products
+        ) WHERE rn = 1
+      )
+    `)
+  } catch (e: any) {
+    if (!e.message?.includes('ROW_NUMBER') && !e.message?.includes('PARTITION')) console.warn('Migración productos (dedup):', e.message)
+  }
+  try {
+    db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_products_name_size ON products(name, size)`)
+  } catch (e: any) {
+    if (!e.message?.includes('duplicate') && !e.message?.includes('UNIQUE')) console.warn('Índice único productos:', e.message)
+  }
+
+  // Seed: si no hay productos, cargar desde data/products.json (deduplicado y con nombre/descripción/precio)
+  const count = (db.prepare('SELECT COUNT(*) AS c FROM products').get() as { c: number }).c
+  if (count === 0) {
+    seedProductsFromJson(db)
+  }
 
   // Tabla de inventario
   db.exec(`

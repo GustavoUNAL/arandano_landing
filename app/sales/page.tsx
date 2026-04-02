@@ -557,6 +557,12 @@ export default function SalesPage() {
         <div className="mb-5 relative">
           <div className="flex flex-wrap items-center justify-end gap-2 mb-3">
             <Link
+              href="/informes"
+              className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-semibold text-stone-700 hover:text-stone-900 bg-white hover:bg-stone-100 rounded-lg transition-colors border border-stone-300"
+            >
+              📊 Informes
+            </Link>
+            <Link
               href="/debts"
               className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-semibold text-red-700 hover:text-red-800 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200"
             >

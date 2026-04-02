@@ -3,7 +3,13 @@
 import Footer from '@/components/Footer'
 import FloatingWhatsApp from '@/components/FloatingWhatsApp'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import {
+  MENU_ORDER_CAFETERIA,
+  MENU_ORDER_COMBO_FIJO,
+  MENU_ORDER_PANADERIA,
+  sortMenuByIds
+} from '@/lib/menu-display-order'
 import WhatsAppIcon from '@/components/WhatsAppIcon'
 import Image from 'next/image'
 
@@ -75,10 +81,32 @@ export default function MenuCafes() {
     loadProducts()
   }, [])
 
-  const cafesCalientes = products.filter(p => p.category === 'cafe-caliente')
-  const cafesFrios = products.filter(p => p.category === 'cafe-frio')
-  const pasteleria = products.filter(p => p.category === 'pasteleria')
-  const combos = products.filter(p => p.category === 'combo')
+  const cafeteriaLista = useMemo(
+    () =>
+      sortMenuByIds(
+        products.filter(
+          (p) => p.category === 'cafe-caliente' || p.category === 'cafe-frio'
+        ),
+        MENU_ORDER_CAFETERIA
+      ),
+    [products]
+  )
+  const pasteleria = useMemo(
+    () =>
+      sortMenuByIds(
+        products.filter((p) => p.category === 'pasteleria'),
+        MENU_ORDER_PANADERIA
+      ),
+    [products]
+  )
+  const combos = useMemo(
+    () =>
+      sortMenuByIds(
+        products.filter((p) => p.category === 'combo'),
+        MENU_ORDER_COMBO_FIJO
+      ),
+    [products]
+  )
 
   const addToCart = (item: Product) => {
     setCart((prevCart) => {
@@ -256,30 +284,15 @@ export default function MenuCafes() {
                   </div>
                 ) : (
                   <>
-                    {/* Cafés Artesanales Calientes */}
-                    {cafesCalientes.length > 0 && (
+                    {/* Cafetería (orden del menú impreso) */}
+                    {cafeteriaLista.length > 0 && (
                       <section>
                         <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-berry-950 mb-4 sm:mb-6 md:mb-8 flex items-center gap-2 sm:gap-3">
                           <span className="text-2xl sm:text-3xl">☕</span>
-                          <span>Cafés Artesanales Calientes</span>
+                          <span>Cafetería</span>
                         </h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
-                          {cafesCalientes.map((item) => (
-                            <MenuCard key={item.id} item={item} />
-                          ))}
-                        </div>
-                      </section>
-                    )}
-
-                    {/* Cafés Artesanales Fríos */}
-                    {cafesFrios.length > 0 && (
-                      <section>
-                        <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-berry-950 mb-4 sm:mb-6 md:mb-8 flex items-center gap-2 sm:gap-3">
-                          <span className="text-2xl sm:text-3xl">🧊</span>
-                          <span>Cafés Artesanales Fríos</span>
-                        </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
-                          {cafesFrios.map((item) => (
+                          {cafeteriaLista.map((item) => (
                             <MenuCard key={item.id} item={item} />
                           ))}
                         </div>
@@ -291,7 +304,7 @@ export default function MenuCafes() {
                       <section>
                         <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-berry-950 mb-4 sm:mb-6 md:mb-8 flex items-center gap-2 sm:gap-3">
                           <span className="text-2xl sm:text-3xl">🍰</span>
-                          <span>Pastelería y Acompañante</span>
+                          <span>Panadería</span>
                         </h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
                           {pasteleria.map((item) => (

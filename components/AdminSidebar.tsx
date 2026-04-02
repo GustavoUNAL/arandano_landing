@@ -27,6 +27,15 @@ const NavIcon = ({ name }: { name: string }) => {
       return <svg {...props}><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg>
     case 'analytics':
       return <svg {...props}><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
+    case 'informes':
+      return (
+        <svg {...props}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+        </svg>
+      )
     default:
       return null
   }
@@ -40,6 +49,7 @@ const NAV_ITEMS = [
   { href: '/tasks', label: 'Tareas', iconName: 'tareas', view: null },
   { href: '/admin?view=recipes', label: 'Recetas', iconName: 'recetas', view: 'recipes' },
   { href: '/expenses', label: 'Gastos', iconName: 'gastos', view: null },
+  { href: '/informes', label: 'Informes', iconName: 'informes', view: null },
   { href: '/analytics', label: 'Analytics', iconName: 'analytics', view: null }
 ]
 

@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
+import { MENU_ORDER_COCTEL, sortMenuByIds } from '@/lib/menu-display-order'
 
 interface Product {
   id: string
@@ -34,6 +35,11 @@ export default function MenuCocteles() {
     loadProducts()
   }, [])
 
+  const sortedProducts = useMemo(
+    () => sortMenuByIds(products, MENU_ORDER_COCTEL),
+    [products]
+  )
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CO', {
       style: 'decimal',
@@ -60,22 +66,25 @@ export default function MenuCocteles() {
               </div>
 
               {/* Título centrado */}
-              <div className="absolute top-16 sm:top-20 left-1/2 transform -translate-x-1/2">
+              <div className="absolute top-16 sm:top-20 left-1/2 transform -translate-x-1/2 text-center">
+                <span className="inline-block text-xs sm:text-sm font-medium text-berry-500 uppercase tracking-wider mb-2">
+                  Bar
+                </span>
                 <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-berry-600">
                   Cócteles
                 </h1>
               </div>
 
-              {/* Productos - Izquierda con separaciones */}
-              <div className="mt-40 sm:mt-48 md:mt-52">
-                <div className="space-y-4 sm:space-y-5 w-full max-w-2xl">
+              {/* Productos - ancho completo en desktop, espacios ajustados */}
+              <div className="mt-40 sm:mt-48 md:mt-52 w-full">
+                <div className="space-y-4 sm:space-y-5 md:space-y-6 w-full">
                   {loading ? (
                     <div className="text-berry-600">Cargando...</div>
                   ) : (
-                    products.map((product, index) => (
-                      <div key={product.id}>
-                        <div className="flex items-center justify-between gap-4 pb-3 sm:pb-4">
-                          <div className="flex-1 text-left">
+                    sortedProducts.map((product, index) => (
+                      <div key={product.id} className="w-full">
+                        <div className="flex items-baseline justify-between gap-4 md:gap-12 lg:gap-20 w-full pb-3 sm:pb-4">
+                          <div className="flex-1 min-w-0 text-left">
                             <div className="font-medium text-base sm:text-lg text-berry-600">
                               {product.name}
                             </div>
@@ -85,11 +94,11 @@ export default function MenuCocteles() {
                               </div>
                             )}
                           </div>
-                          <div className="text-lg sm:text-xl font-semibold text-berry-600 whitespace-nowrap">
+                          <div className="text-lg sm:text-xl font-semibold text-berry-600 whitespace-nowrap shrink-0">
                             {formatPrice(product.price)}
                           </div>
                         </div>
-                        {index < products.length - 1 && (
+                        {index < sortedProducts.length - 1 && (
                           <hr className="border-t border-berry-100 mt-2" />
                         )}
                       </div>

@@ -10,7 +10,7 @@ interface Product {
   name: string
   price: number
   description?: string
-  category: 'cafe-caliente' | 'cafe-frio' | 'pasteleria' | 'combo' | 'coctel' | 'cerveza' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky' | 'aguardiente' | 'brandy' | 'ron' | 'otros'
+  category: 'cafe-caliente' | 'cafe-frio' | 'pasteleria' | 'combo' | 'combo-dia' | 'coctel' | 'cerveza' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky' | 'aguardiente' | 'brandy' | 'ron' | 'shot' | 'otros'
   type: 'cafeteria' | 'bebida' | 'producto'
   stock: number
   imageUrl?: string
@@ -28,12 +28,14 @@ const CATEGORIES = {
   cafeteria: [
     { value: 'cafe-caliente', label: 'Cafés Calientes' },
     { value: 'cafe-frio', label: 'Cafés Fríos' },
-    { value: 'pasteleria', label: 'Pastelería' },
+    { value: 'pasteleria', label: 'Panadería / pastelería' },
     { value: 'combo', label: 'Combos' }
   ],
   bebida: [
+    { value: 'combo-dia', label: 'Combos del día' },
     { value: 'cerveza', label: 'Cervezas' },
     { value: 'coctel', label: 'Cócteles' },
+    { value: 'shot', label: 'Shots' },
     { value: 'vino', label: 'Vinos' },
     { value: 'vodka', label: 'Vodka' },
     { value: 'ginebra', label: 'Ginebra' },

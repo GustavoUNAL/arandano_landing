@@ -1,12 +1,13 @@
 import Footer from '@/components/Footer'
 import FloatingWhatsApp from '@/components/FloatingWhatsApp'
 import LocationSchedule from '@/components/LocationSchedule'
+import { GOOGLE_MAPS_PLACE_URL } from '@/lib/site-location'
 
 export default function Contacto() {
   const whatsappNumber = '573207909835' // +57 3207909835
   const whatsappUrl = `https://wa.me/${whatsappNumber}`
   const instagramUrl = 'https://www.instagram.com/arandano.caf/'
-  const mapsUrl = 'https://maps.google.com/?q=1.223624,-77.284434'
+  const mapsUrl = GOOGLE_MAPS_PLACE_URL
 
   return (
     <>
@@ -60,7 +61,7 @@ export default function Contacto() {
                 Visítanos
               </h3>
               <p className="text-berry-800 text-base sm:text-lg mb-2 sm:mb-4">
-                Cra 35 calle17 - 86 div
+                Carrera 35 #17-86
               </p>
               <p className="text-berry-700 mb-3 sm:mb-4 text-sm sm:text-base">
                 Pasto, Nariño, Colombia

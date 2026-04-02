@@ -6,7 +6,7 @@
  * Uso: node scripts/update-product-costs-from-inventory.js
  */
 
-require('dotenv').config({ path: '.env.local' })
+require('./load-env-local.cjs')
 
 const Database = require('better-sqlite3')
 const path = require('path')

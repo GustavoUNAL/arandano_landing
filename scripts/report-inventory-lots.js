@@ -6,7 +6,7 @@
  * Uso: node scripts/report-inventory-lots.js
  */
 
-require('dotenv').config({ path: '.env.local' })
+require('./load-env-local.cjs')
 
 const admin = require('firebase-admin')
 const path = require('path')

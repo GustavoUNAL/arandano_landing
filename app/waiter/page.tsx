@@ -166,89 +166,28 @@ const CIGARETTES_PRODUCTS: Product[] = [
 
 const buildMediaBottleProducts = (products: Product[]): Product[] => {
   const medias: Product[] = []
-
-  const amarillos = products.filter(
-    (p) =>
-      p.type === 'bebida' &&
-      p.category === 'aguardiente' &&
-      p.name.toLowerCase().includes('amarillo') &&
-      (p.size?.toLowerCase().includes('750') || p.size?.toLowerCase().includes('botella'))
-  )
-  const narinos = products.filter(
-    (p) =>
-      p.type === 'bebida' &&
-      p.category === 'aguardiente' &&
-      p.name.toLowerCase().includes('nariño') &&
-      (p.size?.toLowerCase().includes('750') || p.size?.toLowerCase().includes('botella'))
-  )
-  const rones = products.filter(
-    (p) =>
-      p.type === 'bebida' &&
-      p.category === 'ron' &&
-      (p.size?.toLowerCase().includes('750') || p.size?.toLowerCase().includes('botella'))
-  )
-
-  const pickCheapest = (arr: Product[]): Product | undefined =>
-    arr.length ? arr.reduce((min, p) => (p.price < min.price ? p : min), arr[0]) : undefined
-
-  const fullAmarillo = pickCheapest(amarillos)
-  if (fullAmarillo) {
+  const fullAguardiente = products.find((p) => p.id === 'aguardiente-botella-750')
+  if (fullAguardiente) {
     medias.push({
-      ...fullAmarillo,
-      id: 'media-aguardiente-amarillo',
-      name: 'Media Aguardiente Amarillo',
-      price: Math.round(fullAmarillo.price / 2),
-      size: '1/2 botella'
+      ...fullAguardiente,
+      id: 'media-aguardiente-botella',
+      name: 'Media botella aguardiente (Nariño o Amarillo)',
+      price: Math.round(fullAguardiente.price / 2),
+      size: '375 ml'
     })
   }
-
-  const fullNarino = pickCheapest(narinos)
-  if (fullNarino) {
-    medias.push({
-      ...fullNarino,
-      id: 'media-aguardiente-narino',
-      name: 'Media Aguardiente Nariño',
-      price: Math.round(fullNarino.price / 2),
-      size: '1/2 botella'
-    })
-  }
-
-  const fullRon = pickCheapest(rones)
-  if (fullRon) {
-    medias.push({
-      ...fullRon,
-      id: 'media-ron',
-      name: 'Media Botella Ron',
-      price: Math.round(fullRon.price / 2),
-      size: '1/2 botella'
-    })
-  }
-
   return medias
 }
 
-const AROMATICA_PRODUCT: Product = {
-  id: 'prod-aromatica',
-  name: 'Aromática',
-  price: 4000,
-  description: 'Aromática',
-  category: 'cafe-caliente',
-  type: 'cafeteria'
-}
-
-const ACCOMPANIMENT_EXTRAS: Product[] = [
-  { id: 'prod-suspiros', name: 'Suspiros', price: 1000, description: 'Suspiros', category: 'pasteleria', type: 'cafeteria' },
-  { id: 'prod-galletas-especiales', name: 'Galletas especiales', price: 2000, description: 'Galletas especiales', category: 'pasteleria', type: 'cafeteria' }
-]
-
 const CATEGORIES = [
   { id: 'todos', name: 'Todos los productos', filter: (_p: Product) => true },
-  { id: 'cafes', name: 'Cafés', filter: (p: Product) => p.type === 'cafeteria' && (p.category === 'cafe-caliente' || p.category === 'cafe-frio') },
+  { id: 'cafes', name: 'Cafetería', filter: (p: Product) => p.type === 'cafeteria' && (p.category === 'cafe-caliente' || p.category === 'cafe-frio') },
   { id: 'cocteles', name: 'Cócteles', filter: (p: Product) => p.type === 'bebida' && p.category === 'coctel' },
-  { id: 'acompanantes', name: 'Acompañantes', filter: (p: Product) => p.type === 'cafeteria' && p.category === 'pasteleria' },
+  { id: 'acompanantes', name: 'Panadería', filter: (p: Product) => p.type === 'cafeteria' && p.category === 'pasteleria' },
+  { id: 'combos', name: 'Combos', filter: (p: Product) => p.category === 'combo' || p.category === 'combo-dia' },
   { id: 'cervezas', name: 'Cervezas', filter: (p: Product) => p.type === 'bebida' && p.category === 'cerveza' },
   { id: 'bebidas', name: 'Bebidas', filter: (p: Product) => p.type === 'bebida' },
-  { id: 'shots', name: 'Shots', filter: (p: Product) => p.type === 'bebida' && (p.size?.toLowerCase().includes('shot') || p.size?.toLowerCase().includes('30ml') || p.name?.toLowerCase().includes('shot')) },
+  { id: 'shots', name: 'Shots', filter: (p: Product) => p.category === 'shot' },
   { id: 'cigarrillos', name: 'Cigarrillos', filter: (p: Product) => p.category === 'cigarrillos' || p.id.startsWith('cig-') }
 ]
 
@@ -487,9 +426,7 @@ export default function WaiterPage() {
     const list: Product[] = [
       ...products,
       ...CIGARETTES_PRODUCTS,
-      ...buildMediaBottleProducts(products),
-      AROMATICA_PRODUCT,
-      ...ACCOMPANIMENT_EXTRAS
+      ...buildMediaBottleProducts(products)
     ]
     const byId = new Map<string, Product>()
     list.forEach((p) => {
@@ -511,14 +448,7 @@ export default function WaiterPage() {
           (p.description?.toLowerCase().includes(searchTerm) ?? false)
       )
     : filteredProducts
-  const aromaticMatchesSearch =
-    searchTerm &&
-    (AROMATICA_PRODUCT.name.toLowerCase().includes(searchTerm) ||
-      (AROMATICA_PRODUCT.description?.toLowerCase().includes(searchTerm) ?? false))
-  const displayedProducts =
-    aromaticMatchesSearch && !baseDisplayed.some((p) => p.id === AROMATICA_PRODUCT.id)
-      ? [AROMATICA_PRODUCT, ...baseDisplayed]
-      : baseDisplayed
+  const displayedProducts = baseDisplayed
 
   const addToCart = (product: Product) => {
     const wasEmpty = cart.length === 0

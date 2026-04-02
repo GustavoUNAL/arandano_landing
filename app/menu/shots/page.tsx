@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
+import { MENU_ORDER_SHOT, sortMenuByIds } from '@/lib/menu-display-order'
 
 interface Product {
   id: string
@@ -22,12 +23,8 @@ export default function MenuShots() {
       try {
         const response = await fetch('/api/products')
         const allProducts = await response.json()
-        // Filtrar productos que sean shots (tienen "Shot" o "30ml" en el size o nombre)
-        const shotProducts = allProducts.filter((p: Product) => 
-          p.type === 'bebida' && 
-          (p.size?.toLowerCase().includes('shot') || 
-           p.size?.toLowerCase().includes('30ml') || 
-           p.name?.toLowerCase().includes('shot'))
+        const shotProducts = allProducts.filter(
+          (p: Product) => p.type === 'bebida' && p.category === 'shot'
         )
         setProducts(shotProducts)
       } catch (error) {
@@ -38,6 +35,11 @@ export default function MenuShots() {
     }
     loadProducts()
   }, [])
+
+  const sortedProducts = useMemo(
+    () => sortMenuByIds(products, MENU_ORDER_SHOT),
+    [products]
+  )
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CO', {
@@ -64,25 +66,28 @@ export default function MenuShots() {
                 </Link>
               </div>
 
-              {/* Título centrado */}
-              <div className="absolute top-16 sm:top-20 left-1/2 transform -translate-x-1/2">
+               {/* Título centrado */}
+              <div className="absolute top-16 sm:top-20 left-1/2 transform -translate-x-1/2 text-center">
+                <span className="inline-block text-xs sm:text-sm font-medium text-berry-500 uppercase tracking-wider mb-2">
+                  Bar
+                </span>
                 <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-berry-600">
                   Shots
                 </h1>
               </div>
 
-              {/* Productos - Izquierda con separaciones, centrado en desktop */}
-              <div className="mt-40 sm:mt-48 md:mt-52">
-                <div className="space-y-4 sm:space-y-5 w-full max-w-2xl md:mx-auto">
+              {/* Productos - ancho completo en desktop, espacios ajustados */}
+              <div className="mt-40 sm:mt-48 md:mt-52 w-full">
+                <div className="space-y-4 sm:space-y-5 md:space-y-6 w-full">
                   {loading ? (
                     <div className="text-berry-600">Cargando...</div>
-                  ) : products.length === 0 ? (
+                  ) : sortedProducts.length === 0 ? (
                     <div className="text-berry-600">No hay shots disponibles</div>
                   ) : (
-                    products.map((product, index) => (
-                      <div key={product.id}>
-                        <div className="flex items-center justify-between gap-4 pb-3 sm:pb-4">
-                          <div className="flex-1 text-left">
+                    sortedProducts.map((product, index) => (
+                      <div key={product.id} className="w-full">
+                        <div className="flex items-baseline justify-between gap-4 md:gap-12 lg:gap-20 w-full pb-3 sm:pb-4">
+                          <div className="flex-1 min-w-0 text-left">
                             <div className="font-medium text-base sm:text-lg text-berry-600">
                               {product.name}
                             </div>
@@ -97,11 +102,11 @@ export default function MenuShots() {
                               </div>
                             )}
                           </div>
-                          <div className="text-lg sm:text-xl font-semibold text-berry-600 whitespace-nowrap">
-                            ${formatPrice(product.price)}
+                          <div className="text-lg sm:text-xl font-semibold text-berry-600 whitespace-nowrap shrink-0">
+                            {formatPrice(product.price)}
                           </div>
                         </div>
-                        {index < products.length - 1 && (
+                        {index < sortedProducts.length - 1 && (
                           <hr className="border-t border-berry-100 mt-2" />
                         )}
                       </div>

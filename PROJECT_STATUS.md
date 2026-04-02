@@ -64,19 +64,21 @@
 ### 🔧 Scripts Disponibles
 
 **Scripts de Producción (usados en npm scripts):**
-- `scripts/migrate-to-sqlite.js` - Migrar a SQLite (npm run migrate:sqlite)
-- `scripts/export-json-to-backup.js` - Backup a JSON (npm run backup:json)
-- `scripts/configure-server-env.sh` - Configuración de entorno (npm run configure:env)
-- `scripts/test-api-functions.js` - Tests de API (npm run test:api)
-- `scripts/pre-deploy-check.js` - Verificación pre-despliegue (npm run pre-deploy)
+- `scripts/migrate-to-sqlite.js` - Migrar a SQLite (`npm run migrate:sqlite`)
+- `scripts/normalize-products-json.js` - Normalizar `data/products.json` (`npm run normalize:products`)
+- `scripts/sync-products-json-to-db.js` - Sincronizar JSON → SQLite (`npm run sync:products`)
+- `scripts/export-informe.ts` - Informe consolidado Markdown (`npm run export:informe`)
+- `scripts/export-json-to-backup.js` - Backup a JSON (`npm run backup:json`)
+- `scripts/configure-server-env.sh` - Configuración de entorno (`npm run configure:env`)
+- `scripts/test-api-functions.js` - Smoke test de capa de datos (`npm run test:api`)
+- `scripts/pre-deploy-check.js` - Verificación pre-despliegue (`npm run pre-deploy`)
 
-**Scripts de Utilidad:**
+**Scripts de Utilidad (CLI manual):**
 - `scripts/database-organization-report.js` - Reporte de organización
 - `scripts/report-inventory-lots.js` - Reporte de lotes
 - `scripts/report-sales.js` - Reporte de ventas
 - `scripts/import-inventory.js` - Importación de inventario (usado por API)
-
-**Nota:** Scripts históricos y tareas puntuales completadas se han movido a `scripts/deprecated/`
+- `scripts/update-product-costs-from-inventory.js` - Actualizar costos desde inventario
 
 ### 🚀 Despliegue
 
