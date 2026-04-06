@@ -11,6 +11,7 @@
     "normalize:products": "node scripts/normalize-products-json.js",
     "sync:products": "node scripts/sync-products-json-to-db.js",
     "export:informe": "npx tsx scripts/export-informe.ts",
+    "export:migration": "node scripts/export-sqlite-for-migration.js",
     "backup:json": "node scripts/export-json-to-backup.js",
     "configure:env": "bash scripts/configure-server-env.sh",
     "test:api": "node scripts/test-api-functions.js",

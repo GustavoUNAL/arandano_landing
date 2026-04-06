@@ -41,3 +41,6 @@ next-env.d.ts
 
 # Informe Markdown regenerable
 informes/INFORME.md
+
+# Volcado local para migración (puede contener datos sensibles)
+data/migration-dump.json
