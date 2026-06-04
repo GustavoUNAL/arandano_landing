@@ -29,7 +29,7 @@ export default function LocationSchedule () {
 
   return (
     <ScrollReveal delay={120}>
-      <article className="location-card max-w-xl mx-auto">
+      <article className="location-card max-w-xl sm:max-w-2xl mx-auto">
         <div className="location-card-inner">
           <header className="location-card-header">
             <div className="flex items-center justify-center sm:justify-start gap-2 text-berry-600">

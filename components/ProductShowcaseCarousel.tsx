@@ -50,12 +50,13 @@ export default function ProductShowcaseCarousel() {
     return () => window.clearInterval(id)
   }, [ready, count, reducedMotion])
 
+  const wrapperClass = 'max-w-xl sm:max-w-2xl mx-auto px-4 sm:px-6'
   const frameClass =
-    'relative w-full aspect-[3/2] max-h-[15rem] sm:max-h-[17rem] md:max-h-[19rem] rounded-xl overflow-hidden bg-stone-100 mx-auto'
+    'relative w-full aspect-[3/2] max-h-[17rem] sm:max-h-[19rem] md:max-h-[21rem] lg:max-h-[24rem] rounded-xl overflow-hidden bg-stone-100/90 mx-auto shadow-sm ring-1 ring-stone-200/60'
 
   if (!ready) {
     return (
-      <div className="max-w-xl mx-auto px-4 sm:px-6" aria-hidden>
+      <div className={wrapperClass} aria-hidden>
         <div className={`${frameClass} bg-stone-200/40 animate-pulse`} />
       </div>
     )
@@ -64,7 +65,7 @@ export default function ProductShowcaseCarousel() {
   if (count === 0) return null
 
   return (
-    <div className="max-w-xl mx-auto px-4 sm:px-6" aria-label="Galería ambiental">
+    <div className={wrapperClass} aria-label="Galería ambiental">
       <div
         className={frameClass}
         onPointerDown={() => {
@@ -94,10 +95,10 @@ export default function ProductShowcaseCarousel() {
               fill
               className={
                 isLocal
-                  ? 'object-cover object-center'
+                  ? 'object-contain object-center'
                   : 'object-cover opacity-90 saturate-[0.75] brightness-[0.94]'
               }
-              sizes="(max-width: 640px) 92vw, 576px"
+              sizes="(max-width: 640px) 92vw, (max-width: 1024px) 672px, 672px"
               priority={i === 0}
             />
           </div>
@@ -111,7 +112,7 @@ export default function ProductShowcaseCarousel() {
         )}
         {isLocal && (
           <div
-            className="absolute inset-0 pointer-events-none bg-gradient-to-t from-stone-900/10 via-transparent to-stone-50/20"
+            className="absolute inset-0 pointer-events-none bg-gradient-to-t from-stone-900/5 via-transparent to-transparent"
             aria-hidden
           />
         )}
