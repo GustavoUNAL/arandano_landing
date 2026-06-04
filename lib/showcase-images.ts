@@ -1,17 +1,52 @@
 import fs from 'fs'
 import path from 'path'
+import { getProducts } from '@/lib/products'
 import { SHOWCASE_FALLBACK_IMAGES, type ShowcaseImage } from './showcase-config'
 
 const SHOWCASE_DIR = path.join(process.cwd(), 'public', 'images', 'showcase')
 const MANIFEST_PATH = path.join(process.cwd(), 'data', 'showcase-manifest.json')
 const ALLOWED_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'])
 
-type ManifestEntry = { file: string; alt?: string }
+type ManifestEntry = {
+  file: string
+  alt?: string
+  productId?: string
+  name?: string
+  description?: string
+}
 type ManifestFile = { images: ManifestEntry[] } | ManifestEntry[]
 
 function humanizeFilename(name: string): string {
   const base = name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ')
   return base.charAt(0).toUpperCase() + base.slice(1)
+}
+
+function enrichImage(image: ShowcaseImage, products: ReturnType<typeof getProducts>): ShowcaseImage {
+  const productId = image.productId
+  if (!productId) return image
+
+  const product = products.find((p) => p.id === productId)
+  if (!product) return image
+
+  return {
+    ...image,
+    productId: product.id,
+    name: image.name?.trim() || product.name,
+    description: image.description?.trim() || product.description,
+    price: product.price,
+    alt: image.alt?.trim() || product.name
+  }
+}
+
+function buildImage(entry: ManifestEntry, file: string): ShowcaseImage {
+  return {
+    src: `/images/showcase/${file}`,
+    alt: entry.alt?.trim() || humanizeFilename(file),
+    filename: file,
+    productId: entry.productId,
+    name: entry.name,
+    description: entry.description
+  }
 }
 
 function readManifest(): ManifestEntry[] {
@@ -45,26 +80,19 @@ export function getShowcaseImages(): ShowcaseImage[] {
   const diskFiles = listImageFiles()
   const filesOnDisk = new Set(diskFiles)
   const manifest = readManifest()
+  const products = getProducts()
   const used = new Set<string>()
   const result: ShowcaseImage[] = []
 
   for (const entry of manifest) {
     if (!filesOnDisk.has(entry.file)) continue
     used.add(entry.file)
-    result.push({
-      src: `/images/showcase/${entry.file}`,
-      alt: entry.alt?.trim() || humanizeFilename(entry.file),
-      filename: entry.file
-    })
+    result.push(enrichImage(buildImage(entry, entry.file), products))
   }
 
   for (const file of diskFiles) {
     if (used.has(file)) continue
-    result.push({
-      src: `/images/showcase/${file}`,
-      alt: humanizeFilename(file),
-      filename: file
-    })
+    result.push(enrichImage(buildImage({ file }, file), products))
   }
 
   if (result.length > 0) return result

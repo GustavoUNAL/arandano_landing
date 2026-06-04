@@ -2,6 +2,10 @@ export type ShowcaseImage = {
   src: string
   alt: string
   filename?: string
+  productId?: string
+  name?: string
+  description?: string
+  price?: number
 }
 
 /** Solo si no hay fotos en public/images/showcase/ */

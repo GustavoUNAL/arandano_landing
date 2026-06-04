@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 
 const HIDDEN_PREFIXES = [
@@ -13,32 +13,26 @@ const HIDDEN_PREFIXES = [
   '/informes'
 ]
 
-function shouldShowCounter(pathname: string): boolean {
+function shouldTrack(pathname: string): boolean {
   return !HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
 }
 
-function visitLabel(count: number): string {
-  return count === 1 ? '1 visita' : `${count.toLocaleString('es-CO')} visitas`
-}
-
 /**
- * Muestra cuántas visitas lleva la página actual (esquina inferior, discreto).
+ * Registra visitas en el servidor y las muestra solo en la consola del navegador.
  */
 export default function PageVisitCount() {
   const pathname = usePathname()
-  const [pageVisits, setPageVisits] = useState<number | null>(null)
 
   useEffect(() => {
-    if (!pathname || !shouldShowCounter(pathname)) {
-      setPageVisits(null)
-      return
-    }
+    if (!pathname || !shouldTrack(pathname)) return
 
     let cancelled = false
     const sessionKey = `arandano-visit-${pathname}`
 
-    const apply = (count: number) => {
-      if (!cancelled) setPageVisits(count)
+    const logVisit = (count: number) => {
+      if (cancelled) return
+      const label = count === 1 ? '1 visita' : `${count.toLocaleString('es-CO')} visitas`
+      console.log(`[Arándano] ${pathname} — ${label}`)
     }
 
     const load = async () => {
@@ -55,7 +49,7 @@ export default function PageVisitCount() {
           if (res.ok) {
             const data = await res.json()
             if (typeof data.pageVisits === 'number') {
-              apply(data.pageVisits)
+              logVisit(data.pageVisits)
               sessionStorage.setItem(sessionKey, '1')
               return
             }
@@ -65,7 +59,7 @@ export default function PageVisitCount() {
         const res = await fetch(`/api/visits?path=${encodeURIComponent(pathname)}`)
         if (res.ok) {
           const data = await res.json()
-          if (typeof data.pageVisits === 'number') apply(data.pageVisits)
+          if (typeof data.pageVisits === 'number') logVisit(data.pageVisits)
         }
       } catch {
         /* no bloquear la página */
@@ -78,19 +72,5 @@ export default function PageVisitCount() {
     }
   }, [pathname])
 
-  if (pageVisits === null || !pathname || !shouldShowCounter(pathname)) {
-    return null
-  }
-
-  return (
-    <div
-      className="fixed bottom-[4.75rem] left-3 right-auto sm:bottom-3 sm:left-auto sm:right-3 z-40 pointer-events-none select-none max-w-[calc(100vw-5.5rem)]"
-      aria-live="polite"
-      aria-label={visitLabel(pageVisits)}
-    >
-      <p className="text-[10px] sm:text-xs font-medium text-stone-500 bg-white/95 backdrop-blur-sm border border-stone-200/90 rounded-full px-2 py-0.5 sm:px-2.5 sm:py-1 shadow-sm truncate">
-        {visitLabel(pageVisits)}
-      </p>
-    </div>
-  )
+  return null
 }

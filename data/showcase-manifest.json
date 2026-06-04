@@ -1,8 +1,24 @@
 {
   "images": [
-    { "file": "hotgod.png", "alt": "Hot dog Arándano" },
-    { "file": "frappe.png", "alt": "Café frappé" },
-    { "file": "hervido.png", "alt": "Hervido" },
-    { "file": "coctel.png", "alt": "Cóctel" }
+    {
+      "file": "hotgod.png",
+      "alt": "Hot dog Arándano",
+      "productId": "hot-dog-grande"
+    },
+    {
+      "file": "frappe.png",
+      "alt": "Café frappé",
+      "productId": "cafe-frape"
+    },
+    {
+      "file": "hervido.png",
+      "alt": "Hervido",
+      "productId": "coctel-hervido"
+    },
+    {
+      "file": "coctel.png",
+      "alt": "Cóctel Arándano",
+      "productId": "coctel-arandano"
+    }
   ]
 }
