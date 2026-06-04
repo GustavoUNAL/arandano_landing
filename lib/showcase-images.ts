@@ -42,7 +42,8 @@ function listImageFiles(): string[] {
  * Imágenes del carrusel: lee public/images/showcase/ y opcionalmente data/showcase-manifest.json
  */
 export function getShowcaseImages(): ShowcaseImage[] {
-  const filesOnDisk = new Set(listImageFiles())
+  const diskFiles = listImageFiles()
+  const filesOnDisk = new Set(diskFiles)
   const manifest = readManifest()
   const used = new Set<string>()
   const result: ShowcaseImage[] = []
@@ -57,7 +58,7 @@ export function getShowcaseImages(): ShowcaseImage[] {
     })
   }
 
-  for (const file of [...filesOnDisk].sort((a, b) => a.localeCompare(b, 'es'))) {
+  for (const file of diskFiles) {
     if (used.has(file)) continue
     result.push({
       src: `/images/showcase/${file}`,

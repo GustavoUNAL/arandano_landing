@@ -171,11 +171,11 @@ async function main() {
   fs.writeFileSync(ventasCsvPath, ventasRows.join('\n'), 'utf8')
   fs.writeFileSync(lineasCsvPath, lineasRows.join('\n'), 'utf8')
 
-  const topProducts = [...productTotals.entries()]
+  const topProducts = Array.from(productTotals.entries())
     .sort((a, b) => b[1].revenue - a[1].revenue)
     .slice(0, 20)
 
-  const topDays = [...dayTotals.entries()]
+  const topDays = Array.from(dayTotals.entries())
     .sort((a, b) => b[1].total - a[1].total)
     .slice(0, 15)
 
@@ -235,7 +235,7 @@ async function main() {
   L.push('')
   L.push('| Método | Cantidad | Total |')
   L.push('|--------|----------|-------|')
-  for (const [method, v] of [...paymentTotals.entries()].sort(
+  for (const [method, v] of Array.from(paymentTotals.entries()).sort(
     (a, b) => b[1].total - a[1].total
   )) {
     const label =
