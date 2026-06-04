@@ -1,0 +1,7 @@
+{
+  "images": [
+    { "file": "foto-1.jpg", "alt": "Ambiente del café" },
+    { "file": "foto-2.jpg", "alt": "Barra y bebidas" },
+    { "file": "foto-3.jpg", "alt": "Detalle Arándano" }
+  ]
+}

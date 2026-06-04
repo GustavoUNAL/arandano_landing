@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { MENU_ORDER_PANADERIA, sortMenuByIds } from '@/lib/menu-display-order'
+import { MENU_ORDER_COMIDA_RAPIDA, sortMenuByIds } from '@/lib/menu-display-order'
 
 interface Product {
   id: string
@@ -23,7 +23,7 @@ export default function MenuAcompanantes() {
         const response = await fetch('/api/products')
         const allProducts = await response.json()
         const acompananteProducts = allProducts.filter((p: Product) => 
-          p.type === 'cafeteria' && p.category === 'pasteleria'
+          p.type === 'cafeteria' && p.category === 'comida-rapida'
         )
         setProducts(acompananteProducts)
       } catch (error) {
@@ -36,7 +36,7 @@ export default function MenuAcompanantes() {
   }, [])
 
   const sortedProducts = useMemo(
-    () => sortMenuByIds(products, MENU_ORDER_PANADERIA),
+    () => sortMenuByIds(products, MENU_ORDER_COMIDA_RAPIDA),
     [products]
   )
 
@@ -71,7 +71,7 @@ export default function MenuAcompanantes() {
                   Carta
                 </span>
                 <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-berry-600">
-                  Panadería
+                  Comida rápida
                 </h1>
               </div>
 

@@ -354,8 +354,17 @@ function initializeDatabase() {
     )
   `)
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS site_visits (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      path TEXT NOT NULL,
+      visitedAt TEXT NOT NULL
+    )
+  `)
+
   // Índices para mejorar rendimiento
   db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_site_visits_visitedAt ON site_visits(visitedAt);
     CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
     CREATE INDEX IF NOT EXISTS idx_products_type ON products(type);
     CREATE INDEX IF NOT EXISTS idx_inventory_category ON inventory(category);

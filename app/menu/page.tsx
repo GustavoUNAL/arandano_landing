@@ -6,10 +6,9 @@ import FloatingWhatsApp from '@/components/FloatingWhatsApp'
 export default function MenuPage() {
   const categories = [
     { id: 'cafes', name: 'Cafetería', link: '/menu/cafes' },
-    { id: 'acompanantes', name: 'Panadería', link: '/menu/acompanantes' },
-    { id: 'combos', name: 'Combos', link: '/menu/combos' },
+    { id: 'acompanantes', name: 'Comida rápida', link: '/menu/acompanantes' },
     { id: 'cervezas', name: 'Cervezas', link: '/menu/cervezas' },
-    { id: 'bebidas', name: 'Bar (bebidas)', link: '/menu-bebidas' },
+    { id: 'bebidas', name: 'Licores', link: '/menu-bebidas' },
     { id: 'cocteles', name: 'Cócteles', link: '/menu/cocteles' },
     { id: 'shots', name: 'Shots', link: '/menu/shots' }
   ]

@@ -9,7 +9,7 @@ export default function Footer() {
   const youtubeUrl = 'https://www.youtube.com/@ArándanoCafe'
 
   return (
-    <footer className="bg-stone-100 border-t border-stone-200 px-4 py-4 sm:py-5 md:py-6">
+    <footer className="bg-stone-100 border-t border-stone-200 px-4 py-5 sm:py-6 pb-[5.5rem] sm:pb-6">
       <div className="container-custom">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-3 sm:mb-4">
@@ -78,26 +78,17 @@ export default function Footer() {
             </a>
           </div>
           
-          <div className="text-center pt-3 sm:pt-4 border-t border-stone-300">
-            <p className="text-berry-600 text-xs mb-1">
+          <div className="text-center pt-3 sm:pt-4 border-t border-stone-300 space-y-1.5 px-1">
+            <p className="text-berry-600 text-xs leading-relaxed">
               © {new Date().getFullYear()} Arándano Inc. All rights reserved.
             </p>
-            <p className="text-berry-500 text-xs mb-1">
-              Cra 35 calle17 - 86 div - arandanocafebar@gmail.com
+            <p className="text-berry-500 text-xs leading-relaxed break-words">
+              Cra 35 #17-86 · Pasto
             </p>
-            <p className="text-berry-500 text-xs mb-1">
-              Power by{' '}
-              <a
-                href="https://www.linkedin.com/in/gustavo-arteaga/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold hover:text-berry-700 transition-colors"
-              >
-                Gustavo Arteaga
-              </a>
-              .
+            <p className="text-berry-500 text-xs leading-relaxed break-all">
+              arandanocafebar@gmail.com
             </p>
-            <p className="text-berry-500 text-xs">
+            <p className="text-berry-500 text-xs leading-relaxed">
               Made with 💙 in LATAM
             </p>
           </div>

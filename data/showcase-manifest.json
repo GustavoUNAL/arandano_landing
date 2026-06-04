@@ -1,0 +1,8 @@
+{
+  "images": [
+    { "file": "hotgod.png", "alt": "Hot dog Arándano" },
+    { "file": "frappe.png", "alt": "Café frappé" },
+    { "file": "hervido.png", "alt": "Hervido" },
+    { "file": "coctel.png", "alt": "Cóctel" }
+  ]
+}

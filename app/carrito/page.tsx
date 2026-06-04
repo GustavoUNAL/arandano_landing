@@ -16,7 +16,7 @@ interface Product {
   price: number
   description?: string
   size?: string
-  category: 'cafe-caliente' | 'cafe-frio' | 'pasteleria' | 'combo' | 'cerveza' | 'coctel' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky' | 'aguardiente' | 'brandy' | 'ron' | 'otros'
+  category: 'cafe-caliente' | 'cafe-frio' | 'comida-rapida' | 'pasteleria' | 'combo' | 'cerveza' | 'coctel' | 'shot' | 'vino' | 'vodka' | 'ginebra' | 'tequila' | 'whisky' | 'aguardiente' | 'brandy' | 'ron' | 'otros'
   type: 'cafeteria' | 'bebida' | 'producto'
   stock?: number
   imageUrl?: string
@@ -27,8 +27,8 @@ interface CartItem extends Product {
 }
 
 // Orden de categorías (constantes fuera del componente para mejor rendimiento)
-const CAFETERIA_CATEGORY_ORDER: Product['category'][] = ['cafe-caliente', 'cafe-frio', 'pasteleria', 'combo']
-const BEBIDAS_CATEGORY_ORDER: Product['category'][] = ['cerveza', 'coctel', 'vino', 'vodka', 'ginebra', 'tequila', 'whisky', 'aguardiente', 'brandy', 'ron', 'otros']
+const CAFETERIA_CATEGORY_ORDER: Product['category'][] = ['cafe-caliente', 'cafe-frio', 'comida-rapida']
+const BEBIDAS_CATEGORY_ORDER: Product['category'][] = ['cerveza', 'coctel', 'shot', 'aguardiente', 'ginebra', 'tequila', 'vodka', 'whisky', 'ron', 'brandy', 'vino', 'otros']
 
 const CartIcon = ({ count }: { count: number }) => (
   <div className="relative inline-flex items-center justify-center">
@@ -211,6 +211,7 @@ export default function CarritoPage() {
   const categoryLabels: Record<string, string> = {
     'cafe-caliente': 'Cafés Artesanales Calientes',
     'cafe-frio': 'Cafés Artesanales Fríos',
+    'comida-rapida': 'Comida rápida',
     'pasteleria': 'Panadería',
     'combo': 'Combos',
     'combo-dia': 'Combos del día',
@@ -231,6 +232,7 @@ export default function CarritoPage() {
   const categoryIcons: Record<string, string> = {
     'cafe-caliente': '☕',
     'cafe-frio': '🧊',
+    'comida-rapida': '🍴',
     'pasteleria': '🍰',
     'combo': '✨',
     'combo-dia': '📅',

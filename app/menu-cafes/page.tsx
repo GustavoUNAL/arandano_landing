@@ -6,8 +6,7 @@ import Link from 'next/link'
 import { useState, useEffect, useMemo } from 'react'
 import {
   MENU_ORDER_CAFETERIA,
-  MENU_ORDER_COMBO_FIJO,
-  MENU_ORDER_PANADERIA,
+  MENU_ORDER_COMIDA_RAPIDA,
   sortMenuByIds
 } from '@/lib/menu-display-order'
 import WhatsAppIcon from '@/components/WhatsAppIcon'
@@ -91,19 +90,11 @@ export default function MenuCafes() {
       ),
     [products]
   )
-  const pasteleria = useMemo(
+  const comidaRapida = useMemo(
     () =>
       sortMenuByIds(
-        products.filter((p) => p.category === 'pasteleria'),
-        MENU_ORDER_PANADERIA
-      ),
-    [products]
-  )
-  const combos = useMemo(
-    () =>
-      sortMenuByIds(
-        products.filter((p) => p.category === 'combo'),
-        MENU_ORDER_COMBO_FIJO
+        products.filter((p) => p.category === 'comida-rapida'),
+        MENU_ORDER_COMIDA_RAPIDA
       ),
     [products]
   )
@@ -299,30 +290,15 @@ export default function MenuCafes() {
                       </section>
                     )}
 
-                    {/* Pastelería */}
-                    {pasteleria.length > 0 && (
+                    {/* Comida rápida */}
+                    {comidaRapida.length > 0 && (
                       <section>
                         <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-berry-950 mb-4 sm:mb-6 md:mb-8 flex items-center gap-2 sm:gap-3">
-                          <span className="text-2xl sm:text-3xl">🍰</span>
-                          <span>Panadería</span>
+                          <span className="text-2xl sm:text-3xl">🍴</span>
+                          <span>Comida rápida</span>
                         </h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
-                          {pasteleria.map((item) => (
-                            <MenuCard key={item.id} item={item} />
-                          ))}
-                        </div>
-                      </section>
-                    )}
-
-                    {/* Combos Arándano */}
-                    {combos.length > 0 && (
-                      <section>
-                        <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-berry-950 mb-4 sm:mb-6 md:mb-8 flex items-center gap-2 sm:gap-3">
-                          <span className="text-2xl sm:text-3xl">✨</span>
-                          <span>Combos Arándano</span>
-                        </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
-                          {combos.map((item) => (
+                          {comidaRapida.map((item) => (
                             <MenuCard key={item.id} item={item} />
                           ))}
                         </div>

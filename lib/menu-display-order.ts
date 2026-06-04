@@ -1,4 +1,4 @@
-/** Orden de ítems en cartas públicas (MENÚ ARÁNDANO CAFÉ BAR). */
+/** Orden de ítems en cartas públicas (catálogo Arándano Café Bar). */
 
 export function sortMenuByIds<T extends { id: string }>(
   items: T[],
@@ -13,79 +13,91 @@ export function sortMenuByIds<T extends { id: string }>(
   })
 }
 
-/** CAFETERÍA (orden del menú impreso) */
+/** CAFETERÍA */
 export const MENU_ORDER_CAFETERIA = [
   'cafe-negro',
+  'cafe-leche',
+  'vaso-leche',
   'cafe-aromatizado',
   'carajillo',
-  'cafe-leche',
   'cafe-irlandes',
-  'vaso-leche',
   'cafe-frape',
   'cafe-helado',
   'leche-achocolatada',
   'aromatica-fruta',
-  'aromatica',
   'jarra-aromatica-fruta',
-  'hervidos',
-  'jarra-hervidos',
-  'soda-italiana'
+  'soda',
+  'soda-italiana',
+  'coca-cola',
+  'limonada-casa',
+  'jugo-natural'
 ] as const
 
-export const MENU_ORDER_PANADERIA = [
-  'porcion-galletas',
-  'empanadas',
+/** COMIDA RÁPIDA */
+export const MENU_ORDER_COMIDA_RAPIDA = [
+  'hot-dog-pequeno',
+  'hot-dog-grande',
+  'sandwich-pastuso',
   'tostadas'
 ] as const
 
-export const MENU_ORDER_COMBO_FIJO = ['combo-cafe-panaderia'] as const
+/** @deprecated Usar MENU_ORDER_COMIDA_RAPIDA */
+export const MENU_ORDER_PANADERIA = MENU_ORDER_COMIDA_RAPIDA
 
-export const MENU_ORDER_COMBO_DIA = [
-  'combo-dia-lunes',
-  'combo-dia-martes',
-  'combo-dia-miercoles',
-  'combo-dia-jueves',
-  'combo-dia-viernes',
-  'combo-dia-sabado'
-] as const
+/** @deprecated Combos retirados del catálogo */
+export const MENU_ORDER_COMBO_FIJO = [] as const
+
+/** @deprecated Combos retirados del catálogo */
+export const MENU_ORDER_COMBO_DIA = [] as const
 
 export const MENU_ORDER_CERVEZA = [
   'cerveza-poker-330',
-  'cerveza-coronita',
-  'cerveza-pokeron-750',
+  'cerveza-aguila-330',
+  'cerveza-budweiser',
   'cerveza-club-colombia-330',
-  'cerveza-michelada',
-  'cerveza-budweiser'
+  'cerveza-coronita',
+  'vaso-michelado',
+  'jarra-cerveza'
 ] as const
 
 export const MENU_ORDER_COCTEL = [
+  'coctel-hervido',
   'coctel-arandano',
   'coctel-margarita',
   'coctel-pina-colada',
   'coctel-negroni',
   'coctel-moscow-mule',
   'coctel-gin-tonic',
-  'coctel-whisky-rocas'
+  'coctel-whisky-rocas',
+  'coctel-coco-loco',
+  'coctel-gin-tonic-campari',
+  'coctel-mojito'
 ] as const
 
 export const MENU_ORDER_SHOT = [
   'shot-vodka',
+  'shot-aguardiente',
+  'shot-ginebra',
   'shot-tequila',
   'shot-brandy',
-  'shot-aguardiente',
   'shot-whisky',
-  'shot-ginebra',
-  'shot-ron'
+  'shot-ron',
+  'copa-vino'
 ] as const
 
-/** LICORES (botellas) — orden del menú */
+/** LICORES (botellas) */
 export const MENU_ORDER_LICORES_BOTELLA = [
-  'aguardiente-botella-750',
+  'aguardiente-narino-750',
+  'media-aguardiente-narino',
+  'aguardiente-amarillo-750',
+  'media-aguardiente-amarillo',
   'gin-gordons-botella',
   'tequila-olmeca-botella',
+  'vodka-smirnoff-botella',
   'whisky-old-parr-botella',
-  'vino-tinto-botella',
-  'vodka-smirnoff-botella'
+  'ron-viejo-caldas-750',
+  'brandy-domecq-750',
+  'media-brandy-domecq'
 ] as const
 
 export const LICOR_CATEGORIES = [
@@ -93,6 +105,7 @@ export const LICOR_CATEGORIES = [
   'ginebra',
   'tequila',
   'whisky',
-  'vino',
-  'vodka'
+  'vodka',
+  'ron',
+  'brandy'
 ] as const
