@@ -2,6 +2,7 @@
 
 import Footer from '@/components/Footer'
 import FloatingWhatsApp from '@/components/FloatingWhatsApp'
+import BotanicalBackground from '@/components/BotanicalBackground'
 import LocationSchedule from '@/components/LocationSchedule'
 import ProductShowcaseCarousel from '@/components/ProductShowcaseCarousel'
 import ScrollReveal from '@/components/ScrollReveal'
@@ -11,7 +12,9 @@ import Image from 'next/image'
 export default function Home() {
   return (
     <>
-      <main className="min-h-screen bg-gradient-to-b from-stone-50 via-stone-50/95 to-stone-100">
+      <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-stone-50 via-stone-50/95 to-stone-100">
+        <BotanicalBackground />
+        <div className="relative z-10">
         {/* Hero */}
         <section
           id="inicio"
@@ -114,6 +117,7 @@ export default function Home() {
         >
           <LocationSchedule />
         </section>
+        </div>
       </main>
       <Footer />
       <FloatingWhatsApp />

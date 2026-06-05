@@ -52,9 +52,9 @@ for path in /carrito /carta /admin /api/products; do
 done
 
 # 9. Favicon
-code=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/icon.png")
-echo "GET /icon.png -> $code"
-[ "$code" = "200" ] || { echo "FAIL: icon.png"; exit 1; }
+code=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/favicon-32.png")
+echo "GET /favicon-32.png -> $code"
+[ "$code" = "200" ] || { echo "FAIL: favicon-32.png"; exit 1; }
 
 echo ""
 echo "=== All SEO smoke tests passed ==="

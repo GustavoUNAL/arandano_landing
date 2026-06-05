@@ -37,6 +37,15 @@ export const metadata: Metadata = {
   other: {
     'mobile-web-app-capable': 'yes',
   },
+  icons: {
+    icon: [
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+    shortcut: ['/favicon-32.png'],
+  },
 }
 
 export default function RootLayout({
@@ -46,6 +55,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={`${inter.variable} ${playfair.variable}`}>
+      <head>
+        <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+      </head>
       <body className="antialiased">
         <Suspense fallback={null}>
           <SiteAnalytics />
