@@ -51,10 +51,10 @@ for path in /carrito /carta /admin /api/products; do
   esac
 done
 
-# 9. Icon
-code=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/icon.svg")
-echo "GET /icon.svg -> $code"
-[ "$code" = "200" ] || { echo "FAIL: icon"; exit 1; }
+# 9. Favicon
+code=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/icon.png")
+echo "GET /icon.png -> $code"
+[ "$code" = "200" ] || { echo "FAIL: icon.png"; exit 1; }
 
 echo ""
 echo "=== All SEO smoke tests passed ==="
