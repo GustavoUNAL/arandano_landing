@@ -27,6 +27,15 @@ const NavIcon = ({ name }: { name: string }) => {
       return <svg {...props}><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg>
     case 'analytics':
       return <svg {...props}><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
+    case 'seo':
+      return (
+        <svg {...props}>
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          <line x1="11" y1="8" x2="11" y2="14" />
+          <line x1="8" y1="11" x2="14" y2="11" />
+        </svg>
+      )
     case 'informes':
       return (
         <svg {...props}>
@@ -50,7 +59,8 @@ const NAV_ITEMS = [
   { href: '/admin?view=recipes', label: 'Recetas', iconName: 'recetas', view: 'recipes' },
   { href: '/expenses', label: 'Gastos', iconName: 'gastos', view: null },
   { href: '/informes', label: 'Informes', iconName: 'informes', view: null },
-  { href: '/analytics', label: 'Analytics', iconName: 'analytics', view: null }
+  { href: '/analytics', label: 'Analytics', iconName: 'analytics', view: null },
+  { href: '/seo', label: 'SEO', iconName: 'seo', view: null }
 ]
 
 export default function AdminSidebar() {

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
 import { Suspense } from 'react'
-import PageVisitCount from '@/components/PageVisitCount'
+import SiteAnalytics from '@/components/SiteAnalytics'
 import './globals.css'
 
 const inter = Inter({ 
@@ -37,6 +37,10 @@ export const metadata: Metadata = {
   other: {
     'mobile-web-app-capable': 'yes',
   },
+  icons: {
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+  },
 }
 
 export default function RootLayout({
@@ -48,7 +52,7 @@ export default function RootLayout({
     <html lang="es" className={`${inter.variable} ${playfair.variable}`}>
       <body className="antialiased">
         <Suspense fallback={null}>
-          <PageVisitCount />
+          <SiteAnalytics />
           {children}
         </Suspense>
       </body>

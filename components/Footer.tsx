@@ -3,9 +3,9 @@ import WhatsAppIcon from './WhatsAppIcon'
 export default function Footer() {
   const whatsappNumber = '573207909835' // +57 3207909835
   const whatsappUrl = `https://wa.me/${whatsappNumber}`
-  const tiktokUrl = 'https://www.tiktok.com/@arandano.caf'
-  const instagramUrl = 'https://www.instagram.com/arandano.caf/'
-  const facebookUrl = 'https://www.facebook.com/profile.php?id=61587304528892'
+  const tiktokUrl = 'https://www.tiktok.com/@arandano.cafe'
+  const instagramUrl = 'https://www.instagram.com/arandano.cafe/'
+  const facebookUrl = 'https://www.facebook.com/share/18agoBTJi5/?mibextid=wwXIfr'
   const youtubeUrl = 'https://www.youtube.com/@ArándanoCafe'
 
   return (

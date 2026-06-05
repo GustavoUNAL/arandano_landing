@@ -6,7 +6,7 @@ import { GOOGLE_MAPS_PLACE_URL } from '@/lib/site-location'
 export default function Contacto() {
   const whatsappNumber = '573207909835' // +57 3207909835
   const whatsappUrl = `https://wa.me/${whatsappNumber}`
-  const instagramUrl = 'https://www.instagram.com/arandano.caf/'
+  const instagramUrl = 'https://www.instagram.com/arandano.cafe/'
   const mapsUrl = GOOGLE_MAPS_PLACE_URL
 
   return (

@@ -84,13 +84,24 @@ export default function Home() {
           </ScrollReveal>
         </section>
 
-        {/* Galería sutil */}
+        {/* Productos destacados */}
         <section
           id="ambiente"
-          className="home-section border-t border-stone-200/40"
-          aria-label="Ambiente"
+          className="home-section border-t border-berry-200/30 bg-gradient-to-b from-berry-50/40 via-white to-stone-50/80 px-4 sm:px-6"
+          aria-label="Productos destacados"
         >
           <ScrollReveal delay={60}>
+            <div className="max-w-5xl mx-auto text-center mb-6 sm:mb-8">
+              <span className="inline-block text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] text-berry-600 mb-2">
+                Lo que pedimos hoy
+              </span>
+              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-berry-950">
+                Nuestros productos
+              </h2>
+              <p className="mt-2 text-sm sm:text-base text-stone-600 max-w-lg mx-auto">
+                Elige, agrega al pedido y envíalo por WhatsApp en segundos.
+              </p>
+            </div>
             <ProductShowcaseCarousel />
           </ScrollReveal>
         </section>

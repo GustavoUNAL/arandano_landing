@@ -256,15 +256,16 @@ export default function CarritoPage() {
     const isOutOfStock = (product.stock ?? 999) <= 0
 
     return (
-      <div className="bg-white border-2 border-stone-200 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 lg:p-6 hover:bg-stone-50 hover:border-berry-300 transition-all duration-300 hover:shadow-lg">
-        <div className="flex flex-col gap-2 sm:gap-3 md:gap-4">
+      <div className="group relative bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm ring-1 ring-stone-200/80 hover:shadow-xl hover:ring-berry-300/60 hover:-translate-y-1 transition-all duration-300">
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-berry-400 via-berry-600 to-berry-400 opacity-80 group-hover:opacity-100 transition-opacity" aria-hidden />
+        <div className="p-3 sm:p-4 md:p-5 flex flex-col gap-2 sm:gap-3 h-full">
           {product.imageUrl && (
-            <div className="w-full h-32 sm:h-40 bg-stone-100 rounded-lg overflow-hidden mb-2 relative">
-              <Image 
-                src={product.imageUrl} 
+            <div className="w-full h-28 sm:h-36 md:h-40 bg-gradient-to-br from-berry-50 to-stone-100 rounded-lg sm:rounded-xl overflow-hidden relative ring-1 ring-stone-100">
+              <Image
+                src={product.imageUrl}
                 alt={product.name}
                 fill
-                className="object-cover"
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none'
                 }}
@@ -272,20 +273,22 @@ export default function CarritoPage() {
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h3 className="font-display text-sm sm:text-base md:text-lg lg:text-xl font-bold text-berry-950 mb-1.5 sm:mb-2 md:mb-3 leading-tight break-words">
-              {product.name}
-            </h3>
-            {product.size && (
-              <p className="text-berry-600 text-xs sm:text-sm mb-1 font-medium">
-                {product.size}
-              </p>
-            )}
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <h3 className="font-display text-sm sm:text-base md:text-lg font-bold text-berry-950 leading-tight break-words flex-1">
+                {product.name}
+              </h3>
+              {product.size && (
+                <span className="shrink-0 text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-berry-100 text-berry-700">
+                  {product.size}
+                </span>
+              )}
+            </div>
             {product.description && (
-              <p className="text-berry-600 text-xs sm:text-sm mb-2 sm:mb-3 leading-relaxed line-clamp-2">
+              <p className="text-stone-500 text-xs sm:text-sm mb-2 leading-relaxed line-clamp-2">
                 {product.description}
               </p>
             )}
-            <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-berry-700">
+            <p className="text-base sm:text-lg md:text-xl font-bold text-berry-700">
               ${product.price.toLocaleString('es-CO')}
             </p>
             {isOutOfStock && (
@@ -294,8 +297,8 @@ export default function CarritoPage() {
               </p>
             )}
           </div>
-          
-          <div className="flex items-center gap-2 sm:gap-3 mt-auto">
+
+          <div className="flex items-center gap-2 sm:gap-3 mt-auto pt-1">
             {isOutOfStock ? (
               <button
                 disabled
@@ -650,7 +653,7 @@ export default function CarritoPage() {
                               <span className="text-xl sm:text-2xl md:text-3xl flex-shrink-0">{categoryIcons[group.category] || '•'}</span>
                               <span className="break-words">{categoryLabels[group.category] || group.category}</span>
                             </h3>
-                            <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:gap-5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
                               {group.products.map((product) => (
                                 <ProductCard key={product.id} product={product} />
                               ))}
