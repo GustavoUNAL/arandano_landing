@@ -49,7 +49,7 @@ export default function PollaLeaderboard({
   entries,
   compact = false,
   title = 'Tabla en vivo',
-  subtitle = `Hasta ${TOP_WINNERS_COUNT} ganadores · alias de animales`,
+  subtitle = `Hasta ${TOP_WINNERS_COUNT} ganadores · nombre de usuario`,
 }: PollaLeaderboardProps) {
   const winners = entries.filter((e) => e.isWinner)
 

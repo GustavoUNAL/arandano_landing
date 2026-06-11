@@ -75,6 +75,43 @@ export function generateDisplayAlias(userId: string): string {
   return `${animal} ${num}`
 }
 
+const DISPLAY_ALIAS_MIN = 3
+const DISPLAY_ALIAS_MAX = 24
+const DISPLAY_ALIAS_PATTERN = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9][a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s._-]*$/
+
+export function validateDisplayAlias(displayAlias: string): string {
+  const normalized = displayAlias.trim().replace(/\s+/g, ' ')
+  if (normalized.length < DISPLAY_ALIAS_MIN) {
+    throw new Error(`El nombre debe tener al menos ${DISPLAY_ALIAS_MIN} caracteres.`)
+  }
+  if (normalized.length > DISPLAY_ALIAS_MAX) {
+    throw new Error(`El nombre no puede superar ${DISPLAY_ALIAS_MAX} caracteres.`)
+  }
+  if (!DISPLAY_ALIAS_PATTERN.test(normalized)) {
+    throw new Error('Usa solo letras, números, espacios, puntos, guiones o guiones bajos.')
+  }
+  return normalized
+}
+
+export async function updateDisplayAlias(userId: string, displayAlias: string): Promise<SportsUser> {
+  const normalized = validateDisplayAlias(displayAlias)
+  const taken = await dbGet<{ id: string }>(
+    'SELECT id FROM sports_users WHERE LOWER(displayAlias) = LOWER(?) AND id != ?',
+    [normalized, userId]
+  )
+  if (taken) {
+    throw new Error('Ese nombre de usuario ya está en uso.')
+  }
+
+  const now = new Date().toISOString()
+  await dbRun('UPDATE sports_users SET displayAlias = ?, updatedAt = ? WHERE id = ?', [
+    normalized,
+    now,
+    userId,
+  ])
+  return (await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [userId]))!
+}
+
 async function ensureDisplayAlias(userId: string): Promise<string> {
   const user = await dbGet<{ displayAlias: string | null }>(
     'SELECT displayAlias FROM sports_users WHERE id = ?',

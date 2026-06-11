@@ -7,8 +7,11 @@ import {
   getUserPredictions,
   isMatchPredictable,
   settleFinishedMatches,
+  updateDisplayAlias,
 } from '@/lib/sports-polla'
 import { NextResponse } from 'next/server'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const authUser = await getAuthUser()
@@ -49,5 +52,27 @@ export async function GET() {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Error desconocido'
     return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: Request) {
+  const authUser = await getAuthUser()
+  if (!authUser) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  }
+
+  try {
+    const body = await request.json()
+    const displayAlias = body?.displayAlias
+    if (typeof displayAlias !== 'string') {
+      return NextResponse.json({ error: 'Nombre de usuario inválido' }, { status: 400 })
+    }
+
+    const user = await updateDisplayAlias(authUser.id, displayAlias)
+    return NextResponse.json({ user })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Error desconocido'
+    const status = message.includes('ya está en uso') || message.includes('caracteres') ? 400 : 500
+    return NextResponse.json({ error: message }, { status })
   }
 }

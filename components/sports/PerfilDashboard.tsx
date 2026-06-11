@@ -92,6 +92,17 @@ export default function PerfilDashboard() {
     setFormError('')
   }
 
+  const updateUsername = async (displayAlias: string) => {
+    const res = await fetch('/api/sports/me', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayAlias }),
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || 'Error al guardar nombre')
+    setData((prev) => (prev ? { ...prev, user: json.user } : prev))
+  }
+
   const submitPrediction = async () => {
     if (!activeMatch || !data) return
     setSaving(true)
@@ -188,6 +199,7 @@ export default function PerfilDashboard() {
             onGoMundial={() => setTab('mundial')}
             onGoJugar={() => setTab('jugar')}
             onGoPicks={() => setTab('picks')}
+            onUpdateUsername={updateUsername}
           />
         )}
 

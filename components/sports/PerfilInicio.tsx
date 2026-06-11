@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import {
   IconBall,
   IconGlobe,
@@ -31,6 +32,7 @@ interface PerfilInicioProps {
   onGoMundial: () => void
   onGoJugar: () => void
   onGoPicks: () => void
+  onUpdateUsername?: (displayAlias: string) => Promise<void>
 }
 
 function daysUntil(dateStr: string) {
@@ -57,7 +59,31 @@ export default function PerfilInicio({
   onGoMundial,
   onGoJugar,
   onGoPicks,
+  onUpdateUsername,
 }: PerfilInicioProps) {
+  const [editingUsername, setEditingUsername] = useState(false)
+  const [usernameDraft, setUsernameDraft] = useState(displayAlias ?? '')
+  const [usernameError, setUsernameError] = useState('')
+  const [savingUsername, setSavingUsername] = useState(false)
+
+  useEffect(() => {
+    if (!editingUsername) setUsernameDraft(displayAlias ?? '')
+  }, [displayAlias, editingUsername])
+
+  const saveUsername = async () => {
+    if (!onUpdateUsername) return
+    setSavingUsername(true)
+    setUsernameError('')
+    try {
+      await onUpdateUsername(usernameDraft)
+      setEditingUsername(false)
+    } catch (e) {
+      setUsernameError(e instanceof Error ? e.message : 'No se pudo guardar')
+    } finally {
+      setSavingUsername(false)
+    }
+  }
+
   const daysToStart = daysUntil(worldCup.competition.startDate)
   const upcoming = worldCup.upcomingMatches.slice(0, 4)
   const colombiaTeam = worldCup.teams.find((t) => t.name === 'Colombia')
@@ -80,11 +106,60 @@ export default function PerfilInicio({
             <p className="text-[10px] text-berry-200/70 uppercase tracking-wide">Tus créditos</p>
             <p className="font-display text-3xl font-bold tabular-nums">{credits.toLocaleString('es-CO')}</p>
           </div>
-          <div className="text-right text-xs text-berry-200/80 space-y-0.5">
+          <div className="text-right text-xs text-berry-200/80 space-y-0.5 min-w-0">
             <p>Puntos: <span className="text-white font-semibold tabular-nums">{totalPoints}</span></p>
             <p>Picks: <span className="text-white font-semibold">{predictions.length}</span></p>
-            {displayAlias && (
-              <p className="text-[10px] text-berry-200/60">Alias: {displayAlias}</p>
+            {onUpdateUsername && (
+              <div className="mt-1">
+                {editingUsername ? (
+                  <div className="space-y-1.5 text-left">
+                    <label className="text-[10px] text-berry-200/60 uppercase tracking-wide block">
+                      Nombre en la tabla
+                    </label>
+                    <input
+                      type="text"
+                      value={usernameDraft}
+                      onChange={(e) => setUsernameDraft(e.target.value)}
+                      maxLength={24}
+                      placeholder="Tu nombre público"
+                      className="w-full rounded-lg border border-white/20 bg-black/30 px-2 py-1.5 text-xs text-white placeholder:text-stone-500 focus:border-berry-400 focus:outline-none"
+                      disabled={savingUsername}
+                    />
+                    {usernameError && <p className="text-[10px] text-red-300">{usernameError}</p>}
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingUsername(false)
+                          setUsernameError('')
+                          setUsernameDraft(displayAlias ?? '')
+                        }}
+                        className="text-[10px] text-stone-400"
+                        disabled={savingUsername}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={saveUsername}
+                        disabled={savingUsername || !usernameDraft.trim()}
+                        className="text-[10px] font-semibold text-berry-300 disabled:opacity-50"
+                      >
+                        {savingUsername ? 'Guardando…' : 'Guardar'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setEditingUsername(true)}
+                    className="text-[10px] text-berry-200/60 hover:text-berry-200 text-right w-full"
+                  >
+                    Tabla: <span className="text-white font-medium">{displayAlias ?? 'Sin nombre'}</span>
+                    <span className="ml-1 text-berry-300">· Editar</span>
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
