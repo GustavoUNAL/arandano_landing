@@ -1,178 +1,163 @@
 /**
- * Script de verificación pre-despliegue
- * Verifica que todo esté listo para producción
+ * Verificación pre-despliegue — SQLite + Polla Mundialista + NextAuth
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('fs')
+const path = require('path')
 
-console.log('═══════════════════════════════════════════════════════════');
-console.log('  VERIFICACIÓN PRE-DESPLIEGUE');
-console.log('═══════════════════════════════════════════════════════════\n');
+const root = path.join(__dirname, '..')
+const envPath = path.join(root, '.env.local')
 
-let allGood = true;
-const errors = [];
-const warnings = [];
+console.log('═══════════════════════════════════════════════════════════')
+console.log('  VERIFICACIÓN PRE-DESPLIEGUE — Arándano Café Bar')
+console.log('═══════════════════════════════════════════════════════════\n')
 
-// 1. Verificar build
-console.log('1️⃣  Verificando build...');
-if (fs.existsSync(path.join(__dirname, '../.next'))) {
-  console.log('  ✅ Build existe (.next/)');
-} else {
-  console.log('  ❌ Build no encontrado');
-  errors.push('Ejecuta: npm run build');
-  allGood = false;
+const errors = []
+const warnings = []
+
+function ok(msg) {
+  console.log(`  ✅ ${msg}`)
 }
 
-// 2. Verificar variables de entorno
-console.log('\n2️⃣  Verificando variables de entorno...');
-const envPath = path.join(__dirname, '../.env.local');
-if (fs.existsSync(envPath)) {
-  const envContent = fs.readFileSync(envPath, 'utf8');
-  const requiredVars = [
-    'NEXT_PUBLIC_FIREBASE_API_KEY',
-    'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
-    'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
-    'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
-    'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
-    'NEXT_PUBLIC_FIREBASE_APP_ID',
-    'DB_MODE',
-    'ADMIN_PASSWORD'
-  ];
-  
-  requiredVars.forEach(varName => {
-    if (envContent.includes(varName)) {
-      console.log(`  ✅ ${varName}`);
+function fail(msg) {
+  console.log(`  ❌ ${msg}`)
+  errors.push(msg)
+}
+
+function warn(msg) {
+  console.log(`  ⚠️  ${msg}`)
+  warnings.push(msg)
+}
+
+// 1. Build
+console.log('1️⃣  Build de producción')
+if (fs.existsSync(path.join(root, '.next', 'standalone', 'server.js'))) {
+  ok('Servidor standalone (.next/standalone/server.js)')
+} else {
+  warn('Build standalone no encontrado — ejecuta: npm run build')
+}
+
+// 2. Variables de entorno
+console.log('\n2️⃣  Variables de entorno (.env.local)')
+const requiredVars = [
+  { key: 'DB_MODE', hint: 'sqlite' },
+  { key: 'ADMIN_PASSWORD', hint: 'contraseña del panel admin' },
+  { key: 'NEXTAUTH_URL', hint: 'https://tu-dominio.com' },
+  { key: 'NEXTAUTH_SECRET', hint: 'openssl rand -base64 32' },
+  { key: 'GOOGLE_CLIENT_ID', hint: 'Google Cloud Console' },
+  { key: 'GOOGLE_CLIENT_SECRET', hint: 'Google Cloud Console' },
+  { key: 'FOOTBALL_DATA_API_TOKEN', hint: 'football-data.org' },
+]
+
+if (!fs.existsSync(envPath)) {
+  fail('.env.local no encontrado — copia desde .env.example')
+} else {
+  const envContent = fs.readFileSync(envPath, 'utf8')
+  for (const { key, hint } of requiredVars) {
+    const line = envContent.split('\n').find((l) => l.startsWith(`${key}=`))
+    if (!line || line.trim() === `${key}=` || line.trim() === `${key}=""`) {
+      fail(`${key} vacío o ausente (${hint})`)
     } else {
-      console.log(`  ❌ ${varName} - FALTA`);
-      errors.push(`Variable ${varName} no encontrada en .env.local`);
-      allGood = false;
+      ok(key)
     }
-  });
-  
-  // Verificar DB_MODE
-  if (envContent.includes('DB_MODE=firebase') || envContent.includes('DB_MODE=hybrid')) {
-    console.log('  ✅ DB_MODE configurado para Firebase');
-  } else {
-    warnings.push('DB_MODE está en "json", considera cambiar a "firebase" para producción');
   }
-} else {
-  console.log('  ❌ .env.local no encontrado');
-  errors.push('Crea .env.local con las variables de Firebase');
-  allGood = false;
+  if (envContent.includes('DB_MODE=sqlite')) {
+    ok('DB_MODE=sqlite')
+  } else if (envContent.includes('DB_MODE=json')) {
+    warn('DB_MODE=json — en producción usar sqlite')
+  }
 }
 
-// 3. Verificar Service Account
-console.log('\n3️⃣  Verificando Service Account...');
-const serviceAccountPath = path.join(__dirname, '../firebase-service-account.json');
-if (fs.existsSync(serviceAccountPath)) {
+// 3. Base de datos SQLite
+console.log('\n3️⃣  Base de datos SQLite')
+const dbPath = path.join(root, 'data', 'arandano.db')
+if (fs.existsSync(dbPath)) {
+  const sizeMb = (fs.statSync(dbPath).size / (1024 * 1024)).toFixed(2)
+  ok(`data/arandano.db (${sizeMb} MB)`)
   try {
-    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-    console.log('  ✅ firebase-service-account.json existe');
-    console.log(`  ✅ Project ID: ${serviceAccount.project_id || 'N/A'}`);
-  } catch (error) {
-    console.log('  ❌ Error leyendo Service Account:', error.message);
-    errors.push('firebase-service-account.json tiene errores');
-    allGood = false;
+    const Database = require('better-sqlite3')
+    const db = new Database(dbPath, { readonly: true })
+    const tables = ['sports_users', 'match_predictions', 'products', 'sales']
+    for (const table of tables) {
+      const row = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`).get(table)
+      if (row) ok(`Tabla ${table}`)
+      else warn(`Tabla ${table} no existe (se creará al iniciar)`)
+    }
+    const users = db.prepare('SELECT COUNT(*) AS c FROM sports_users').get()
+    const preds = db.prepare('SELECT COUNT(*) AS c FROM match_predictions').get()
+    ok(`Polla: ${users.c} usuarios, ${preds.c} pronósticos`)
+    db.close()
+  } catch (e) {
+    warn(`No se pudo inspeccionar SQLite: ${e.message}`)
   }
 } else {
-  console.log('  ⚠️  firebase-service-account.json no encontrado');
-  warnings.push('Necesario para operaciones del servidor. Puedes usar FIREBASE_SERVICE_ACCOUNT en .env.local');
+  warn('data/arandano.db no existe — se creará en el primer arranque')
 }
 
-// 4. Verificar archivos de datos
-console.log('\n4️⃣  Verificando archivos de datos...');
-const dataDir = path.join(__dirname, '../data');
-const dataFiles = ['products.json', 'inventory.json', 'sales.json', 'expenses.json', 'tasks.json'];
-let totalItems = 0;
+// 4. Dependencias críticas
+console.log('\n4️⃣  Dependencias')
+const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
+for (const dep of ['better-sqlite3', 'next-auth', 'next']) {
+  if (pkg.dependencies?.[dep]) ok(dep)
+  else fail(`Falta dependencia: ${dep}`)
+}
 
-dataFiles.forEach(file => {
-  const filePath = path.join(dataDir, file);
-  if (fs.existsSync(filePath)) {
-    try {
-      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-      const count = Array.isArray(data) ? data.length : Object.keys(data).length;
-      totalItems += count;
-      console.log(`  ✅ ${file.padEnd(20)} - ${count.toString().padStart(4)} items`);
-    } catch (error) {
-      console.log(`  ❌ ${file.padEnd(20)} - Error: ${error.message}`);
-      errors.push(`${file} tiene errores de sintaxis`);
-      allGood = false;
-    }
+// 5. Rutas API sports
+console.log('\n5️⃣  API Polla Mundialista')
+const apiRoutes = [
+  'app/api/sports/me/route.ts',
+  'app/api/sports/predictions/route.ts',
+  'app/api/sports/leaderboard/route.ts',
+  'app/api/auth/[...nextauth]/route.ts',
+  'app/api/football/world-cup/route.ts',
+]
+for (const route of apiRoutes) {
+  if (fs.existsSync(path.join(root, route))) ok(route)
+  else fail(`Falta: ${route}`)
+}
+
+// 6. PM2
+console.log('\n6️⃣  Configuración PM2')
+const ecosystemPath = path.join(root, 'ecosystem.config.js')
+if (fs.existsSync(ecosystemPath)) {
+  ok('ecosystem.config.js')
+  const eco = fs.readFileSync(ecosystemPath, 'utf8')
+  if (eco.includes('DATABASE_PATH') && eco.includes('PROJECT_ROOT')) {
+    ok('PROJECT_ROOT y DATABASE_PATH configurados')
   } else {
-    console.log(`  ⚠️  ${file.padEnd(20)} - No encontrado`);
-    warnings.push(`${file} no encontrado (puede estar bien si usas solo Firebase)`);
+    warn('ecosystem.config.js sin DATABASE_PATH — revisar rutas SQLite')
   }
-});
-
-console.log(`\n  Total: ${totalItems} items en archivos JSON`);
-
-// 5. Verificar dependencias
-console.log('\n5️⃣  Verificando dependencias...');
-const packageJsonPath = path.join(__dirname, '../package.json');
-if (fs.existsSync(packageJsonPath)) {
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-  const requiredDeps = ['firebase', 'firebase-admin'];
-  
-  requiredDeps.forEach(dep => {
-    if (packageJson.dependencies && packageJson.dependencies[dep]) {
-      console.log(`  ✅ ${dep} instalado`);
-    } else {
-      console.log(`  ❌ ${dep} no encontrado en package.json`);
-      errors.push(`Dependencia ${dep} falta en package.json`);
-      allGood = false;
-    }
-  });
-}
-
-// 6. Verificar backups
-console.log('\n6️⃣  Verificando backups...');
-const backupDir = path.join(__dirname, '../backups');
-if (fs.existsSync(backupDir)) {
-  const backups = fs.readdirSync(backupDir).filter(f => 
-    fs.statSync(path.join(backupDir, f)).isDirectory()
-  );
-  console.log(`  ✅ Directorio de backups existe (${backups.length} backups)`);
 } else {
-  console.log('  ⚠️  Directorio de backups no encontrado');
-  warnings.push('Crea backups antes de desplegar');
+  fail('ecosystem.config.js no encontrado')
 }
+
+// 7. Archivos de datos JSON (semilla)
+console.log('\n7️⃣  Datos JSON (semilla)')
+const productsJson = path.join(root, 'data', 'products.json')
+if (fs.existsSync(productsJson)) ok('data/products.json')
+else warn('data/products.json no encontrado')
 
 // Resumen
-console.log('\n═══════════════════════════════════════════════════════════');
-if (allGood && errors.length === 0) {
-  console.log('  ✅ TODO LISTO PARA PRODUCCIÓN');
-  console.log('═══════════════════════════════════════════════════════════\n');
-  
-  if (warnings.length > 0) {
-    console.log('⚠️  Advertencias:');
-    warnings.forEach(w => console.log(`   - ${w}`));
-    console.log('');
+console.log('\n═══════════════════════════════════════════════════════════')
+if (errors.length === 0) {
+  console.log('  ✅ LISTO PARA DESPLEGAR')
+  console.log('═══════════════════════════════════════════════════════════\n')
+  if (warnings.length) {
+    console.log('Advertencias:')
+    warnings.forEach((w) => console.log(`  - ${w}`))
+    console.log('')
   }
-  
-  console.log('Próximos pasos:');
-  console.log('1. Subir proyecto a EC2');
-  console.log('2. Configurar .env.local en el servidor');
-  console.log('3. Subir firebase-service-account.json');
-  console.log('4. Ejecutar: npm install && npm run build');
-  console.log('5. Iniciar con PM2: pm2 start npm --name "arandano-app" -- start');
-  console.log('6. Configurar Nginx (ver EC2_PRODUCTION_SETUP.md)\n');
+  console.log('Despliegue:')
+  console.log('  npm run deploy:ovh')
+  console.log('  o: npm run build && pm2 start ecosystem.config.js')
+  console.log('\nVer DEPLOY.md para OAuth Google y backups.\n')
 } else {
-  console.log('  ❌ HAY PROBLEMAS QUE RESOLVER');
-  console.log('═══════════════════════════════════════════════════════════\n');
-  
-  if (errors.length > 0) {
-    console.log('❌ Errores:');
-    errors.forEach(e => console.log(`   - ${e}`));
-    console.log('');
+  console.log('  ❌ CORRIGE ESTOS ERRORES ANTES DE DESPLEGAR')
+  console.log('═══════════════════════════════════════════════════════════\n')
+  errors.forEach((e) => console.log(`  - ${e}`))
+  if (warnings.length) {
+    console.log('\nAdvertencias:')
+    warnings.forEach((w) => console.log(`  - ${w}`))
   }
-  
-  if (warnings.length > 0) {
-    console.log('⚠️  Advertencias:');
-    warnings.forEach(w => console.log(`   - ${w}`));
-    console.log('');
-  }
-  
-  process.exit(1);
+  process.exit(1)
 }
-

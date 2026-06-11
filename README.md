@@ -37,7 +37,24 @@ npm install
 npm run dev
 ```
 
-3. Abre tu navegador en `http://localhost:3000`
+3. Copia variables de entorno y configura la polla:
+```bash
+cp .env.example .env.local
+# Completa: NEXTAUTH_*, GOOGLE_*, FOOTBALL_DATA_API_TOKEN, ADMIN_PASSWORD
+```
+
+4. Abre tu navegador en `http://localhost:3000`  
+   - Polla mundialista: `/sports` → login Google → `/perfil`
+
+## ⚽ Polla Mundialista (datos)
+
+| Ruta | Descripción |
+|------|-------------|
+| `/sports` | Landing del Mundial |
+| `/perfil` | Pronósticos, tabla en vivo, créditos |
+| `GET /api/sports/leaderboard` | Ranking (alias de animales) |
+
+Usuarios y pronósticos en SQLite (`data/arandano.db`). Esquema: [`data/README.md`](data/README.md).
 
 ## 📦 Build para producción
 
@@ -125,7 +142,7 @@ Para instrucciones detalladas de despliegue, consulta [DEPLOY.md](./DEPLOY.md).
 ### Opciones de Despliegue
 
 - **EC2 (AWS)** - Servidor propio con Nginx y SSL
-- **Vercel** - Recomendado para Next.js (deploy automático)
+- **VPS (OVH/EC2) + PM2** - Recomendado (SQLite + polla mundialista requieren disco persistente)
 - **Netlify** - Alternativa fácil y rápida
 - **GitHub Actions** - CI/CD automático
 

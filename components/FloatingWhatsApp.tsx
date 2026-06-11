@@ -1,24 +1,60 @@
 'use client'
 
-import WhatsAppIcon from './WhatsAppIcon'
+import { signIn, useSession } from 'next-auth/react'
+import Image from 'next/image'
 
 export default function FloatingWhatsApp() {
-  const whatsappNumber = '573207909835' // +57 3207909835
-  const whatsappMessage = encodeURIComponent('Hola, quiero hacer un pedido en Arándano Café Bar.')
-  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`
+  const { data: session } = useSession()
+
+  const handleClick = () => {
+    if (session) {
+      window.open('/perfil', '_blank', 'noopener,noreferrer')
+    } else {
+      signIn('google', { callbackUrl: '/perfil' })
+    }
+  }
 
   return (
-    <a
-      href={whatsappUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 md:bottom-8 md:right-8 w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 bg-[#25D366] hover:bg-[#20BA5A] rounded-full flex items-center justify-center shadow-2xl hover:shadow-[#25D366]/50 transition-all duration-300 hover:scale-110 active:scale-95 z-50 group"
-      aria-label="Contactar por WhatsApp"
-    >
-      <WhatsAppIcon size={24} className="sm:w-7 sm:h-7 md:w-8 md:h-8 text-white group-hover:scale-110 transition-transform duration-300" />
-      <span className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-red-500 rounded-full animate-ping"></span>
-      <span className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-red-500 rounded-full"></span>
-    </a>
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 md:bottom-8 md:right-8 z-50 flex flex-col items-end gap-2">
+      {/* Globo de diálogo animado */}
+      <button
+        type="button"
+        onClick={handleClick}
+        className="group relative animate-balloon-float cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-berry-500 focus-visible:ring-offset-2 rounded-2xl"
+        aria-label="Ingresar a tu cuenta"
+      >
+        <div className="relative bg-gradient-to-r from-berry-600 to-berry-700 text-white text-sm font-bold px-4 py-2.5 rounded-2xl shadow-xl shadow-berry-900/30 border border-berry-500/50 whitespace-nowrap transition-transform duration-300 group-hover:scale-105 group-active:scale-95">
+          <span>Gool!</span>
+          <div className="absolute -bottom-2 right-6 w-4 h-4 bg-berry-700 border-r border-b border-berry-800/50 rotate-45 shadow-sm" />
+        </div>
+        <span className="absolute -inset-1 rounded-2xl bg-berry-500/20 blur-md animate-ping-slow pointer-events-none" />
+      </button>
+
+      {/* Balón — técnicas de fútbol */}
+      <button
+        type="button"
+        onClick={handleClick}
+        className="relative flex flex-col items-center justify-end cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-berry-400 focus-visible:ring-offset-2 rounded-full group transition-transform duration-300 hover:scale-105 active:scale-95"
+        aria-label="Ingresar — abre en nueva pestaña"
+      >
+        <div className="relative w-14 h-16 sm:w-16 sm:h-[4.5rem] flex items-end justify-center overflow-visible">
+          <div className="animate-soccer-juggle relative w-12 h-12 sm:w-14 sm:h-14">
+            <Image
+              src="/soccer-ball.png"
+              alt=""
+              fill
+              className="object-contain drop-shadow-lg"
+              sizes="56px"
+              priority
+            />
+          </div>
+        </div>
+
+        <div
+          className="animate-soccer-shadow w-9 h-2 sm:w-10 sm:h-2.5 rounded-[50%] bg-black/25 blur-[2px] -mt-1"
+          aria-hidden
+        />
+      </button>
+    </div>
   )
 }
-

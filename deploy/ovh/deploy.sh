@@ -123,7 +123,9 @@ echo -e "${CYAN}4️⃣  Verificando base de datos SQLite...${NC}"
 
 if [ -f "data/arandano.db" ]; then
     echo -e "${GREEN}   ✅ Base de datos SQLite encontrada${NC}"
-    echo -e "${GREEN}   ✅ Listo para desplegar${NC}"
+    if command -v sqlite3 &> /dev/null; then
+        bash scripts/backup-sqlite.sh 2>/dev/null && echo -e "${GREEN}   ✅ Backup SQLite creado${NC}" || true
+    fi
 else
     echo -e "${YELLOW}   ⚠️  Base de datos SQLite no existe${NC}"
     echo -e "${YELLOW}      Se creará automáticamente al iniciar la aplicación${NC}"
@@ -149,14 +151,14 @@ if npm run build; then
     if [ -f ".next/standalone/server.js" ]; then
         echo -e "${GREEN}   ✅ Servidor standalone generado correctamente${NC}"
         
-        # Copiar directorio data al standalone si existe
-        if [ -d "data" ]; then
-            cp -r data .next/standalone/ 2>/dev/null || true
-            echo -e "${GREEN}   ✅ Directorio data copiado al build standalone${NC}"
+        # Variables de entorno para el servidor standalone (cwd = .next/standalone)
+        if [ -f ".env.local" ]; then
+            cp .env.local .next/standalone/.env.local
+            echo -e "${GREEN}   ✅ .env.local copiado al build standalone${NC}"
         fi
-        
-        # Asegurar que .env.local esté disponible (se carga desde el directorio raíz)
-        echo -e "${GREEN}   ✅ Build standalone listo${NC}"
+
+        # SQLite usa PROJECT_ROOT/DATABASE_PATH (ecosystem.config.js), no la copia en standalone
+        echo -e "${GREEN}   ✅ Build standalone listo (BD: data/arandano.db en raíz del proyecto)${NC}"
     else
         echo -e "${RED}   ❌ Error: Servidor standalone no encontrado${NC}"
         echo -e "${YELLOW}   Verifica la configuración de next.config.js${NC}"

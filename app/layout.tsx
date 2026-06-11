@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
 import { Suspense } from 'react'
+import Providers from '@/components/Providers'
 import SiteAnalytics from '@/components/SiteAnalytics'
 import './globals.css'
 
@@ -60,10 +61,12 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
       </head>
       <body className="antialiased">
-        <Suspense fallback={null}>
-          <SiteAnalytics />
-          {children}
-        </Suspense>
+        <Providers>
+          <Suspense fallback={null}>
+            <SiteAnalytics />
+            {children}
+          </Suspense>
+        </Providers>
       </body>
     </html>
   )

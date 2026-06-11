@@ -3,18 +3,15 @@
  * Productos: nombre, descripción y precio obligatorios; sin duplicados (name + size).
  */
 
+import { ensureDataDir, getDatabasePath, getDataDir } from '@/lib/db-path'
 import Database from 'better-sqlite3'
-import path from 'path'
 import fs from 'fs'
+import path from 'path'
 
-const dbPath = path.join(process.cwd(), 'data', 'arandano.db')
-const productsJsonPath = path.join(process.cwd(), 'data', 'products.json')
-const dbDir = path.dirname(dbPath)
+const dbPath = getDatabasePath()
+const productsJsonPath = path.join(getDataDir(), 'products.json')
 
-// Asegurar que el directorio existe
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true })
-}
+ensureDataDir()
 
 // Crear conexión a la base de datos
 let db: Database.Database | null = null
@@ -381,6 +378,64 @@ function initializeDatabase() {
     )
   `)
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sports_users (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      name TEXT,
+      image TEXT,
+      credits INTEGER NOT NULL DEFAULT 2000,
+      displayAlias TEXT,
+      totalPoints INTEGER NOT NULL DEFAULT 0,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL
+    )
+  `)
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS match_predictions (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      matchId INTEGER NOT NULL,
+      homeTeamName TEXT NOT NULL,
+      awayTeamName TEXT NOT NULL,
+      homeTeamCrest TEXT,
+      awayTeamCrest TEXT,
+      matchDate TEXT NOT NULL,
+      matchGroup TEXT,
+      homeScore INTEGER NOT NULL,
+      awayScore INTEGER NOT NULL,
+      creditsWagered INTEGER NOT NULL DEFAULT 50,
+      actualHomeScore INTEGER,
+      actualAwayScore INTEGER,
+      pointsEarned INTEGER,
+      settledAt TEXT,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      UNIQUE(userId, matchId),
+      FOREIGN KEY (userId) REFERENCES sports_users(id)
+    )
+  `)
+
+  const sportsMigrations = [
+    'ALTER TABLE sports_users ADD COLUMN displayAlias TEXT',
+    'ALTER TABLE sports_users ADD COLUMN totalPoints INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE match_predictions ADD COLUMN actualHomeScore INTEGER',
+    'ALTER TABLE match_predictions ADD COLUMN actualAwayScore INTEGER',
+    'ALTER TABLE match_predictions ADD COLUMN pointsEarned INTEGER',
+    'ALTER TABLE match_predictions ADD COLUMN settledAt TEXT',
+  ]
+  for (const sql of sportsMigrations) {
+    try {
+      db.exec(sql)
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : ''
+      if (!message.includes('duplicate column')) {
+        console.warn('Sports migration:', message)
+      }
+    }
+  }
+
   // Índices para mejorar rendimiento
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_site_visits_visitedAt ON site_visits(visitedAt);
@@ -395,8 +450,15 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_stock_movements_productId ON stock_movements(productId);
     CREATE INDEX IF NOT EXISTS idx_tasks_completed ON tasks(completed);
     CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);
+    CREATE INDEX IF NOT EXISTS idx_match_predictions_userId ON match_predictions(userId);
+    CREATE INDEX IF NOT EXISTS idx_match_predictions_matchId ON match_predictions(matchId);
+    CREATE INDEX IF NOT EXISTS idx_match_predictions_settledAt ON match_predictions(settledAt);
+    CREATE INDEX IF NOT EXISTS idx_sports_users_totalPoints ON sports_users(totalPoints);
+    CREATE INDEX IF NOT EXISTS idx_sports_users_displayAlias ON sports_users(displayAlias);
   `)
 }
+
+export { getDatabasePath, getDataDir, getProjectRoot } from '@/lib/db-path'
 
 /**
  * Cierra la conexión a la base de datos

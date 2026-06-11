@@ -153,6 +153,32 @@
     transform: none;
     transition: none;
   }
+
+  .animate-balloon-float,
+  .animate-float-gentle,
+  .animate-soccer-juggle,
+  .animate-soccer-shadow,
+  .animate-blob,
+  .animate-ping-slow {
+    animation: none;
+  }
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0);
 }
 
 /* Smooth scrolling */
@@ -237,6 +263,101 @@ button, a {
   }
 }
 
+@keyframes balloon-float {
+  0%, 100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  33% {
+    transform: translateY(-6px) rotate(1.5deg);
+  }
+  66% {
+    transform: translateY(-3px) rotate(-0.5deg);
+  }
+}
+
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Balón haciendo técnicas — juggling / keepie-uppie */
+@keyframes soccer-juggle {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1, 1);
+  }
+  8% {
+    transform: translateY(-4px) rotate(45deg) scale(1.02, 0.98);
+  }
+  18% {
+    transform: translateY(-22px) rotate(130deg) scale(1, 1);
+  }
+  28% {
+    transform: translateY(-30px) rotate(220deg) scale(1, 1);
+  }
+  38% {
+    transform: translateY(-14px) rotate(300deg) scale(1, 1);
+  }
+  46% {
+    transform: translateY(2px) rotate(360deg) scale(1.06, 0.9);
+  }
+  52% {
+    transform: translateY(-16px) rotate(430deg) scale(1, 1);
+  }
+  62% {
+    transform: translateY(-24px) rotate(520deg) scale(1, 1);
+  }
+  72% {
+    transform: translateY(-10px) rotate(600deg) scale(1, 1);
+  }
+  80% {
+    transform: translateY(1px) rotate(660deg) scale(1.05, 0.92);
+  }
+  88% {
+    transform: translateY(-8px) rotate(700deg) scale(1, 1);
+  }
+  94% {
+    transform: translateY(-2px) rotate(720deg) scale(1.02, 0.98);
+  }
+  100% {
+    transform: translateY(0) rotate(720deg) scale(1, 1);
+  }
+}
+
+@keyframes soccer-shadow {
+  0%, 46%, 80%, 100% {
+    transform: scaleX(1);
+    opacity: 0.45;
+  }
+  18%, 28% {
+    transform: scaleX(0.45);
+    opacity: 0.12;
+  }
+  52%, 62% {
+    transform: scaleX(0.55);
+    opacity: 0.18;
+  }
+  88% {
+    transform: scaleX(0.7);
+    opacity: 0.28;
+  }
+}
+
+@keyframes blob {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(20px, -20px) scale(1.05);
+  }
+  66% {
+    transform: translate(-15px, 10px) scale(0.95);
+  }
+}
+
 .animate-fade-in {
   animation: fade-in 0.6s ease-out;
 }
@@ -259,6 +380,36 @@ button, a {
 
 .animate-bounce-horizontal {
   animation: bounce-horizontal 2s ease-in-out infinite;
+}
+
+.animate-balloon-float {
+  animation: balloon-float 3s ease-in-out infinite;
+}
+
+.animate-float-gentle {
+  animation: float-gentle 4s ease-in-out infinite;
+}
+
+.animate-soccer-juggle {
+  animation: soccer-juggle 2.4s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.animate-soccer-shadow {
+  animation: soccer-shadow 2.4s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.animate-blob {
+  animation: blob 8s ease-in-out infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
 }
 
 /* Minimalist Menu Styles */
