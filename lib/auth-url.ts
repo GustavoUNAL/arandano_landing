@@ -67,7 +67,12 @@ export function originFromHeaders(headers: Headers): string | undefined {
   if (!host) return undefined
 
   const forwardedProto = headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
-  const proto = forwardedProto || (LOCALHOST_RE.test(host) ? 'http' : 'https')
+  let proto = forwardedProto || (LOCALHOST_RE.test(host) ? 'http' : 'https')
+
+  // Nginx en :80 suele enviar x-forwarded-proto=http aunque el sitio público sea HTTPS.
+  if (isProduction() && !LOCALHOST_RE.test(host) && proto === 'http') {
+    proto = 'https'
+  }
 
   return normalizeOrigin(`${proto}://${host}`)
 }
@@ -87,6 +92,13 @@ export function resolvePublicOrigin(headers?: Headers): string {
 }
 
 export function applyNextAuthUrl(origin: string): string {
+  const configured = getConfiguredSiteUrl()
+  if (configured) {
+    const canonical = normalizeOrigin(configured)
+    process.env.NEXTAUTH_URL = canonical
+    return canonical
+  }
+
   const normalized = normalizeOrigin(origin)
   const current = process.env.NEXTAUTH_URL ?? ''
 

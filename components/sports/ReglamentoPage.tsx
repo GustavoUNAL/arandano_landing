@@ -2,6 +2,7 @@
 
 import { IconInfo, IconTarget, IconTrophy } from '@/components/sports/SportsIcons'
 import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
+import TeamFlag from '@/components/sports/TeamFlag'
 import { useMundialTheme } from '@/hooks/useMundialTheme'
 import { mundialTheme, scoringTierClass } from '@/lib/mundial-theme-classes'
 import {
@@ -135,58 +136,65 @@ export default function ReglamentoPage() {
         </div>
       </section>
 
-      {/* Galería ambiente */}
-      <section className="max-w-4xl mx-auto px-4 py-12">
-        <div className={`grid grid-cols-3 gap-2 sm:gap-3 rounded-2xl overflow-hidden border h-40 sm:h-52 transition-colors ${t.border}`}>
-          {[
-            { src: '/images/showcase/coctel.png', alt: 'Ambiente Arándano' },
-            { src: '/images/showcase/frappe.png', alt: 'Café Arándano' },
-            { src: '/images/logo.png', alt: 'Arándano Café Bar' },
-          ].map((img) => (
-            <div key={img.src} className={`relative transition-colors ${t.galleryBg}`}>
-              <Image src={img.src} alt={img.alt} fill className="object-cover opacity-90" sizes="33vw" />
-              <div className={`absolute inset-0 bg-gradient-to-t ${t.galleryOverlay} to-transparent`} />
-            </div>
-          ))}
-        </div>
-        <p className={`text-center text-xs mt-3 ${t.mutedSm}`}>
-          Vive el Mundial desde tu tercer espacio en Pasto · Arándano Café Bar
-        </p>
-      </section>
-
       {/* Ejemplos de puntuación */}
       <section className="max-w-4xl mx-auto px-4 pb-12">
-        <div className="flex items-center gap-2 mb-6">
-          <IconTarget className="w-5 h-5 text-berry-400" />
-          <h2 className="font-display text-2xl font-bold">Ejemplos de puntuación</h2>
+        <div className="flex items-center gap-2 mb-4 sm:mb-6">
+          <IconTarget className="w-5 h-5 text-berry-400 shrink-0" />
+          <h2 className="font-display text-xl sm:text-2xl font-bold">Ejemplos de puntuación</h2>
         </div>
-        <div className="grid sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-4">
           {SCORING_EXAMPLES.map((ex) => (
             <div
-              key={ex.label}
-              className={`rounded-2xl border p-5 transition-colors ${scoringTierClass(ex.color, isDark)}`}
+              key={`${ex.match}-${ex.label}`}
+              className={`rounded-xl sm:rounded-2xl border p-3 sm:p-5 transition-colors flex flex-col h-full ${scoringTierClass(ex.color, isDark)}`}
             >
-              <p className="text-xs uppercase tracking-wide opacity-80 mb-3">{ex.label}</p>
-              <div className="flex items-center justify-center gap-4 mb-3">
-                <div className="text-center">
-                  <p className={`text-[10px] mb-1 ${t.mutedSm}`}>Tu pick</p>
-                  <p className="font-display text-2xl font-bold tabular-nums">{ex.prediction}</p>
+              <p className="text-[9px] sm:text-xs uppercase tracking-wide opacity-80 mb-1 sm:mb-2 leading-tight">
+                {ex.label}
+              </p>
+              <p className={`text-[9px] sm:text-xs mb-2 sm:mb-3 leading-tight ${t.mutedSm}`}>
+                {ex.match}
+              </p>
+              <div className="flex items-center justify-center gap-1.5 sm:gap-3 mb-2 sm:mb-4">
+                <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+                  <TeamFlag code={ex.homeFlag} alt={ex.home} className="h-5 w-[30px] sm:h-7 sm:w-[42px]" />
+                  <span className="text-[9px] sm:text-xs font-medium truncate w-full text-center leading-tight">
+                    {ex.home}
+                  </span>
                 </div>
-                <span className={t.arrow}>→</span>
-                <div className="text-center">
-                  <p className={`text-[10px] mb-1 ${t.mutedSm}`}>Real</p>
-                  <p className={`font-display text-2xl font-bold tabular-nums ${t.resultText}`}>
-                    {ex.result}
+                <span className={`text-[8px] sm:text-[10px] font-semibold shrink-0 ${t.mutedSm}`}>
+                  vs
+                </span>
+                <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+                  <TeamFlag code={ex.awayFlag} alt={ex.away} className="h-5 w-[30px] sm:h-7 sm:w-[42px]" />
+                  <span className="text-[9px] sm:text-xs font-medium truncate w-full text-center leading-tight">
+                    {ex.away}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center justify-center gap-1.5 sm:gap-4 mb-2 sm:mb-3 flex-1">
+                <div className="text-center min-w-0">
+                  <p className={`text-[8px] sm:text-[10px] mb-0.5 sm:mb-1 ${t.mutedSm}`}>Tu pick</p>
+                  <p className="font-display text-base sm:text-2xl font-bold tabular-nums leading-none">
+                    {ex.predictionHome}–{ex.predictionAway}
+                  </p>
+                </div>
+                <span className={`text-xs sm:text-base shrink-0 ${t.arrow}`}>→</span>
+                <div className="text-center min-w-0">
+                  <p className={`text-[8px] sm:text-[10px] mb-0.5 sm:mb-1 ${t.mutedSm}`}>Real</p>
+                  <p
+                    className={`font-display text-base sm:text-2xl font-bold tabular-nums leading-none ${t.resultText}`}
+                  >
+                    {ex.resultHome}–{ex.resultAway}
                   </p>
                 </div>
               </div>
-              <p className="text-center font-bold text-lg">
-                {ex.points > 0 ? `+${ex.points} puntos` : '0 puntos'}
+              <p className="text-center font-bold text-sm sm:text-lg mt-auto">
+                {ex.points > 0 ? `+${ex.points} pt${ex.points === 1 ? '' : 's'}` : '0 pts'}
               </p>
             </div>
           ))}
         </div>
-        <p className={`text-xs mt-4 text-center ${t.mutedSm}`}>
+        <p className={`text-[10px] sm:text-xs mt-3 sm:mt-4 text-center ${t.mutedSm}`}>
           En cada partido solo se otorga el mejor nivel alcanzado (no se suman).
         </p>
       </section>

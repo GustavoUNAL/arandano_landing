@@ -5,9 +5,9 @@ const STORAGE_KEY = 'mundial-theme'
 export type MundialTheme = 'light' | 'dark'
 
 export function getStoredMundialTheme(): MundialTheme {
-  if (typeof window === 'undefined') return 'dark'
+  if (typeof window === 'undefined') return 'light'
   const saved = localStorage.getItem(STORAGE_KEY)
-  return saved === 'light' ? 'light' : 'dark'
+  return saved === 'dark' ? 'dark' : 'light'
 }
 
 export function storeMundialTheme(theme: MundialTheme) {

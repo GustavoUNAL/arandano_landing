@@ -1,3 +1,4 @@
+import { mundialTheme } from '@/lib/mundial-theme-classes'
 import {
   POINTS_CORRECT_RESULT,
   POINTS_EXACT_SCORE,
@@ -7,28 +8,42 @@ import {
   type MatchPrediction,
 } from '@/lib/sports-polla-shared'
 
-function pointsBadge(points: number | null) {
+function pointsBadge(points: number | null, isDark: boolean) {
   if (points == null) return null
   const tier = pointsToTier(points)
   const label = tierLabel(tier)
   const text =
     points === 0 ? '0 pts' : `+${points} · ${label}`
 
-  const className =
-    tier === 'exact'
+  const className = isDark
+    ? tier === 'exact'
       ? 'text-emerald-400 bg-emerald-950/40 border-emerald-500/30'
       : tier === 'goal_diff'
         ? 'text-sky-400 bg-sky-950/40 border-sky-500/30'
         : tier === 'result'
           ? 'text-amber-400 bg-amber-950/40 border-amber-500/30'
           : 'text-stone-500 bg-stone-900/40 border-white/10'
+    : tier === 'exact'
+      ? 'text-emerald-700 bg-emerald-50 border-emerald-300'
+      : tier === 'goal_diff'
+        ? 'text-sky-700 bg-sky-50 border-sky-300'
+        : tier === 'result'
+          ? 'text-amber-800 bg-amber-50 border-amber-300'
+          : 'text-stone-600 bg-stone-100 border-stone-200'
 
   return { text, className }
 }
 
-export default function PredictionCard({ prediction }: { prediction: MatchPrediction }) {
+export default function PredictionCard({
+  prediction,
+  isDark = true,
+}: {
+  prediction: MatchPrediction
+  isDark?: boolean
+}) {
+  const theme = mundialTheme(isDark)
   const settled = prediction.settledAt != null
-  const badge = settled ? pointsBadge(prediction.pointsEarned) : null
+  const badge = settled ? pointsBadge(prediction.pointsEarned, isDark) : null
   const matchDate = new Date(prediction.matchDate).toLocaleDateString('es-CO', {
     day: 'numeric',
     month: 'short',
@@ -37,9 +52,9 @@ export default function PredictionCard({ prediction }: { prediction: MatchPredic
   })
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+    <div className={`rounded-xl border px-4 py-3 ${theme.cardSoft}`}>
       <div className="flex items-start justify-between gap-2 mb-1">
-        <p className="text-sm text-stone-200 leading-snug">
+        <p className={`text-sm leading-snug ${theme.body}`}>
           {prediction.homeTeamName}{' '}
           <strong className="text-berry-300 text-base tabular-nums">
             {prediction.homeScore}-{prediction.awayScore}
@@ -54,15 +69,15 @@ export default function PredictionCard({ prediction }: { prediction: MatchPredic
       </div>
 
       {settled && prediction.actualHomeScore != null && prediction.actualAwayScore != null && (
-        <p className="text-xs text-stone-400 mb-1">
+        <p className={`text-xs mb-1 ${theme.muted}`}>
           Resultado real:{' '}
-          <span className="text-stone-200 font-semibold tabular-nums">
+          <span className={`font-semibold tabular-nums ${theme.resultText}`}>
             {prediction.actualHomeScore}-{prediction.actualAwayScore}
           </span>
         </p>
       )}
 
-      <p className="text-[10px] text-stone-500">
+      <p className={`text-[10px] ${theme.mutedSm}`}>
         -{prediction.creditsWagered} créditos · {matchDate}
         {!settled && ' · Pendiente'}
       </p>

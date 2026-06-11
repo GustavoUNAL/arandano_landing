@@ -1,6 +1,7 @@
 'use client'
 
 import { IconTrophy } from '@/components/sports/SportsIcons'
+import { mundialTheme } from '@/lib/mundial-theme-classes'
 import { TOP_WINNERS_COUNT } from '@/lib/polla-rules'
 import type { LeaderboardEntry } from '@/lib/sports-polla-shared'
 
@@ -41,6 +42,7 @@ function animalEmoji(alias: string) {
 interface PollaLeaderboardProps {
   entries: LeaderboardEntry[]
   compact?: boolean
+  isDark?: boolean
   title?: string
   subtitle?: string
 }
@@ -48,24 +50,26 @@ interface PollaLeaderboardProps {
 export default function PollaLeaderboard({
   entries,
   compact = false,
+  isDark = true,
   title = 'Tabla en vivo',
   subtitle = `Hasta ${TOP_WINNERS_COUNT} ganadores · nombre de usuario`,
 }: PollaLeaderboardProps) {
+  const theme = mundialTheme(isDark)
   const winners = entries.filter((e) => e.isWinner)
 
   if (entries.length === 0) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
-        <IconTrophy className="w-8 h-8 mx-auto mb-2 text-stone-600" />
-        <p className="text-sm text-stone-500">Aún no hay jugadores en la tabla</p>
-        <p className="text-xs text-stone-600 mt-1">Sé el primero en pronosticar</p>
+      <div className={`rounded-2xl border p-6 text-center ${theme.cardSoft}`}>
+        <IconTrophy className={`w-8 h-8 mx-auto mb-2 ${isDark ? 'text-stone-600' : 'text-stone-400'}`} />
+        <p className={`text-sm ${theme.muted}`}>Aún no hay jugadores en la tabla</p>
+        <p className={`text-xs mt-1 ${theme.mutedSm}`}>Sé el primero en pronosticar</p>
       </div>
     )
   }
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
-      <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
+    <section className={`rounded-2xl border overflow-hidden ${theme.cardSoft}`}>
+      <div className={`px-4 py-3 border-b flex items-center gap-2 ${theme.border}`}>
         <IconTrophy className="w-4 h-4 text-berry-400 shrink-0" />
         <div className="min-w-0">
           <h3 className="font-semibold text-sm">{title}</h3>

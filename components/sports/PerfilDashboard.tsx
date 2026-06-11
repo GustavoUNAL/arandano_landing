@@ -1,13 +1,16 @@
 'use client'
 
 import MundialExplorer from '@/components/sports/MundialExplorer'
+import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
 import PerfilInicio from '@/components/sports/PerfilInicio'
 import PredictionCard from '@/components/sports/PredictionCard'
 import { IconClipboard, IconGlobe, IconHome, IconTarget } from '@/components/sports/SportsIcons'
 import TeamCrest from '@/components/sports/TeamCrest'
+import { useMundialTheme } from '@/hooks/useMundialTheme'
 import type { ScoringRules } from '@/lib/polla-rules'
 import type { LeaderboardEntry, MatchPrediction, SportsUser } from '@/lib/sports-polla-shared'
 import type { WorldCupFullData } from '@/lib/football-data'
+import { mundialTheme } from '@/lib/mundial-theme-classes'
 import { signOut, useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
@@ -49,6 +52,8 @@ const MAIN_TABS: { id: MainTab; label: string; Icon: typeof IconHome }[] = [
 
 export default function PerfilDashboard() {
   const { data: session } = useSession()
+  const { isDark, toggleTheme } = useMundialTheme()
+  const theme = mundialTheme(isDark)
   const [data, setData] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -133,7 +138,7 @@ export default function PerfilDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-950 flex items-center justify-center">
+      <div className={`min-h-screen flex items-center justify-center ${theme.page}`}>
         <div className="w-10 h-10 border-4 border-berry-400/30 border-t-berry-400 rounded-full animate-spin" />
       </div>
     )
@@ -141,7 +146,7 @@ export default function PerfilDashboard() {
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-stone-950 flex items-center justify-center px-4">
+      <div className={`min-h-screen flex items-center justify-center px-4 ${theme.page}`}>
         <div className="text-center">
           <p className="text-red-400 mb-4">{error || 'No se pudo cargar el perfil'}</p>
           <button type="button" onClick={loadProfile} className="text-berry-400 font-semibold">
@@ -161,31 +166,40 @@ export default function PerfilDashboard() {
     matchFilter === 'all' ? matches : matches.filter((m) => m.group === matchFilter)
 
   return (
-    <div className="min-h-screen bg-stone-950 text-white pb-[4.5rem]">
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-stone-950/95 backdrop-blur-xl safe-area-top">
+    <div className={`min-h-screen pb-[4.5rem] transition-colors duration-300 ${theme.page}`}>
+      <header
+        className={`sticky top-0 z-40 border-b backdrop-blur-xl safe-area-top transition-colors ${theme.header}`}
+      >
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 shrink-0">
             <Link href="/mundial" className="text-xs text-berry-400 font-medium">
               ← Polla
             </Link>
-            <Link href="/mundial/reglamento" className="text-[10px] text-stone-500 hover:text-berry-400">
+            <Link
+              href="/mundial/reglamento"
+              className={`text-[10px] hover:text-berry-400 ${theme.mutedSm}`}
+            >
               Reglamento
             </Link>
           </div>
           <span className="font-display font-bold text-sm truncate">Mi perfil</span>
-          <button
-            type="button"
-            onClick={() => signOut({ callbackUrl: '/mundial' })}
-            className="text-xs text-stone-500 shrink-0"
-          >
-            Salir
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <MundialThemeToggle isDark={isDark} onToggle={toggleTheme} />
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: '/mundial' })}
+              className={`text-xs ${theme.mutedSm}`}
+            >
+              Salir
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-4">
         {tab === 'inicio' && (
           <PerfilInicio
+            isDark={isDark}
             userName={user?.name}
             userEmail={user?.email}
             userImage={user?.image}
@@ -204,11 +218,11 @@ export default function PerfilDashboard() {
           />
         )}
 
-        {tab === 'mundial' && <MundialExplorer data={worldCup} />}
+        {tab === 'mundial' && <MundialExplorer data={worldCup} isDark={isDark} />}
 
         {tab === 'jugar' && (
           <div className="space-y-3">
-            <p className="text-xs text-stone-500">
+            <p className={`text-xs ${theme.mutedSm}`}>
               Pronostica antes del pitazo · {predictionCost} créditos por pick nuevo · editar es gratis
             </p>
             <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
@@ -216,7 +230,11 @@ export default function PerfilDashboard() {
                 type="button"
                 onClick={() => setMatchFilter('all')}
                 className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold ${
-                  matchFilter === 'all' ? 'bg-berry-600 text-white' : 'bg-white/5 text-stone-400'
+                  matchFilter === 'all'
+                    ? 'bg-berry-600 text-white'
+                    : isDark
+                      ? 'bg-white/5 text-stone-400'
+                      : 'bg-stone-100 text-stone-600'
                 }`}
               >
                 Todos
@@ -227,7 +245,11 @@ export default function PerfilDashboard() {
                   type="button"
                   onClick={() => setMatchFilter(g)}
                   className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold ${
-                    matchFilter === g ? 'bg-berry-600 text-white' : 'bg-white/5 text-stone-400'
+                    matchFilter === g
+                      ? 'bg-berry-600 text-white'
+                      : isDark
+                        ? 'bg-white/5 text-stone-400'
+                        : 'bg-stone-100 text-stone-600'
                   }`}
                 >
                   {g.replace('GROUP_', '')}
@@ -235,10 +257,14 @@ export default function PerfilDashboard() {
               ))}
             </div>
             {filteredMatches.map((match) => (
-              <div key={match.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
+              <div key={match.id} className={`rounded-xl border p-3 ${theme.cardSoft}`}>
                 <div className="flex items-center gap-2 mb-2">
                   {match.groupLabel && (
-                    <span className="text-[10px] text-stone-500 bg-stone-900 px-2 py-0.5 rounded-full">
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full ${theme.mutedSm} ${
+                        isDark ? 'bg-stone-900' : 'bg-stone-100'
+                      }`}
+                    >
                       {match.groupLabel}
                     </span>
                   )}
@@ -255,7 +281,7 @@ export default function PerfilDashboard() {
                         {match.prediction.homeScore} - {match.prediction.awayScore}
                       </p>
                     ) : (
-                      <p className="text-[10px] text-stone-500">{match.formattedDate}</p>
+                      <p className={`text-[10px] ${theme.mutedSm}`}>{match.formattedDate}</p>
                     )}
                   </div>
                   <TeamCrest src={match.awayTeam.crest} alt="" size={32} />
@@ -277,7 +303,7 @@ export default function PerfilDashboard() {
         {tab === 'picks' && (
           <div className="space-y-3">
             {data.predictions.length === 0 ? (
-              <div className="text-center py-12 text-stone-500 text-sm">
+              <div className={`text-center py-12 text-sm ${theme.muted}`}>
                 <IconTarget className="w-10 h-10 mx-auto mb-3 text-stone-600" />
                 Aún no tienes pronósticos
                 <button
@@ -290,11 +316,11 @@ export default function PerfilDashboard() {
               </div>
             ) : (
               <>
-                <p className="text-[10px] text-stone-500 text-center pb-1">
+                <p className={`text-[10px] text-center pb-1 ${theme.mutedSm}`}>
                   Puntos: +{data.scoringRules.exactScore} exacto · +{data.scoringRules.goalDifference} dif. · +{data.scoringRules.correctResult} resultado
                 </p>
                 {data.predictions.map((p) => (
-                  <PredictionCard key={p.id} prediction={p} />
+                  <PredictionCard key={p.id} prediction={p} isDark={isDark} />
                 ))}
               </>
             )}
@@ -303,7 +329,9 @@ export default function PerfilDashboard() {
       </main>
 
       {/* Bottom nav móvil */}
-      <nav className="fixed bottom-0 inset-x-0 z-50 border-t border-white/10 bg-stone-950/95 backdrop-blur-xl safe-area-bottom">
+      <nav
+        className={`fixed bottom-0 inset-x-0 z-50 border-t backdrop-blur-xl safe-area-bottom transition-colors ${theme.header}`}
+      >
         <div className="max-w-lg mx-auto flex">
           {MAIN_TABS.map((t) => (
             <button
@@ -323,10 +351,12 @@ export default function PerfilDashboard() {
 
       {activeMatch && (
         <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-t-2xl border border-white/10 bg-stone-900 p-5 pb-8 shadow-2xl">
-            <div className="w-10 h-1 bg-stone-700 rounded-full mx-auto mb-4" />
+          <div className={`w-full max-w-lg rounded-t-2xl border p-5 pb-8 shadow-2xl ${theme.card}`}>
+            <div
+              className={`w-10 h-1 rounded-full mx-auto mb-4 ${isDark ? 'bg-stone-700' : 'bg-stone-300'}`}
+            />
             <h3 className="font-display text-lg font-bold text-center mb-1">Tu pronóstico</h3>
-            <p className="text-stone-500 text-xs text-center mb-5">
+            <p className={`text-xs text-center mb-5 ${theme.mutedSm}`}>
               {activeMatch.homeTeam.name} vs {activeMatch.awayTeam.name}
             </p>
             <div className="flex items-center justify-center gap-6 mb-5">
@@ -341,10 +371,14 @@ export default function PerfilDashboard() {
                   onChange={(e) =>
                     setHomeScore(Math.max(0, Math.min(maxScore, Number(e.target.value))))
                   }
-                  className="w-14 h-12 text-center text-xl font-bold rounded-xl bg-stone-800 border border-white/10 text-white focus:ring-2 focus:ring-berry-500 focus:outline-none"
+                  className={`w-14 h-12 text-center text-xl font-bold rounded-xl border focus:ring-2 focus:ring-berry-500 focus:outline-none ${
+                    isDark
+                      ? 'bg-stone-800 border-white/10 text-white'
+                      : 'bg-white border-stone-300 text-stone-900'
+                  }`}
                 />
               </div>
-              <span className="text-stone-600 font-bold text-2xl">:</span>
+              <span className={`font-bold text-2xl ${theme.arrow}`}>:</span>
               <div className="text-center">
                 <TeamCrest src={activeMatch.awayTeam.crest} alt="" size={36} className="mx-auto mb-2" />
                 <input
@@ -356,7 +390,11 @@ export default function PerfilDashboard() {
                   onChange={(e) =>
                     setAwayScore(Math.max(0, Math.min(maxScore, Number(e.target.value))))
                   }
-                  className="w-14 h-12 text-center text-xl font-bold rounded-xl bg-stone-800 border border-white/10 text-white focus:ring-2 focus:ring-berry-500 focus:outline-none"
+                  className={`w-14 h-12 text-center text-xl font-bold rounded-xl border focus:ring-2 focus:ring-berry-500 focus:outline-none ${
+                    isDark
+                      ? 'bg-stone-800 border-white/10 text-white'
+                      : 'bg-white border-stone-300 text-stone-900'
+                  }`}
                 />
               </div>
             </div>
@@ -365,7 +403,7 @@ export default function PerfilDashboard() {
                 Editar antes del pitazo no consume créditos adicionales
               </p>
             ) : (
-              <p className="text-center text-[10px] text-stone-500 mb-3">
+              <p className={`text-center text-[10px] mb-3 ${theme.mutedSm}`}>
                 Costo: {predictionCost} créditos · Saldo tras guardar:{' '}
                 {(credits - predictionCost).toLocaleString('es-CO')}
               </p>
@@ -375,7 +413,7 @@ export default function PerfilDashboard() {
               <button
                 type="button"
                 onClick={() => setActiveMatch(null)}
-                className="flex-1 py-3 rounded-xl border border-white/10 text-stone-400"
+                className={`flex-1 py-3 rounded-xl border ${theme.btnOutline}`}
               >
                 Cancelar
               </button>

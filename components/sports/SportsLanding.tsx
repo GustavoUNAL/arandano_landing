@@ -1,5 +1,6 @@
 'use client'
 
+import GoogleSignInButton from '@/components/GoogleSignInButton'
 import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
 import { useMundialTheme } from '@/hooks/useMundialTheme'
 import PollaLeaderboard from '@/components/sports/PollaLeaderboard'
@@ -11,6 +12,7 @@ import {
   TOP_WINNERS_COUNT,
 } from '@/lib/polla-rules'
 import type { WorldCupData } from '@/lib/football-data'
+import { mundialTheme } from '@/lib/mundial-theme-classes'
 import type { LeaderboardEntry } from '@/lib/sports-polla-shared'
 import { signIn, useSession } from 'next-auth/react'
 import Image from 'next/image'
@@ -179,6 +181,8 @@ export default function SportsLanding() {
     ? formatSeasonDates(wcData.competition.startDate, wcData.competition.endDate)
     : '11 jun — 19 jul 2026'
 
+  const theme = mundialTheme(isDark)
+
   return (
     <div
       className={`min-h-screen transition-colors duration-300 ${
@@ -212,14 +216,32 @@ export default function SportsLanding() {
               >
                 Reglamento
               </Link>
-              <button
-                type="button"
-                onClick={goToLoginOrPlay}
-                disabled={authLoading}
-                className="text-sm font-semibold px-4 py-2 rounded-full bg-berry-600 hover:bg-berry-500 text-white transition-colors disabled:opacity-60"
-              >
-                {authLoading ? '…' : session ? 'Mi perfil' : 'Iniciar sesión'}
-              </button>
+              {session ? (
+                <button
+                  type="button"
+                  onClick={goToLoginOrPlay}
+                  disabled={authLoading}
+                  className="text-sm font-semibold px-4 py-2 rounded-full bg-berry-600 hover:bg-berry-500 text-white transition-colors disabled:opacity-60"
+                >
+                  Mi perfil
+                </button>
+              ) : (
+                <GoogleSignInButton compact label="Iniciar sesión" className="!shadow-none" />
+              )}
+            </div>
+            <div className="sm:hidden">
+              {session ? (
+                <button
+                  type="button"
+                  onClick={goToLoginOrPlay}
+                  disabled={authLoading}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-full bg-berry-600 hover:bg-berry-500 text-white transition-colors disabled:opacity-60"
+                >
+                  Mi perfil
+                </button>
+              ) : (
+                <GoogleSignInButton compact label="Iniciar sesión" loggedInLabel="Mi perfil" />
+              )}
             </div>
             <MundialThemeToggle isDark={isDark} onToggle={toggleTheme} />
           </div>
@@ -255,25 +277,41 @@ export default function SportsLanding() {
                 ¿Quieres jugar la <span className="text-berry-300">polla mundialista</span>? Entra a jugar
                 con tus amigos y ganar. Demuestra que eres un experto.
               </p>
-              <div id="reglamento-juego" className="flex flex-col sm:flex-row gap-3 scroll-mt-24">
-                <Link
-                  href="/mundial/reglamento"
-                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-berry-600 hover:bg-berry-500 text-white font-semibold rounded-xl transition-colors min-w-[260px]"
-                >
-                  Reglamento de juego
-                </Link>
-                {session && (
-                  <button
-                    type="button"
-                    onClick={goToLoginOrPlay}
-                    className={`inline-flex items-center justify-center gap-2 px-7 py-3.5 border font-semibold rounded-xl transition-colors ${
-                      isDark
-                        ? 'border-white/20 hover:bg-white/5 text-stone-200'
-                        : 'border-stone-300 hover:bg-stone-100 text-stone-700'
-                    }`}
-                  >
-                    Ir a mi perfil
-                  </button>
+              <div id="reglamento-juego" className="flex flex-col sm:flex-row gap-3 scroll-mt-24 max-w-md sm:max-w-none">
+                {session ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={goToLoginOrPlay}
+                      className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-berry-600 hover:bg-berry-500 text-white font-semibold rounded-xl transition-colors"
+                    >
+                      Ir a mi perfil
+                    </button>
+                    <Link
+                      href="/mundial/reglamento"
+                      className={`inline-flex items-center justify-center gap-2 px-7 py-3.5 border font-semibold rounded-xl transition-colors ${
+                        isDark
+                          ? 'border-white/20 hover:bg-white/5 text-stone-200'
+                          : 'border-stone-300 hover:bg-stone-100 text-stone-700'
+                      }`}
+                    >
+                      Reglamento de juego
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <GoogleSignInButton label="Jugar con Google" callbackUrl="/perfil" />
+                    <Link
+                      href="/mundial/reglamento"
+                      className={`inline-flex items-center justify-center gap-2 px-7 py-3.5 border font-semibold rounded-xl transition-colors ${
+                        isDark
+                          ? 'border-white/20 hover:bg-white/5 text-stone-200'
+                          : 'border-stone-300 hover:bg-stone-100 text-stone-700'
+                      }`}
+                    >
+                      Reglamento de juego
+                    </Link>
+                  </>
                 )}
               </div>
             </div>
@@ -349,21 +387,28 @@ export default function SportsLanding() {
       </section>
 
       {/* Info Mundial 2026 */}
-      <section id="mundial" className="py-20 border-t border-white/5 bg-gradient-to-b from-stone-950 to-berry-950/20 scroll-mt-20">
+      <section
+        id="mundial"
+        className={`py-12 sm:py-20 border-t scroll-mt-20 ${theme.borderSubtle} ${
+          isDark
+            ? 'bg-gradient-to-b from-stone-950 to-berry-950/20'
+            : 'bg-gradient-to-b from-white to-berry-50/90'
+        }`}
+      >
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-12">
+          <div className="text-center mb-8 sm:mb-12">
             {wcData?.competition.emblem && (
               <div className="flex justify-center mb-4">
                 <TeamCrest src={wcData.competition.emblem} alt="Mundial 2026" size={64} />
               </div>
             )}
-            <h2 className="font-display text-3xl sm:text-4xl font-bold mb-3">Mundial FIFA 2026</h2>
-            <p className="text-stone-400 max-w-2xl mx-auto">
+            <h2 className="font-display text-2xl sm:text-4xl font-bold mb-2 sm:mb-3">Mundial FIFA 2026</h2>
+            <p className={`text-sm sm:text-base max-w-2xl mx-auto ${theme.muted}`}>
               Por primera vez en la historia, el Mundial se juega en tres países. Calendario y resultados
               actualizados en tiempo real.
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-8 sm:mb-12">
             {[
               { icon: '🌎', label: 'Sede', value: 'EE.UU., México y Canadá' },
               { icon: '📅', label: 'Fechas', value: seasonDates },
@@ -372,19 +417,37 @@ export default function SportsLanding() {
             ].map((item) => (
               <div
                 key={item.label}
-                className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center hover:border-berry-500/30 transition-colors"
+                className={`rounded-xl sm:rounded-2xl border p-4 sm:p-6 text-center transition-colors h-full flex flex-col items-center justify-center ${
+                  isDark
+                    ? 'border-white/10 bg-white/5 hover:border-berry-500/30'
+                    : 'border-stone-200 bg-white shadow-sm hover:border-berry-400/40 hover:shadow-md'
+                }`}
               >
-                <span className="text-3xl mb-3 block">{item.icon}</span>
-                <p className="text-xs text-stone-500 uppercase tracking-wide mb-1">{item.label}</p>
-                <p className="font-semibold text-white text-sm">{item.value}</p>
+                <span className="text-2xl sm:text-3xl mb-2 sm:mb-3">{item.icon}</span>
+                <p className={`text-[10px] sm:text-xs uppercase tracking-wide mb-1 ${theme.mutedSm}`}>
+                  {item.label}
+                </p>
+                <p className={`font-semibold text-xs sm:text-sm leading-snug ${theme.resultText}`}>
+                  {item.value}
+                </p>
               </div>
             ))}
           </div>
-          <div className="rounded-2xl border border-berry-500/20 bg-berry-950/30 p-6 sm:p-8 text-center max-w-3xl mx-auto">
-            <p className="text-berry-200 font-display text-xl sm:text-2xl font-bold mb-3">
+          <div
+            className={`rounded-xl sm:rounded-2xl border p-5 sm:p-8 text-center max-w-3xl mx-auto ${
+              isDark
+                ? 'border-berry-500/20 bg-berry-950/30'
+                : 'border-berry-300/50 bg-gradient-to-br from-berry-50 to-white shadow-sm'
+            }`}
+          >
+            <p
+              className={`font-display text-lg sm:text-2xl font-bold mb-2 sm:mb-3 ${
+                isDark ? 'text-berry-200' : 'text-berry-800'
+              }`}
+            >
               🇨🇴 {wcData?.colombiaQualified ? '¡Colombia clasificada!' : '¿Y Colombia?'}
             </p>
-            <p className="text-stone-400 text-sm sm:text-base leading-relaxed">
+            <p className={`text-xs sm:text-base leading-relaxed ${theme.muted}`}>
               {wcData?.colombiaQualified
                 ? 'La Tricolor estará en el Mundial 2026. Arma tu polla, invita a los parceros y pronostica cada partido de Colombia.'
                 : 'La Tricolor busca su cupo. Mientras tanto, arma tu polla y pronostica cada partido del Mundial 2026.'}
@@ -394,25 +457,45 @@ export default function SportsLanding() {
       </section>
 
       {/* Cómo funciona */}
-      <section className="py-20 border-t border-white/5 bg-stone-950">
+      <section
+        className={`py-12 sm:py-20 border-t ${theme.borderSubtle} ${
+          isDark ? 'bg-stone-950' : 'bg-white'
+        }`}
+      >
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-14">
-            <h2 className="font-display text-3xl sm:text-4xl font-bold mb-3">¿Cómo jugar la polla?</h2>
-            <p className="text-stone-400 max-w-lg mx-auto">
+          <div className="text-center mb-8 sm:mb-14">
+            <h2 className="font-display text-2xl sm:text-4xl font-bold mb-2 sm:mb-3">
+              ¿Cómo jugar la polla?
+            </h2>
+            <p className={`text-sm sm:text-base max-w-lg mx-auto ${theme.muted}`}>
               La polla mundialista clásica, ahora en digital. Sin complicaciones, solo fútbol y amigos.
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             {STEPS.map((item) => (
               <div
                 key={item.step}
-                className="relative rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-berry-500/30 hover:bg-berry-950/30 transition-all group"
+                className={`relative flex flex-col rounded-xl sm:rounded-2xl border p-3.5 sm:p-6 transition-all group h-full ${
+                  isDark
+                    ? 'border-white/10 bg-white/5 hover:border-berry-500/30 hover:bg-berry-950/30'
+                    : 'border-stone-200 bg-stone-50 shadow-sm hover:border-berry-400/40 hover:bg-white hover:shadow-md'
+                }`}
               >
-                <div className="w-10 h-10 rounded-xl bg-berry-600/20 border border-berry-500/30 flex items-center justify-center text-berry-300 font-bold mb-4 group-hover:bg-berry-600/30 transition-colors">
+                <div
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center font-bold mb-2.5 sm:mb-4 text-sm sm:text-base shrink-0 transition-colors ${
+                    isDark
+                      ? 'bg-berry-600/20 border border-berry-500/30 text-berry-300 group-hover:bg-berry-600/30'
+                      : 'bg-berry-100 border border-berry-300/60 text-berry-700 group-hover:bg-berry-200/70'
+                  }`}
+                >
                   {item.step}
                 </div>
-                <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-                <p className="text-sm text-stone-400 leading-relaxed">{item.desc}</p>
+                <h3 className="font-semibold text-xs sm:text-lg mb-1 sm:mb-2 leading-snug">
+                  {item.title}
+                </h3>
+                <p className={`text-[10px] sm:text-sm leading-relaxed flex-1 ${theme.muted}`}>
+                  {item.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -489,25 +572,41 @@ export default function SportsLanding() {
                 ¡Parcero, {session.user?.name?.split(' ')[0]}! Ya estás en la polla.
               </p>
             )}
-            <Link
-              href="/mundial/reglamento"
-              className="flex w-full items-center justify-center px-6 py-4 bg-berry-600 hover:bg-berry-500 text-white font-semibold rounded-2xl transition-colors"
-            >
-              Reglamento de juego
-            </Link>
             {session ? (
-              <button
-                type="button"
-                onClick={goToLoginOrPlay}
-                className={`w-full py-3 rounded-xl border font-medium text-sm transition-colors ${
-                  isDark
-                    ? 'border-white/15 text-stone-300 hover:bg-white/5'
-                    : 'border-stone-300 text-stone-700 hover:bg-stone-100'
-                }`}
-              >
-                Ir a mi perfil
-              </button>
-            ) : null}
+              <>
+                <button
+                  type="button"
+                  onClick={goToLoginOrPlay}
+                  className="flex w-full items-center justify-center px-6 py-4 bg-berry-600 hover:bg-berry-500 text-white font-semibold rounded-2xl transition-colors"
+                >
+                  Ir a mi perfil
+                </button>
+                <Link
+                  href="/mundial/reglamento"
+                  className={`flex w-full items-center justify-center px-6 py-3 rounded-xl border font-medium text-sm transition-colors ${
+                    isDark
+                      ? 'border-white/15 text-stone-300 hover:bg-white/5'
+                      : 'border-stone-300 text-stone-700 hover:bg-stone-100'
+                  }`}
+                >
+                  Reglamento de juego
+                </Link>
+              </>
+            ) : (
+              <>
+                <GoogleSignInButton label="Jugar con Google" callbackUrl="/perfil" />
+                <Link
+                  href="/mundial/reglamento"
+                  className={`flex w-full items-center justify-center px-6 py-3 rounded-xl border font-medium text-sm transition-colors ${
+                    isDark
+                      ? 'border-white/15 text-stone-300 hover:bg-white/5'
+                      : 'border-stone-300 text-stone-700 hover:bg-stone-100'
+                  }`}
+                >
+                  Reglamento de juego
+                </Link>
+              </>
+            )}
             <p className={`text-xs ${isDark ? 'text-stone-600' : 'text-stone-500'}`}>
               Pronósticos entre amigos · Sin dinero real · Solo competencia y pasión por el fútbol
             </p>

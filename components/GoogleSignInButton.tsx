@@ -8,6 +8,7 @@ interface GoogleSignInButtonProps {
   className?: string
   label?: string
   loggedInLabel?: string
+  compact?: boolean
 }
 
 export default function GoogleSignInButton({
@@ -15,6 +16,7 @@ export default function GoogleSignInButton({
   className = '',
   label = 'Continuar con Google',
   loggedInLabel = 'Ir a mi perfil',
+  compact = false,
 }: GoogleSignInButtonProps) {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -29,23 +31,29 @@ export default function GoogleSignInButton({
     void signIn('google', { callbackUrl })
   }
 
+  const sizeClass = compact
+    ? 'w-auto gap-2 px-3 py-2 text-xs font-semibold rounded-full shadow-md hover:shadow-lg hover:translate-y-0'
+    : 'w-full gap-3 px-6 py-4 text-base font-semibold rounded-2xl shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-berry-900/10 hover:-translate-y-0.5 active:translate-y-0'
+
   return (
     <button
       type="button"
       onClick={handleClick}
       disabled={isLoading}
-      className={`group relative w-full flex items-center justify-center gap-3 px-6 py-4 bg-white hover:bg-stone-50 text-stone-800 font-semibold rounded-2xl border border-stone-200 shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-berry-900/10 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:pointer-events-none ${className}`}
+      className={`group relative flex items-center justify-center bg-white hover:bg-stone-50 text-stone-800 border border-stone-200 transition-all duration-300 disabled:opacity-60 disabled:pointer-events-none ${sizeClass} ${className}`}
     >
-      {!session && <GoogleIcon />}
-      <span>{isLoading ? 'Cargando…' : session ? loggedInLabel : label}</span>
-      <span className="absolute inset-0 rounded-2xl ring-2 ring-berry-400/0 group-hover:ring-berry-400/30 transition-all duration-300" />
+      {!session && <GoogleIcon compact={compact} />}
+      <span className="whitespace-nowrap">{isLoading ? '…' : session ? loggedInLabel : label}</span>
+      {!compact && (
+        <span className="absolute inset-0 rounded-2xl ring-2 ring-berry-400/0 group-hover:ring-berry-400/30 transition-all duration-300" />
+      )}
     </button>
   )
 }
 
-function GoogleIcon() {
+function GoogleIcon({ compact = false }: { compact?: boolean }) {
   return (
-    <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" aria-hidden>
+    <svg className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} shrink-0`} viewBox="0 0 24 24" aria-hidden>
       <path
         fill="#4285F4"
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"

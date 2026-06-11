@@ -8,7 +8,7 @@ import {
 import { useCallback, useEffect, useState } from 'react'
 
 export function useMundialTheme() {
-  const [theme, setTheme] = useState<MundialTheme>('dark')
+  const [theme, setTheme] = useState<MundialTheme>('light')
 
   useEffect(() => {
     setTheme(getStoredMundialTheme())

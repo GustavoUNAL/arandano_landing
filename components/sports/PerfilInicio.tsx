@@ -15,9 +15,11 @@ import UserAvatar from '@/components/sports/UserAvatar'
 import type { ScoringRules } from '@/lib/polla-rules'
 import type { LeaderboardEntry, MatchPrediction } from '@/lib/sports-polla-shared'
 import type { WorldCupFullData } from '@/lib/football-data'
+import { mundialTheme } from '@/lib/mundial-theme-classes'
 import { MUNDIAL_2026 } from '@/lib/world-cup-info'
 
 interface PerfilInicioProps {
+  isDark?: boolean
   userName?: string | null
   userEmail?: string | null
   userImage?: string | null
@@ -45,6 +47,7 @@ function teamLabel(team: { shortName?: string; name?: string; tla?: string }) {
 }
 
 export default function PerfilInicio({
+  isDark = true,
   userName,
   userEmail,
   userImage,
@@ -61,6 +64,7 @@ export default function PerfilInicio({
   onGoPicks,
   onUpdateUsername,
 }: PerfilInicioProps) {
+  const theme = mundialTheme(isDark)
   const [editingUsername, setEditingUsername] = useState(false)
   const [usernameDraft, setUsernameDraft] = useState(displayAlias ?? '')
   const [usernameError, setUsernameError] = useState('')
@@ -170,13 +174,19 @@ export default function PerfilInicio({
       </div>
 
       {/* Countdown Mundial */}
-      <div className="rounded-2xl border border-white/10 bg-gradient-to-r from-stone-900 to-stone-950 p-4 overflow-hidden relative">
+      <div
+        className={`rounded-2xl border p-4 overflow-hidden relative ${
+          isDark
+            ? 'border-white/10 bg-gradient-to-r from-stone-900 to-stone-950'
+            : 'border-stone-200 bg-gradient-to-r from-white to-stone-50 shadow-sm'
+        }`}
+      >
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-berry-600/10 via-transparent to-transparent" />
         <div className="relative flex items-center gap-4">
           <TeamCrest src={worldCup.competition.emblem} alt="Mundial" size={52} />
           <div className="flex-1">
             <h2 className="font-display font-bold text-base">Mundial FIFA 2026</h2>
-            <p className="text-xs text-stone-400 mt-0.5">
+            <p className={`text-xs mt-0.5 ${theme.muted}`}>
               {worldCup.stats.totalTeams} selecciones · {worldCup.stats.totalMatches} partidos
             </p>
           </div>
@@ -191,9 +201,14 @@ export default function PerfilInicio({
             { label: 'Final', value: new Date(worldCup.competition.endDate).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) },
             { label: 'Sedes', value: '🇺🇸🇲🇽🇨🇦' },
           ].map((item) => (
-            <div key={item.label} className="rounded-lg bg-white/5 border border-white/5 py-2 text-center">
-              <p className="text-xs font-semibold text-stone-200">{item.value}</p>
-              <p className="text-[9px] text-stone-500 uppercase mt-0.5">{item.label}</p>
+            <div
+              key={item.label}
+              className={`rounded-lg border py-2 text-center ${
+                isDark ? 'bg-white/5 border-white/5' : 'bg-stone-50 border-stone-200'
+              }`}
+            >
+              <p className={`text-xs font-semibold ${theme.resultText}`}>{item.value}</p>
+              <p className={`text-[9px] uppercase mt-0.5 ${theme.mutedSm}`}>{item.label}</p>
             </div>
           ))}
         </div>
@@ -226,9 +241,9 @@ export default function PerfilInicio({
       )}
 
       {/* Tabla en vivo */}
-      <PollaLeaderboard entries={leaderboard} />
+      <PollaLeaderboard entries={leaderboard} isDark={isDark} />
 
-      <PollaReglamento compact />
+      <PollaReglamento compact isDark={isDark} />
 
       {/* Próximos partidos */}
       <section>
@@ -242,14 +257,14 @@ export default function PerfilInicio({
           {upcoming.map((m) => (
             <div
               key={m.id}
-              className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5"
+              className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${theme.cardSoft}`}
             >
               <TeamCrest src={m.homeTeam.crest} alt="" size={28} />
               <div className="flex-1 min-w-0 text-center">
                 <p className="text-xs font-medium truncate">
-                  {teamLabel(m.homeTeam)} <span className="text-stone-600">vs</span> {teamLabel(m.awayTeam)}
+                  {teamLabel(m.homeTeam)} <span className={theme.mutedSm}>vs</span> {teamLabel(m.awayTeam)}
                 </p>
-                <p className="text-[10px] text-stone-500">{m.formattedDate}</p>
+                <p className={`text-[10px] ${theme.mutedSm}`}>{m.formattedDate}</p>
               </div>
               <TeamCrest src={m.awayTeam.crest} alt="" size={28} />
               <span className="text-[10px] text-berry-400 font-medium w-12 text-right shrink-0">{m.startsIn}</span>
@@ -266,24 +281,24 @@ export default function PerfilInicio({
           { Icon: IconTarget, label: 'Costo por pick', value: predictionCost.toLocaleString('es-CO'), sub: 'créditos' },
           { Icon: IconBall, label: 'Partidos', value: `${worldCup.stats.totalMatches}`, sub: 'en el torneo' },
         ].map((s) => (
-          <div key={s.label} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+          <div key={s.label} className={`rounded-xl border p-3 ${theme.cardSoft}`}>
             <s.Icon className="w-5 h-5 text-berry-400" />
-            <p className="font-display text-lg font-bold text-berry-300 mt-2">{s.value}</p>
-            <p className="text-[10px] text-stone-500">{s.label} · {s.sub}</p>
+            <p className="font-display text-lg font-bold text-berry-500 mt-2">{s.value}</p>
+            <p className={`text-[10px] ${theme.mutedSm}`}>{s.label} · {s.sub}</p>
           </div>
         ))}
       </div>
 
       {/* Formato */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+      <div className={`rounded-2xl border p-4 ${theme.cardSoft}`}>
         <h3 className="font-semibold text-sm mb-3">Formato del torneo</h3>
         <div className="space-y-2">
           {MUNDIAL_2026.format.map((line, i) => (
             <div key={line} className="flex gap-3 items-start">
-              <span className="w-5 h-5 rounded-full bg-berry-600/30 text-berry-300 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+              <span className="w-5 h-5 rounded-full bg-berry-600/30 text-berry-500 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
                 {i + 1}
               </span>
-              <p className="text-xs text-stone-400 leading-relaxed">{line}</p>
+              <p className={`text-xs leading-relaxed ${theme.muted}`}>{line}</p>
             </div>
           ))}
         </div>
@@ -298,10 +313,17 @@ export default function PerfilInicio({
           </div>
           <div className="space-y-2">
             {predictions.slice(-3).reverse().map((p) => (
-              <div key={p.id} className="rounded-xl bg-berry-950/30 border border-berry-500/20 px-3 py-2 text-xs">
-                <span className="text-stone-300">{p.homeTeamName}</span>{' '}
-                <strong className="text-berry-300 text-sm">{p.homeScore}-{p.awayScore}</strong>{' '}
-                <span className="text-stone-300">{p.awayTeamName}</span>
+              <div
+                key={p.id}
+                className={`rounded-xl border px-3 py-2 text-xs ${
+                  isDark
+                    ? 'bg-berry-950/30 border-berry-500/20'
+                    : 'bg-berry-50 border-berry-200'
+                }`}
+              >
+                <span className={theme.body}>{p.homeTeamName}</span>{' '}
+                <strong className="text-berry-500 text-sm">{p.homeScore}-{p.awayScore}</strong>{' '}
+                <span className={theme.body}>{p.awayTeamName}</span>
               </div>
             ))}
           </div>
@@ -313,7 +335,7 @@ export default function PerfilInicio({
         <button
           type="button"
           onClick={onGoMundial}
-          className="flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 border border-white/10 text-sm font-semibold text-stone-200 hover:bg-white/10 transition-colors"
+          className={`flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-semibold transition-colors ${theme.btnOutline}`}
         >
           <IconGlobe className="w-4 h-4" />
           Explorar Mundial

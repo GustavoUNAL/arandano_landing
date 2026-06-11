@@ -9,6 +9,7 @@ import {
   IconTrophy,
 } from '@/components/sports/SportsIcons'
 import TeamCrest from '@/components/sports/TeamCrest'
+import { mundialTheme } from '@/lib/mundial-theme-classes'
 import { useMemo, useState } from 'react'
 
 type MundialTab = 'info' | 'grupos' | 'llaves' | 'equipos'
@@ -222,7 +223,18 @@ function TeamCard({ team, rank }: { team: FootballTeamDetail; rank: number }) {
   )
 }
 
-export default function MundialExplorer({ data }: { data: WorldCupFullData }) {
+export default function MundialExplorer({
+  data,
+  isDark = true,
+}: {
+  data: WorldCupFullData
+  isDark?: boolean
+}) {
+  const theme = mundialTheme(isDark)
+  const inactiveBtn = isDark ? 'bg-white/5 text-stone-400' : 'bg-stone-100 text-stone-600'
+  const inactiveChip = isDark
+    ? 'bg-white/5 text-stone-400 border border-white/10'
+    : 'bg-stone-100 text-stone-600 border border-stone-200'
   const [tab, setTab] = useState<MundialTab>('grupos')
   const [teamSearch, setTeamSearch] = useState('')
   const [activeGroup, setActiveGroup] = useState(data.groups[0]?.id ?? '')
@@ -267,7 +279,11 @@ export default function MundialExplorer({ data }: { data: WorldCupFullData }) {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1.5 p-1 rounded-2xl bg-stone-900/80 border border-white/10">
+      <div
+        className={`flex gap-1.5 p-1 rounded-2xl border ${
+          isDark ? 'bg-stone-900/80 border-white/10' : 'bg-stone-100 border-stone-200'
+        }`}
+      >
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -276,7 +292,9 @@ export default function MundialExplorer({ data }: { data: WorldCupFullData }) {
             className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl text-[10px] font-semibold transition-all ${
               tab === t.id
                 ? 'bg-berry-600 text-white shadow-lg shadow-berry-900/40'
-                : 'text-stone-500 hover:text-stone-300'
+                : isDark
+                  ? 'text-stone-500 hover:text-stone-300'
+                  : 'text-stone-600 hover:text-stone-900'
             }`}
           >
             <t.Icon className="w-5 h-5" />
@@ -292,7 +310,7 @@ export default function MundialExplorer({ data }: { data: WorldCupFullData }) {
               type="button"
               onClick={() => setGroupsView('single')}
               className={`flex-1 py-2 rounded-xl text-xs font-semibold ${
-                groupsView === 'single' ? 'bg-berry-600 text-white' : 'bg-white/5 text-stone-400'
+                groupsView === 'single' ? 'bg-berry-600 text-white' : inactiveBtn
               }`}
             >
               Por grupo
@@ -301,7 +319,7 @@ export default function MundialExplorer({ data }: { data: WorldCupFullData }) {
               type="button"
               onClick={() => setGroupsView('all')}
               className={`flex-1 py-2 rounded-xl text-xs font-semibold ${
-                groupsView === 'all' ? 'bg-berry-600 text-white' : 'bg-white/5 text-stone-400'
+                groupsView === 'all' ? 'bg-berry-600 text-white' : inactiveBtn
               }`}
             >
               Ver todos
@@ -320,7 +338,7 @@ export default function MundialExplorer({ data }: { data: WorldCupFullData }) {
                     className={`shrink-0 w-10 h-10 rounded-xl font-display font-bold text-sm transition-all ${
                       activeGroup === g.id
                         ? 'bg-berry-600 text-white scale-110 shadow-lg shadow-berry-900/40'
-                        : 'bg-white/5 text-stone-400 border border-white/10'
+                        : inactiveChip
                     }`}
                   >
                     {letter}
@@ -354,7 +372,7 @@ export default function MundialExplorer({ data }: { data: WorldCupFullData }) {
       {tab === 'llaves' && (
         <div className="space-y-6">
           <div className="text-center px-4">
-            <p className="text-xs text-stone-400 leading-relaxed">
+            <p className={`text-xs leading-relaxed ${theme.muted}`}>
               Ruta hacia la final · Los cruces de dieciseisavos se confirman al terminar la fase de grupos
             </p>
           </div>

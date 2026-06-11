@@ -1,21 +1,34 @@
-import { getGoogleOAuthRedirectUri } from '@/lib/auth-url'
+import {
+  applyNextAuthUrl,
+  getConfiguredSiteUrl,
+  getGoogleOAuthRedirectUri,
+  originFromHeaders,
+} from '@/lib/auth-url'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * Diagnóstico OAuth — verifica qué redirect_uri envía la app a Google.
- * GET /api/auth/config (solo en producción muestra la URI esperada)
+ * GET /api/auth/config
  */
-export async function GET() {
+export async function GET(request: Request) {
   const redirectUri = getGoogleOAuthRedirectUri()
   const siteUrl = process.env.SITE_URL ?? null
   const nextAuthUrl = process.env.NEXTAUTH_URL ?? null
+  const configuredSiteUrl = getConfiguredSiteUrl() ?? null
+  const requestOrigin = originFromHeaders(request.headers) ?? null
+  const effectiveAfterRequest = applyNextAuthUrl(requestOrigin ?? 'http://localhost:3000')
 
   return NextResponse.json({
     redirectUri,
+    effectiveRedirectUri: `${effectiveAfterRequest}/api/auth/callback/google`,
     siteUrl,
     nextAuthUrl,
+    configuredSiteUrl,
+    requestOrigin,
+    xForwardedProto: request.headers.get('x-forwarded-proto'),
+    xForwardedHost: request.headers.get('x-forwarded-host'),
     nodeEnv: process.env.NODE_ENV,
     authTrustHost: process.env.AUTH_TRUST_HOST ?? null,
     googleClientConfigured: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),

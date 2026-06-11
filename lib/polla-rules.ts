@@ -140,36 +140,79 @@ export const CONDICIONES_LEGALES: ReglamentoSection[] = [
   },
 ]
 
-export const SCORING_EXAMPLES = [
+export interface ScoringExample {
+  match: string
+  home: string
+  away: string
+  homeFlag: string
+  awayFlag: string
+  predictionHome: number
+  predictionAway: number
+  resultHome: number
+  resultAway: number
+  points: number
+  label: string
+  color: 'emerald' | 'sky' | 'amber' | 'stone'
+}
+
+export const SCORING_EXAMPLES: ScoringExample[] = [
   {
-    prediction: '2 - 1',
-    result: '2 - 1',
+    match: 'Final · Mundial 2018',
+    home: 'Francia',
+    away: 'Croacia',
+    homeFlag: 'fr',
+    awayFlag: 'hr',
+    predictionHome: 4,
+    predictionAway: 2,
+    resultHome: 4,
+    resultAway: 2,
     points: POINTS_EXACT_SCORE,
     label: 'Marcador exacto',
     color: 'emerald',
   },
   {
-    prediction: '3 - 1',
-    result: '2 - 0',
+    match: 'Grupos · Mundial 2014',
+    home: 'Colombia',
+    away: 'Grecia',
+    homeFlag: 'co',
+    awayFlag: 'gr',
+    predictionHome: 4,
+    predictionAway: 1,
+    resultHome: 3,
+    resultAway: 0,
     points: POINTS_GOAL_DIFFERENCE,
-    label: 'Diferencia correcta (+2)',
+    label: 'Diferencia correcta',
     color: 'sky',
   },
   {
-    prediction: '1 - 0',
-    result: '3 - 2',
+    match: 'Grupos · Mundial 2014',
+    home: 'Alemania',
+    away: 'Portugal',
+    homeFlag: 'de',
+    awayFlag: 'pt',
+    predictionHome: 2,
+    predictionAway: 1,
+    resultHome: 4,
+    resultAway: 0,
     points: POINTS_CORRECT_RESULT,
     label: 'Resultado correcto',
     color: 'amber',
   },
   {
-    prediction: '2 - 0',
-    result: '1 - 2',
+    match: 'Semifinal · Mundial 2014',
+    home: 'Brasil',
+    away: 'Alemania',
+    homeFlag: 'br',
+    awayFlag: 'de',
+    predictionHome: 2,
+    predictionAway: 0,
+    resultHome: 1,
+    resultAway: 7,
     points: 0,
     label: 'Sin acierto',
     color: 'stone',
   },
-] as const
+]
 
 export const REGLAMENTO_SHORT =
   `${INITIAL_CREDITS.toLocaleString('es-CO')} créditos al registrarte · ` +
