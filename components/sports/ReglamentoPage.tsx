@@ -10,7 +10,8 @@ import {
   CONDICIONES_LEGALES,
   GROUP_STAGE_WINNERS_COUNT,
   INITIAL_CREDITS,
-  KNOCKOUT_PASSPORT_PRICE_COP,
+  GROUP_STAGE_NO_PASSPORT_NOTE,
+  KNOCKOUT_PASSPORT_ACQUIRE_NOTE,
   MIN_SETTLED_PICKS_TO_WIN,
   POINTS_CORRECT_RESULT,
   POINTS_EXACT_SCORE,
@@ -118,7 +119,7 @@ export default function ReglamentoPage() {
             {
               icon: '🏆',
               title: 'Dos premiaciones',
-              sub: `Grupos: ${GROUP_STAGE_WINNERS_COUNT} ganadores. Eliminatorias: pasaporte ${KNOCKOUT_PASSPORT_PRICE_COP.toLocaleString('es-CO')} COP.`,
+              sub: `Grupos: ${GROUP_STAGE_WINNERS_COUNT} ganadores. ${GROUP_STAGE_NO_PASSPORT_NOTE} Eliminatorias: ${KNOCKOUT_PASSPORT_ACQUIRE_NOTE}`,
             },
           ].map((card) => (
             <div

@@ -3,16 +3,16 @@
 import { IconPremium, IconTrophy } from '@/components/sports/SportsIcons'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
 import {
-  GROUP_PASSPORT_LABEL,
+  GROUP_STAGE_NO_PASSPORT_NOTE,
   GROUP_STAGE_PRIZES,
   GROUP_STAGE_WINNERS_COUNT,
-  KNOCKOUT_PASSPORT_LABEL,
-  KNOCKOUT_PASSPORT_PRICE_COP,
+  KNOCKOUT_PASSPORT_ACQUIRE_NOTE,
+  KNOCKOUT_PASSPORT_RULES,
   KNOCKOUT_PHASE_LABEL,
   KNOCKOUT_PRIZES_NOTE,
 } from '@/lib/polla-rules'
 
-const MEDALS = ['🥇', '🥈', '🥉']
+const MEDALS = ['🥇', '🥈']
 
 interface PollaPremiosPanelProps {
   isDark?: boolean
@@ -26,6 +26,9 @@ export default function PollaPremiosPanel({
   className = '',
 }: PollaPremiosPanelProps) {
   const theme = mundialTheme(isDark)
+  const knockoutDetailRules = KNOCKOUT_PASSPORT_RULES.filter(
+    (rule) => rule !== KNOCKOUT_PASSPORT_ACQUIRE_NOTE
+  )
 
   return (
     <div
@@ -41,17 +44,17 @@ export default function PollaPremiosPanel({
       </div>
 
       <p className={`text-[11px] sm:text-xs mb-4 ${theme.muted}`}>
-        Dos premiaciones independientes. Cada una exige su pasaporte (compra en Arándano Café Bar).
+        Dos premiaciones independientes. La de grupos es abierta; la de eliminatorias requiere el
+        Pasaporte de Eliminatorias en el café.
       </p>
 
       <div className="space-y-4">
         <div>
           <p className={`text-xs font-semibold uppercase tracking-wide mb-1 ${theme.accent}`}>
-            Fase de grupos · {GROUP_STAGE_WINNERS_COUNT} ganadores
+            Primera polla · Fase de grupos · {GROUP_STAGE_WINNERS_COUNT} ganadores
           </p>
-          <p className={`text-[11px] sm:text-xs mb-3 ${theme.muted}`}>
-            Requiere <span className="font-medium">{GROUP_PASSPORT_LABEL}</span> activo. Ranking solo
-            con partidos de grupos.
+          <p className={`text-[11px] sm:text-xs mb-3 leading-relaxed font-medium ${theme.muted}`}>
+            {GROUP_STAGE_NO_PASSPORT_NOTE}
           </p>
           <ul className="space-y-2">
             {GROUP_STAGE_PRIZES.map((item, i) => (
@@ -94,19 +97,24 @@ export default function PollaPremiosPanel({
             />
             <div>
               <p className={`text-xs font-semibold ${isDark ? 'text-stone-100' : 'text-stone-900'}`}>
-                {KNOCKOUT_PHASE_LABEL}
+                Segunda polla · {KNOCKOUT_PHASE_LABEL}
               </p>
-              <p className={`text-[11px] sm:text-xs mt-1.5 leading-relaxed ${theme.muted}`}>
-                <span className="font-semibold">{KNOCKOUT_PASSPORT_LABEL}</span> —{' '}
-                {KNOCKOUT_PASSPORT_PRICE_COP.toLocaleString('es-CO')} COP en el café.
+              <p
+                className={`text-[11px] sm:text-xs mt-1.5 leading-relaxed font-semibold ${
+                  isDark ? 'text-stone-100' : 'text-stone-800'
+                }`}
+              >
+                {KNOCKOUT_PASSPORT_ACQUIRE_NOTE}
               </p>
-              <p className={`text-[11px] sm:text-xs mt-2 leading-relaxed ${theme.muted}`}>
-                Solo quienes compren este pasaporte participarán por los premios de eliminatorias y
-                final. Se abre un{' '}
-                <span className="font-medium">ranking nuevo</span> que solo suma puntos de octavos,
-                cuartos, semifinales y final.
-              </p>
-              <p className={`text-[11px] sm:text-xs mt-2 italic ${theme.mutedSm}`}>
+              <ul className={`mt-3 space-y-2 text-[11px] sm:text-xs leading-relaxed ${theme.muted}`}>
+                {knockoutDetailRules.map((rule) => (
+                  <li key={rule} className="flex gap-2">
+                    <span className="text-berry-400 shrink-0">·</span>
+                    <span>{rule}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className={`text-[11px] sm:text-xs mt-3 italic ${theme.mutedSm}`}>
                 {KNOCKOUT_PRIZES_NOTE}
               </p>
             </div>

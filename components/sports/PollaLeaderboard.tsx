@@ -3,7 +3,6 @@
 import { IconPremium, IconTrophy } from '@/components/sports/SportsIcons'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
 import {
-  GROUP_PASSPORT_LABEL,
   GROUP_STAGE_WINNERS_COUNT,
   KNOCKOUT_PASSPORT_LABEL,
   TOP_WINNERS_COUNT,
@@ -56,9 +55,9 @@ interface PollaLeaderboardProps {
 
 function defaultSubtitle(phase: PollaPhase) {
   if (phase === 'knockout') {
-    return `Solo ${KNOCKOUT_PASSPORT_LABEL} · ranking de eliminatorias`
+    return `Solo ${KNOCKOUT_PASSPORT_LABEL} · compra en el café`
   }
-  return `Hasta ${GROUP_STAGE_WINNERS_COUNT} ganadores · ${GROUP_PASSPORT_LABEL}`
+  return `${GROUP_STAGE_WINNERS_COUNT} ganadores · sin pasaporte requerido`
 }
 
 export default function PollaLeaderboard({
@@ -76,8 +75,9 @@ export default function PollaLeaderboard({
   const maxWinners = phase === 'group' ? GROUP_STAGE_WINNERS_COUNT : TOP_WINNERS_COUNT
   const winners = entries.filter((e) => e.isWinner)
 
+  const requiresPassport = phase === 'knockout'
   const hasPhasePassport = (entry: LeaderboardEntry) =>
-    phase === 'knockout' ? entry.hasKnockoutPassport : entry.hasPassport
+    !requiresPassport || entry.hasKnockoutPassport
 
   if (entries.length === 0) {
     return (
@@ -155,7 +155,7 @@ export default function PollaLeaderboard({
                     : entry.isCurrentUser
                       ? theme.tableRowYou
                       : theme.tableRow
-                } ${hasPhasePassport(entry) ? '' : 'opacity-45'}`}
+                } ${requiresPassport && !hasPhasePassport(entry) ? 'opacity-45' : ''}`}
               >
                 <td className="px-3 py-2.5 tabular-nums font-semibold">
                   {entry.isWinner ? (
@@ -179,25 +179,26 @@ export default function PollaLeaderboard({
                         <span className={`text-[10px] ml-1 ${theme.accentLink}`}>(tú)</span>
                       )}
                     </span>
-                    {hasPhasePassport(entry) ? (
-                      <span
-                        className={`inline-flex items-center shrink-0 ${
-                          isDark ? 'text-amber-400' : 'text-amber-600'
-                        }`}
-                        title="Pasaporte de fase activo"
-                      >
-                        <IconPremium className="w-3.5 h-3.5" />
-                      </span>
-                    ) : (
-                      !compact && (
+                    {requiresPassport &&
+                      (hasPhasePassport(entry) ? (
                         <span
-                          className={`text-[9px] shrink-0 ${theme.mutedSm}`}
-                          title="Sin pasaporte de esta fase"
+                          className={`inline-flex items-center shrink-0 ${
+                            isDark ? 'text-amber-400' : 'text-amber-600'
+                          }`}
+                          title="Pasaporte eliminatorias activo"
                         >
-                          sin pasaporte
+                          <IconPremium className="w-3.5 h-3.5" />
                         </span>
-                      )
-                    )}
+                      ) : (
+                        !compact && (
+                          <span
+                            className={`text-[9px] shrink-0 ${theme.mutedSm}`}
+                            title="Sin Pasaporte Eliminatorias"
+                          >
+                            sin pasaporte
+                          </span>
+                        )
+                      ))}
                     {!entry.qualifiesForPodium && hasPhasePassport(entry) && entry.settledCount > 0 && !compact && (
                       <span className={`text-[9px] shrink-0 ${theme.mutedSm}`} title="Faltan picks calificados para el podio">
                         ·

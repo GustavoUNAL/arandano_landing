@@ -7,8 +7,10 @@ import PollaLeaderboard from '@/components/sports/PollaLeaderboard'
 import TeamCrest from '@/components/sports/TeamCrest'
 import PollaPremiosPanel from '@/components/sports/PollaPremiosPanel'
 import {
+  GROUP_STAGE_NO_PASSPORT_NOTE,
   GROUP_STAGE_WINNERS_COUNT,
   INITIAL_CREDITS,
+  KNOCKOUT_PASSPORT_ACQUIRE_NOTE,
   PREDICTION_COST,
   REGLAMENTO_SHORT,
 } from '@/lib/polla-rules'
@@ -41,7 +43,7 @@ const STEPS = [
   {
     step: '4',
     title: 'Dos premiaciones',
-    desc: `Suma puntos por fase. Grupos: ${GROUP_STAGE_WINNERS_COUNT} ganadores con pasaporte de grupos. Eliminatorias: pasaporte $30.000 COP en el café y ranking nuevo solo para quienes lo compren.`,
+    desc: `Grupos: ${GROUP_STAGE_WINNERS_COUNT} ganadores (aguardiente y cubetazo de cerveza). ${GROUP_STAGE_NO_PASSPORT_NOTE} Eliminatorias: ${KNOCKOUT_PASSPORT_ACQUIRE_NOTE}`,
   },
 ]
 
@@ -392,7 +394,7 @@ export default function SportsLanding() {
               ¿Qué puedes ganar?
             </h2>
             <p className={`text-sm sm:text-base max-w-2xl mx-auto ${theme.muted}`}>
-              Dos premiaciones independientes. Cada fase tiene su pasaporte y su ranking.
+              Primera polla: {GROUP_STAGE_NO_PASSPORT_NOTE} Segunda polla: {KNOCKOUT_PASSPORT_ACQUIRE_NOTE}
             </p>
           </div>
           <div className="max-w-lg mx-auto">

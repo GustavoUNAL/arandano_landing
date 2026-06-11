@@ -390,7 +390,6 @@ export default function PerfilDashboard() {
             userEmail={user?.email}
             userImage={user?.image}
             displayAlias={data.user.displayAlias}
-            hasPassport={data.user.hasPassport}
             hasKnockoutPassport={data.user.hasKnockoutPassport}
             totalPoints={data.user.totalPoints}
             credits={credits}

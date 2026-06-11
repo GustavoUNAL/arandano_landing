@@ -281,7 +281,9 @@ export async function getLeaderboard(
     const settledCount = Number(row.settledCount)
     const hasPassport = normalizeHasPassport(row.hasPassport)
     const hasKnockoutPassport = normalizeHasKnockoutPassport(row.hasKnockoutPassport)
-    const phasePassport = isGroup ? hasPassport : hasKnockoutPassport
+    const qualifiesForPodium = isGroup
+      ? settledCount >= MIN_SETTLED_PICKS_TO_WIN
+      : hasKnockoutPassport && settledCount >= MIN_SETTLED_PICKS_TO_WIN
     return {
       rank: index + 1,
       displayAlias: row.displayAlias ?? generateDisplayAlias(row.id),
@@ -294,7 +296,7 @@ export async function getLeaderboard(
       hasPassport,
       hasKnockoutPassport,
       phase,
-      qualifiesForPodium: phasePassport && settledCount >= MIN_SETTLED_PICKS_TO_WIN,
+      qualifiesForPodium,
       isWinner: false,
       winnerRank: null as number | null,
       isCurrentUser: row.id === currentUserId,
