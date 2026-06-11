@@ -14,11 +14,45 @@ interface LiveMatchData {
   refreshedAt: string
 }
 
+function StatRow({
+  label,
+  home,
+  away,
+  isDark,
+}: {
+  label: string
+  home: number | null | undefined
+  away: number | null | undefined
+  isDark: boolean
+}) {
+  if (home == null && away == null) return null
+  const h = home ?? 0
+  const a = away ?? 0
+  const total = h + a || 1
+  const homePct = Math.round((h / total) * 100)
+
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between text-[10px] sm:text-xs tabular-nums">
+        <span className="font-semibold">{h}</span>
+        <span className="text-stone-500 uppercase tracking-wide text-[9px] sm:text-[10px]">{label}</span>
+        <span className="font-semibold">{a}</span>
+      </div>
+      <div className={`h-1.5 rounded-full overflow-hidden flex ${isDark ? 'bg-stone-800' : 'bg-stone-200'}`}>
+        <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${homePct}%` }} />
+        <div className="h-full bg-sky-500 flex-1" />
+      </div>
+    </div>
+  )
+}
+
 interface LiveMatchBroadcastProps {
   matchIds: number[]
   isDark?: boolean
   onOpenDetail?: (matchId: number) => void
   className?: string
+  /** inicio: tiempo y estadísticas más visibles en la pestaña Inicio */
+  variant?: 'default' | 'inicio'
 }
 
 export default function LiveMatchBroadcast({
@@ -26,6 +60,7 @@ export default function LiveMatchBroadcast({
   isDark = true,
   onOpenDetail,
   className = '',
+  variant = 'default',
 }: LiveMatchBroadcastProps) {
   const theme = mundialTheme(isDark)
   const [activeIdx, setActiveIdx] = useState(0)
@@ -52,14 +87,21 @@ export default function LiveMatchBroadcast({
   }, [load])
 
   useEffect(() => {
-    const interval = setInterval(load, 30_000)
+    const ms = variant === 'inicio' ? 25_000 : 30_000
+    const interval = setInterval(load, ms)
     return () => clearInterval(interval)
-  }, [load])
+  }, [load, variant])
 
   if (!matchId) return null
 
   const match = data?.match
   const score = match?.displayScore
+  const homeStats = match?.homeTeam.statistics
+  const awayStats = match?.awayTeam.statistics
+  const hasMatchStats =
+    homeStats?.ball_possession != null ||
+    homeStats?.shots != null ||
+    homeStats?.shots_on_goal != null
 
   return (
     <section
@@ -93,7 +135,7 @@ export default function LiveMatchBroadcast({
             >
               Transmitiendo en vivo
             </span>
-            {match && (
+            {match && variant !== 'inicio' && (
               <span className={`text-xs font-semibold tabular-nums ${theme.muted}`}>
                 · {match.statusLabel}
               </span>
@@ -138,10 +180,24 @@ export default function LiveMatchBroadcast({
               </div>
 
               <div className="shrink-0 text-center px-2">
+                {variant === 'inicio' && (
+                  <div
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-2 ${
+                      isDark
+                        ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300'
+                        : 'bg-emerald-100 border border-emerald-300 text-emerald-800'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-sm font-bold tabular-nums">{match.statusLabel}</span>
+                  </div>
+                )}
                 <p
-                  className={`font-display text-4xl sm:text-5xl lg:text-6xl font-bold tabular-nums leading-none ${
-                    isDark ? 'text-white' : 'text-stone-900'
-                  }`}
+                  className={`font-display font-bold tabular-nums leading-none ${
+                    variant === 'inicio'
+                      ? 'text-5xl sm:text-6xl lg:text-7xl'
+                      : 'text-4xl sm:text-5xl lg:text-6xl'
+                  } ${isDark ? 'text-white' : 'text-stone-900'}`}
                 >
                   {score?.home ?? '–'}
                   <span className={`mx-1 sm:mx-2 text-2xl sm:text-3xl ${theme.muted}`}>:</span>
@@ -185,47 +241,50 @@ export default function LiveMatchBroadcast({
               </div>
             )}
 
-            {/* Stats + polla en grid */}
-            <div className="grid sm:grid-cols-2 gap-3 mb-4">
-              {(match.homeTeam.statistics?.ball_possession != null ||
-                match.awayTeam.statistics?.shots_on_goal != null) && (
-                <div
-                  className={`rounded-xl border p-3 ${
-                    isDark ? 'border-white/10 bg-black/20' : 'border-stone-200 bg-white/80'
-                  }`}
-                >
-                  <p className={`text-[10px] uppercase tracking-wide mb-2 ${theme.mutedSm}`}>Estadísticas</p>
-                  {match.homeTeam.statistics?.ball_possession != null && (
-                    <div className="mb-2">
-                      <div className="flex justify-between text-[10px] tabular-nums mb-1">
-                        <span>{match.homeTeam.statistics.ball_possession}%</span>
-                        <span className={theme.mutedSm}>Posesión</span>
-                        <span>{match.awayTeam.statistics?.ball_possession ?? 0}%</span>
-                      </div>
-                      <div className={`h-1.5 rounded-full overflow-hidden flex ${isDark ? 'bg-stone-800' : 'bg-stone-200'}`}>
-                        <div
-                          className="h-full bg-emerald-500"
-                          style={{
-                            width: `${match.homeTeam.statistics.ball_possession ?? 50}%`,
-                          }}
-                        />
-                        <div className="h-full bg-sky-500 flex-1" />
-                      </div>
-                    </div>
+            {/* Estadísticas del partido */}
+            {hasMatchStats && (
+              <div
+                className={`rounded-xl border p-3 sm:p-4 mb-4 ${
+                  isDark ? 'border-white/10 bg-black/20' : 'border-stone-200 bg-white/80'
+                }`}
+              >
+                <p className={`text-xs font-semibold uppercase tracking-wide mb-3 ${theme.accent}`}>
+                  Estadísticas en vivo
+                </p>
+                <div className={`space-y-3 ${variant === 'inicio' ? 'sm:grid sm:grid-cols-2 sm:gap-x-6 sm:space-y-0 sm:gap-y-3' : ''}`}>
+                  <StatRow
+                    label="Posesión %"
+                    home={homeStats?.ball_possession}
+                    away={awayStats?.ball_possession}
+                    isDark={isDark}
+                  />
+                  <StatRow label="Tiros" home={homeStats?.shots} away={awayStats?.shots} isDark={isDark} />
+                  {(variant === 'inicio' || homeStats?.shots_on_goal != null) && (
+                    <StatRow
+                      label="A puerta"
+                      home={homeStats?.shots_on_goal}
+                      away={awayStats?.shots_on_goal}
+                      isDark={isDark}
+                    />
                   )}
-                  <div className="flex justify-between text-xs tabular-nums">
-                    <span>
-                      <span className={theme.mutedSm}>Tiros </span>
-                      <span className="font-semibold">{match.homeTeam.statistics?.shots ?? '–'}</span>
-                    </span>
-                    <span>
-                      <span className="font-semibold">{match.awayTeam.statistics?.shots ?? '–'}</span>
-                      <span className={theme.mutedSm}> Tiros</span>
-                    </span>
-                  </div>
+                  {variant === 'inicio' && (
+                    <>
+                      <StatRow label="Córners" home={homeStats?.corners} away={awayStats?.corners} isDark={isDark} />
+                      <StatRow label="Faltas" home={homeStats?.fouls} away={awayStats?.fouls} isDark={isDark} />
+                      <StatRow
+                        label="Amarillas"
+                        home={homeStats?.yellow_cards}
+                        away={awayStats?.yellow_cards}
+                        isDark={isDark}
+                      />
+                    </>
+                  )}
                 </div>
-              )}
+              </div>
+            )}
 
+            {/* Polla comunitaria */}
+            <div className={`grid sm:grid-cols-2 gap-3 mb-4 ${hasMatchStats ? '' : 'sm:grid-cols-1'}`}>
               {data && (
                 <div
                   className={`rounded-xl border p-3 ${

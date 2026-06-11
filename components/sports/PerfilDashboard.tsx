@@ -1,6 +1,5 @@
 'use client'
 
-import LiveMatchBroadcast from '@/components/sports/LiveMatchBroadcast'
 import MatchLivePanel from '@/components/sports/MatchLivePanel'
 import MundialExplorer from '@/components/sports/MundialExplorer'
 import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
@@ -417,15 +416,6 @@ export default function PerfilDashboard() {
         </header>
 
         <main className="flex-1 w-full max-w-lg lg:max-w-7xl mx-auto px-4 py-4 lg:px-8 xl:px-10 lg:py-8">
-        {data.hasLiveMatches && liveMatchIds.length > 0 && (
-          <LiveMatchBroadcast
-            matchIds={liveMatchIds}
-            isDark={isDark}
-            onOpenDetail={setLiveMatchId}
-            className="mb-5 lg:mb-8"
-          />
-        )}
-
         {tab === 'inicio' && (
           <PerfilInicio
             isDark={isDark}
@@ -442,9 +432,11 @@ export default function PerfilDashboard() {
             leaderboard={data.leaderboard}
             leaderboardKnockout={data.leaderboardKnockout}
             worldCup={worldCup}
+            liveMatchIds={liveMatchIds}
             onGoMundial={() => changeTab('mundial')}
             onGoJugar={() => changeTab('jugar')}
             onGoPicks={() => changeTab('picks')}
+            onViewLiveMatch={setLiveMatchId}
             onUpdateUsername={updateUsername}
           />
         )}
