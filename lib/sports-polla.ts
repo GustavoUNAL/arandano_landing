@@ -4,11 +4,13 @@ import {
   calculatePredictionPoints,
   INITIAL_CREDITS,
   isMatchPredictable,
+  type AdminSportsUserRow,
   type LeaderboardEntry,
   LEGACY_INITIAL_CREDITS,
   MAX_SCORE_PER_TEAM,
   type MatchPrediction,
   MIN_SETTLED_PICKS_TO_WIN,
+  normalizeHasPassport,
   PREDICTION_COST,
   POINTS_CORRECT_RESULT,
   POINTS_EXACT_SCORE,
@@ -68,6 +70,10 @@ function hashUserId(id: string): number {
     h = (h * 31 + id.charCodeAt(i)) >>> 0
   }
   return h
+}
+
+function mapSportsUser(row: SportsUser & { hasPassport?: unknown }): SportsUser {
+  return { ...row, hasPassport: normalizeHasPassport(row.hasPassport) }
 }
 
 export function generateDisplayAlias(userId: string): string {
@@ -145,7 +151,7 @@ export async function updateDisplayAlias(userId: string, displayAlias: string): 
     now,
     userId,
   ])
-  return (await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [userId]))!
+  return mapSportsUser((await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [userId]))!)
 }
 
 async function ensureDisplayAlias(userId: string): Promise<string> {
@@ -219,6 +225,7 @@ export async function getLeaderboard(currentUserId?: string): Promise<Leaderboar
   const rows = await dbAll<{
     id: string
     displayAlias: string | null
+    hasPassport: number | boolean
     totalPoints: number
     picksCount: number
     settledCount: number
@@ -229,6 +236,7 @@ export async function getLeaderboard(currentUserId?: string): Promise<Leaderboar
     `SELECT
       su.id,
       su.displayAlias,
+      su.hasPassport,
       COALESCE(SUM(CASE WHEN mp.settledAt IS NOT NULL THEN mp.pointsEarned ELSE 0 END), 0) AS totalPoints,
       COUNT(mp.id) AS picksCount,
       SUM(CASE WHEN mp.settledAt IS NOT NULL THEN 1 ELSE 0 END) AS settledCount,
@@ -251,6 +259,7 @@ export async function getLeaderboard(currentUserId?: string): Promise<Leaderboar
 
   const base = rows.map((row, index) => {
     const settledCount = Number(row.settledCount)
+    const hasPassport = normalizeHasPassport(row.hasPassport)
     return {
       rank: index + 1,
       displayAlias: row.displayAlias ?? generateDisplayAlias(row.id),
@@ -260,7 +269,8 @@ export async function getLeaderboard(currentUserId?: string): Promise<Leaderboar
       exactHits: Number(row.exactHits),
       goalDiffHits: Number(row.goalDiffHits),
       resultHits: Number(row.resultHits),
-      qualifiesForPodium: settledCount >= MIN_SETTLED_PICKS_TO_WIN,
+      hasPassport,
+      qualifiesForPodium: hasPassport && settledCount >= MIN_SETTLED_PICKS_TO_WIN,
       isWinner: false,
       winnerRank: null as number | null,
       isCurrentUser: row.id === currentUserId,
@@ -286,14 +296,14 @@ export async function getOrCreateSportsUser(input: {
       [input.name ?? existing.name, input.image ?? existing.image, input.email, alias, now, input.id]
     )
     await syncWelcomeCreditsIfNeeded(input.id)
-    return (await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [input.id]))!
+    return mapSportsUser((await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [input.id]))!)
   }
 
   const now = new Date().toISOString()
   const alias = generateDisplayAlias(input.id)
   await dbRun(
-    `INSERT INTO sports_users (id, email, name, image, credits, displayAlias, totalPoints, createdAt, updatedAt)
-     VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+    `INSERT INTO sports_users (id, email, name, image, credits, displayAlias, totalPoints, hasPassport, createdAt, updatedAt)
+     VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?)`,
     [
       input.id,
       input.email,
@@ -306,7 +316,61 @@ export async function getOrCreateSportsUser(input: {
     ]
   )
 
-  return (await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [input.id]))!
+  return mapSportsUser((await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [input.id]))!)
+}
+
+export async function listAllSportsUsersForAdmin(): Promise<AdminSportsUserRow[]> {
+  const rows = await dbAll<{
+    id: string
+    email: string
+    name: string | null
+    image: string | null
+    credits: number
+    displayAlias: string | null
+    totalPoints: number
+    hasPassport: number | boolean
+    createdAt: string
+    updatedAt: string
+    picksCount: number
+    settledCount: number
+  }>(
+    `SELECT
+      su.id,
+      su.email,
+      su.name,
+      su.image,
+      su.credits,
+      su.displayAlias,
+      su.totalPoints,
+      su.hasPassport,
+      su.createdAt,
+      su.updatedAt,
+      COUNT(mp.id) AS picksCount,
+      SUM(CASE WHEN mp.settledAt IS NOT NULL THEN 1 ELSE 0 END) AS settledCount
+    FROM sports_users su
+    LEFT JOIN match_predictions mp ON mp.userId = su.id
+    GROUP BY su.id
+    ORDER BY su.hasPassport DESC, su.totalPoints DESC, su.createdAt DESC`
+  )
+
+  return rows.map((row) => ({
+    ...mapSportsUser(row as SportsUser & { hasPassport?: unknown }),
+    picksCount: Number(row.picksCount),
+    settledCount: Number(row.settledCount ?? 0),
+  }))
+}
+
+export async function setUserPassport(userId: string, hasPassport: boolean): Promise<SportsUser> {
+  const now = new Date().toISOString()
+  const result = await dbRun('UPDATE sports_users SET hasPassport = ?, updatedAt = ? WHERE id = ?', [
+    hasPassport ? 1 : 0,
+    now,
+    userId,
+  ])
+  if (result.changes === 0) throw new Error('Usuario no encontrado')
+  const user = await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [userId])
+  if (!user) throw new Error('Usuario no encontrado')
+  return mapSportsUser(user)
 }
 
 export async function getUserPredictions(userId: string): Promise<MatchPrediction[]> {
@@ -377,12 +441,13 @@ export async function savePrediction(input: {
     const prediction = (await dbGet<MatchPrediction>('SELECT * FROM match_predictions WHERE id = ?', [
       existing.id,
     ]))!
-    return { user, prediction, creditsCharged: 0 }
+    return { user: mapSportsUser(user), prediction, creditsCharged: 0 }
   }
 
   const user = await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [input.userId])
   if (!user) throw new Error('Usuario no encontrado')
-  if (user.credits < PREDICTION_COST) {
+  const mappedUser = mapSportsUser(user)
+  if (mappedUser.credits < PREDICTION_COST) {
     throw new Error(`Necesitas al menos ${PREDICTION_COST} créditos para pronosticar.`)
   }
 
@@ -420,7 +485,9 @@ export async function savePrediction(input: {
   })
 
   return {
-    user: (await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [input.userId]))!,
+    user: mapSportsUser(
+      (await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [input.userId]))!
+    ),
     prediction: (await dbGet<MatchPrediction>('SELECT * FROM match_predictions WHERE id = ?', [id]))!,
     creditsCharged: PREDICTION_COST,
   }

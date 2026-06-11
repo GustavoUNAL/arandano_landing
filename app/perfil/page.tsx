@@ -4,6 +4,7 @@ import PerfilDashboard from '@/components/sports/PerfilDashboard'
 import UserAvatar from '@/components/sports/UserAvatar'
 import { signIn, useSession } from 'next-auth/react'
 import Link from 'next/link'
+import { Suspense } from 'react'
 
 export default function PerfilPage() {
   const { data: session, status } = useSession()
@@ -38,5 +39,15 @@ export default function PerfilPage() {
     )
   }
 
-  return <PerfilDashboard />
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+          <div className="w-10 h-10 border-4 border-berry-400/30 border-t-berry-400 rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <PerfilDashboard />
+    </Suspense>
+  )
 }

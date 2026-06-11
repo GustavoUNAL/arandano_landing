@@ -151,6 +151,7 @@ const SCHEMA_STATEMENTS = [
     credits INTEGER NOT NULL DEFAULT 20000,
     displayalias TEXT,
     totalpoints INTEGER NOT NULL DEFAULT 0,
+    haspassport INTEGER NOT NULL DEFAULT 0,
     createdat TEXT NOT NULL,
     updatedat TEXT NOT NULL
   )`,
@@ -185,9 +186,16 @@ const SCHEMA_STATEMENTS = [
 
 let schemaReady = false
 
+const POSTGRES_MIGRATIONS = [
+  `ALTER TABLE sports_users ADD COLUMN IF NOT EXISTS haspassport INTEGER NOT NULL DEFAULT 0`,
+]
+
 export async function ensurePostgresSchema(sql: NeonQueryFunction<false, false>): Promise<void> {
   if (schemaReady) return
   for (const statement of SCHEMA_STATEMENTS) {
+    await sql.query(statement)
+  }
+  for (const statement of POSTGRES_MIGRATIONS) {
     await sql.query(statement)
   }
   schemaReady = true

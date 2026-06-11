@@ -18,6 +18,7 @@ import {
   SCORING_EXAMPLES,
   TOP_WINNERS_COUNT,
 } from '@/lib/polla-rules'
+import { PERFIL_JUGAR_PATH } from '@/lib/perfil-routes'
 import { signIn, useSession } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -28,8 +29,8 @@ export default function ReglamentoPage() {
   const t = mundialTheme(isDark)
 
   const goPlay = () => {
-    if (session) window.location.href = '/perfil'
-    else signIn('google', { callbackUrl: '/perfil' })
+    if (session) window.location.href = PERFIL_JUGAR_PATH
+    else signIn('google', { callbackUrl: PERFIL_JUGAR_PATH })
   }
 
   return (

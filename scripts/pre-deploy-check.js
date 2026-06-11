@@ -40,7 +40,7 @@ if (fs.existsSync(path.join(root, '.next', 'standalone', 'server.js'))) {
 // 2. Variables de entorno
 console.log('\n2️⃣  Variables de entorno (.env.local)')
 const requiredVars = [
-  { key: 'DB_MODE', hint: 'sqlite' },
+  { key: 'DB_MODE', hint: 'postgres (Neon) o sqlite' },
   { key: 'ADMIN_PASSWORD', hint: 'contraseña del panel admin' },
   { key: 'NEXTAUTH_URL', hint: 'https://arandanocafe.com (no usar localhost en producción)' },
   { key: 'NEXTAUTH_SECRET', hint: 'openssl rand -base64 32' },
@@ -61,10 +61,18 @@ if (!fs.existsSync(envPath)) {
       ok(key)
     }
   }
-  if (envContent.includes('DB_MODE=sqlite')) {
-    ok('DB_MODE=sqlite')
+  if (envContent.includes('DB_MODE=postgres')) {
+    ok('DB_MODE=postgres (base en la nube)')
+    const dbUrl = envContent.split('\n').find((l) => l.startsWith('DATABASE_URL='))
+    if (!dbUrl || dbUrl.trim() === 'DATABASE_URL=') {
+      fail('DATABASE_URL vacío — requerido con DB_MODE=postgres')
+    } else {
+      ok('DATABASE_URL configurado')
+    }
+  } else if (envContent.includes('DB_MODE=sqlite')) {
+    ok('DB_MODE=sqlite (archivo local en el servidor)')
   } else if (envContent.includes('DB_MODE=json')) {
-    warn('DB_MODE=json — en producción usar sqlite')
+    warn('DB_MODE=json — en producción usar postgres o sqlite')
   }
   const nextAuthLine = envContent.split('\n').find((l) => l.startsWith('NEXTAUTH_URL='))
   if (nextAuthLine && /localhost|127\.0\.0\.1/i.test(nextAuthLine)) {
@@ -77,8 +85,14 @@ if (!fs.existsSync(envPath)) {
   }
 }
 
-// 3. Base de datos SQLite
-console.log('\n3️⃣  Base de datos SQLite')
+// 3. Base de datos
+console.log('\n3️⃣  Base de datos')
+const envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : ''
+const usesPostgres = envContent.includes('DB_MODE=postgres')
+
+if (usesPostgres) {
+  ok('Polla y café usan PostgreSQL (Neon) — mismo DATABASE_URL en local y servidor')
+} else {
 const dbPath = path.join(root, 'data', 'arandano.db')
 if (fs.existsSync(dbPath)) {
   const sizeMb = (fs.statSync(dbPath).size / (1024 * 1024)).toFixed(2)
@@ -101,6 +115,7 @@ if (fs.existsSync(dbPath)) {
   }
 } else {
   warn('data/arandano.db no existe — se creará en el primer arranque')
+}
 }
 
 // 4. Dependencias críticas

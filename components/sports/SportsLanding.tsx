@@ -13,6 +13,7 @@ import {
 } from '@/lib/polla-rules'
 import type { WorldCupData } from '@/lib/football-data'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
+import { PERFIL_JUGAR_PATH, PERFIL_PATH } from '@/lib/perfil-routes'
 import type { LeaderboardEntry } from '@/lib/sports-polla-shared'
 import { signIn, useSession } from 'next-auth/react'
 import Image from 'next/image'
@@ -151,12 +152,21 @@ export default function SportsLanding() {
     return () => clearInterval(interval)
   }, [])
 
-  const goToLoginOrPlay = () => {
+  const goToProfile = () => {
     if (authLoading) return
     if (session) {
-      router.push('/perfil')
+      router.push(PERFIL_PATH)
     } else {
-      void signIn('google', { callbackUrl: '/perfil' })
+      void signIn('google', { callbackUrl: PERFIL_PATH })
+    }
+  }
+
+  const goToPredict = () => {
+    if (authLoading) return
+    if (session) {
+      router.push(PERFIL_JUGAR_PATH)
+    } else {
+      void signIn('google', { callbackUrl: PERFIL_JUGAR_PATH })
     }
   }
 
@@ -219,7 +229,7 @@ export default function SportsLanding() {
               {session ? (
                 <button
                   type="button"
-                  onClick={goToLoginOrPlay}
+                  onClick={goToProfile}
                   disabled={authLoading}
                   className="text-sm font-semibold px-4 py-2 rounded-full bg-berry-600 hover:bg-berry-500 text-white transition-colors disabled:opacity-60"
                 >
@@ -233,7 +243,7 @@ export default function SportsLanding() {
               {session ? (
                 <button
                   type="button"
-                  onClick={goToLoginOrPlay}
+                  onClick={goToProfile}
                   disabled={authLoading}
                   className="text-xs font-semibold px-3 py-1.5 rounded-full bg-berry-600 hover:bg-berry-500 text-white transition-colors disabled:opacity-60"
                 >
@@ -282,7 +292,7 @@ export default function SportsLanding() {
                   <>
                     <button
                       type="button"
-                      onClick={goToLoginOrPlay}
+                      onClick={goToProfile}
                       className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-berry-600 hover:bg-berry-500 text-white font-semibold rounded-xl transition-colors"
                     >
                       Ir a mi perfil
@@ -300,7 +310,7 @@ export default function SportsLanding() {
                   </>
                 ) : (
                   <>
-                    <GoogleSignInButton label="Jugar con Google" callbackUrl="/perfil" />
+                    <GoogleSignInButton label="Jugar con Google" callbackUrl={PERFIL_JUGAR_PATH} />
                     <Link
                       href="/mundial/reglamento"
                       className={`inline-flex items-center justify-center gap-2 px-7 py-3.5 border font-semibold rounded-xl transition-colors ${
@@ -365,7 +375,7 @@ export default function SportsLanding() {
           ) : liveMatches.length > 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {liveMatches.map((match) => (
-                <MatchCard key={match.id} match={match} onPredict={goToLoginOrPlay} />
+                <MatchCard key={match.id} match={match} onPredict={goToPredict} />
               ))}
             </div>
           ) : (
@@ -377,7 +387,7 @@ export default function SportsLanding() {
           <div className="text-center">
             <button
               type="button"
-              onClick={goToLoginOrPlay}
+              onClick={goToPredict}
               className="text-berry-400 hover:text-berry-300 font-semibold text-sm transition-colors"
             >
               Jugar la polla →
@@ -576,10 +586,10 @@ export default function SportsLanding() {
               <>
                 <button
                   type="button"
-                  onClick={goToLoginOrPlay}
+                  onClick={goToPredict}
                   className="flex w-full items-center justify-center px-6 py-4 bg-berry-600 hover:bg-berry-500 text-white font-semibold rounded-2xl transition-colors"
                 >
-                  Ir a mi perfil
+                  Ir a pronosticar
                 </button>
                 <Link
                   href="/mundial/reglamento"
@@ -594,7 +604,7 @@ export default function SportsLanding() {
               </>
             ) : (
               <>
-                <GoogleSignInButton label="Jugar con Google" callbackUrl="/perfil" />
+                <GoogleSignInButton label="Jugar con Google" callbackUrl={PERFIL_JUGAR_PATH} />
                 <Link
                   href="/mundial/reglamento"
                   className={`flex w-full items-center justify-center px-6 py-3 rounded-xl border font-medium text-sm transition-colors ${

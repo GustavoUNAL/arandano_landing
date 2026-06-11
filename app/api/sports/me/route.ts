@@ -1,4 +1,5 @@
 import { getAuthUser } from '@/lib/auth-server'
+import { isPollAdmin } from '@/lib/polla-admin'
 import { getWorldCupFullData } from '@/lib/football-data'
 import { getScoringRules } from '@/lib/polla-rules'
 import {
@@ -41,6 +42,7 @@ export async function GET() {
 
     return NextResponse.json({
       user,
+      isPollAdmin: isPollAdmin(authUser.email),
       worldCup,
       matches,
       predictions,

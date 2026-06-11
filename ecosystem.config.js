@@ -2,8 +2,9 @@
  * PM2 — Arándano Café Bar
  * Uso: npm run build && pm2 start ecosystem.config.js
  *
- * DATABASE_PATH y PROJECT_ROOT apuntan al repo (no a .next/standalone)
- * para que SQLite y backups usen siempre data/arandano.db del proyecto.
+ * DB_MODE y DATABASE_URL vienen de .env.local (copiado a .next/standalone/.env.local).
+ * Para polla sincronizada local ↔ servidor, usa DB_MODE=postgres + Neon.
+ * SQLite local: PROJECT_ROOT/DATA_DIR/DATABASE_PATH apuntan al repo.
  */
 
 const path = require('path')
@@ -33,6 +34,7 @@ module.exports = {
         NEXTAUTH_URL: 'https://arandanocafe.com',
         AUTH_TRUST_HOST: 'true',
         PROJECT_ROOT: projectRoot,
+        // Solo necesario si DB_MODE=sqlite (fallback local en el VPS)
         DATA_DIR: path.join(projectRoot, 'data'),
         DATABASE_PATH: path.join(projectRoot, 'data', 'arandano.db'),
       },

@@ -1,6 +1,6 @@
 'use client'
 
-import { IconTrophy } from '@/components/sports/SportsIcons'
+import { IconPremium, IconTrophy } from '@/components/sports/SportsIcons'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
 import { TOP_WINNERS_COUNT } from '@/lib/polla-rules'
 import type { LeaderboardEntry } from '@/lib/sports-polla-shared'
@@ -52,7 +52,7 @@ export default function PollaLeaderboard({
   compact = false,
   isDark = true,
   title = 'Tabla en vivo',
-  subtitle = `Hasta ${TOP_WINNERS_COUNT} ganadores · nombre de usuario`,
+  subtitle = `Hasta ${TOP_WINNERS_COUNT} ganadores con pasaporte · nombre de usuario`,
 }: PollaLeaderboardProps) {
   const theme = mundialTheme(isDark)
   const winners = entries.filter((e) => e.isWinner)
@@ -82,8 +82,8 @@ export default function PollaLeaderboard({
       </div>
 
       {winners.length > 0 && !compact && (
-        <div className="px-4 py-3 border-b border-berry-500/20 bg-berry-950/20">
-          <p className="text-[10px] uppercase tracking-widest text-berry-400 font-semibold mb-2">
+        <div className={`px-4 py-3 border-b ${theme.podioBox}`}>
+          <p className={`text-[10px] uppercase tracking-widest font-semibold mb-2 ${theme.accentLink}`}>
             Podio · {winners.length} de {TOP_WINNERS_COUNT} ganadores
           </p>
           <div className="flex flex-wrap gap-2">
@@ -91,15 +91,13 @@ export default function PollaLeaderboard({
               <div
                 key={w.displayAlias}
                 className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs border ${
-                  w.isCurrentUser
-                    ? 'bg-berry-600/30 border-berry-500/40 text-berry-100'
-                    : 'bg-white/5 border-white/10 text-stone-200'
+                  w.isCurrentUser ? theme.podioChipYou : theme.podioChip
                 }`}
               >
                 <span>{WINNER_MEDALS[(w.winnerRank ?? 1) - 1]}</span>
                 <span>{animalEmoji(w.displayAlias)}</span>
                 <span className="font-medium truncate max-w-[7rem]">{w.displayAlias}</span>
-                <span className="text-berry-300 font-bold tabular-nums">{w.totalPoints}</span>
+                <span className={`font-bold tabular-nums ${theme.accent}`}>{w.totalPoints}</span>
               </div>
             ))}
           </div>
@@ -109,7 +107,7 @@ export default function PollaLeaderboard({
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="text-[10px] text-stone-500 uppercase tracking-wide border-b border-white/5">
+            <tr className={`text-[10px] uppercase tracking-wide border-b ${theme.tableHead}`}>
               <th className="px-3 py-2 font-medium w-10">#</th>
               <th className="px-3 py-2 font-medium">Jugador</th>
               <th className="px-3 py-2 font-medium text-right">Pts</th>
@@ -125,46 +123,68 @@ export default function PollaLeaderboard({
             {entries.map((entry) => (
               <tr
                 key={`${entry.rank}-${entry.displayAlias}`}
-                className={`border-b border-white/5 last:border-0 ${
+                className={`border-b last:border-0 transition-opacity ${
                   entry.isWinner
-                    ? 'bg-yellow-950/20'
+                    ? theme.tableRowWinner
                     : entry.isCurrentUser
-                      ? 'bg-berry-950/40'
-                      : 'hover:bg-white/[0.02]'
-                }`}
+                      ? theme.tableRowYou
+                      : theme.tableRow
+                } ${entry.hasPassport ? '' : 'opacity-45'}`}
               >
                 <td className="px-3 py-2.5 tabular-nums font-semibold">
                   {entry.isWinner ? (
-                    <span className="text-yellow-400">{WINNER_MEDALS[(entry.winnerRank ?? 1) - 1]}</span>
+                    <span className={isDark ? 'text-yellow-400' : 'text-amber-600'}>
+                      {WINNER_MEDALS[(entry.winnerRank ?? 1) - 1]}
+                    </span>
                   ) : (
-                    <span className="text-stone-500">{entry.rank}</span>
+                    <span className={theme.mutedSm}>{entry.rank}</span>
                   )}
                 </td>
                 <td className="px-3 py-2.5">
                   <span className="flex items-center gap-1.5 min-w-0">
                     <span className="shrink-0">{animalEmoji(entry.displayAlias)}</span>
-                    <span className={`truncate font-medium ${entry.isCurrentUser ? 'text-berry-300' : 'text-stone-200'}`}>
+                    <span
+                      className={`truncate font-medium ${
+                        entry.isCurrentUser ? theme.tableNameYou : theme.tableName
+                      }`}
+                    >
                       {entry.displayAlias}
                       {entry.isCurrentUser && (
-                        <span className="text-[10px] text-berry-400/80 ml-1">(tú)</span>
+                        <span className={`text-[10px] ml-1 ${theme.accentLink}`}>(tú)</span>
                       )}
                     </span>
-                    {!entry.qualifiesForPodium && entry.settledCount > 0 && !compact && (
-                      <span className="text-[9px] text-stone-600 shrink-0" title="Faltan picks calificados para el podio">
+                    {entry.hasPassport ? (
+                      <span
+                        className={`inline-flex items-center shrink-0 ${
+                          isDark ? 'text-amber-400' : 'text-amber-600'
+                        }`}
+                        title="Pasaporte activo — puede ganar el podio"
+                      >
+                        <IconPremium className="w-3.5 h-3.5" />
+                      </span>
+                    ) : (
+                      !compact && (
+                        <span className={`text-[9px] shrink-0 ${theme.mutedSm}`} title="Sin pasaporte — no puede ganar el podio">
+                          sin pasaporte
+                        </span>
+                      )
+                    )}
+                    {!entry.qualifiesForPodium && entry.hasPassport && entry.settledCount > 0 && !compact && (
+                      <span className={`text-[9px] shrink-0 ${theme.mutedSm}`} title="Faltan picks calificados para el podio">
                         ·
                       </span>
                     )}
                   </span>
                 </td>
-                <td className="px-3 py-2.5 text-right font-bold text-berry-300 tabular-nums">
+                <td className={`px-3 py-2.5 text-right font-bold tabular-nums ${theme.accent}`}>
                   {entry.totalPoints}
                 </td>
                 {!compact && (
                   <>
-                    <td className="px-3 py-2.5 text-right text-stone-400 tabular-nums hidden sm:table-cell">
+                    <td className={`px-3 py-2.5 text-right tabular-nums hidden sm:table-cell ${theme.muted}`}>
                       {entry.settledCount}/{entry.picksCount}
                     </td>
-                    <td className="px-3 py-2.5 text-right text-stone-500 tabular-nums hidden md:table-cell text-[10px]">
+                    <td className={`px-3 py-2.5 text-right tabular-nums hidden md:table-cell text-[10px] ${theme.mutedSm}`}>
                       {entry.exactHits}·{entry.goalDiffHits}·{entry.resultHits}
                     </td>
                   </>

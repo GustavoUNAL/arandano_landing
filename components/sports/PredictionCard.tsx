@@ -56,7 +56,7 @@ export default function PredictionCard({
       <div className="flex items-start justify-between gap-2 mb-1">
         <p className={`text-sm leading-snug ${theme.body}`}>
           {prediction.homeTeamName}{' '}
-          <strong className="text-berry-300 text-base tabular-nums">
+          <strong className={`text-base tabular-nums ${isDark ? 'text-berry-300' : 'text-berry-600'}`}>
             {prediction.homeScore}-{prediction.awayScore}
           </strong>{' '}
           {prediction.awayTeamName}

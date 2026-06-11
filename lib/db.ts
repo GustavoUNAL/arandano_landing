@@ -37,6 +37,7 @@ const PG_COLUMN_MAP: Record<string, string> = {
   recordedat: 'recordedAt',
   displayalias: 'displayAlias',
   totalpoints: 'totalPoints',
+  haspassport: 'hasPassport',
   userid: 'userId',
   matchid: 'matchId',
   hometeamname: 'homeTeamName',

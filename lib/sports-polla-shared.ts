@@ -30,6 +30,10 @@ export {
 
 const PREDICTABLE_STATUSES = new Set(['SCHEDULED', 'TIMED'])
 
+export function normalizeHasPassport(value: unknown): boolean {
+  return value === true || value === 1 || value === '1'
+}
+
 export interface SportsUser {
   id: string
   email: string
@@ -38,6 +42,22 @@ export interface SportsUser {
   credits: number
   displayAlias: string | null
   totalPoints: number
+  hasPassport: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AdminSportsUserRow {
+  id: string
+  email: string
+  name: string | null
+  image: string | null
+  credits: number
+  displayAlias: string | null
+  totalPoints: number
+  hasPassport: boolean
+  picksCount: number
+  settledCount: number
   createdAt: string
   updatedAt: string
 }
@@ -72,6 +92,7 @@ export interface LeaderboardEntry {
   exactHits: number
   goalDiffHits: number
   resultHits: number
+  hasPassport: boolean
   qualifiesForPodium: boolean
   isWinner: boolean
   winnerRank: number | null

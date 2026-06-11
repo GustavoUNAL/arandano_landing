@@ -54,6 +54,7 @@ export const REGLAMENTO_SECTIONS: ReglamentoSection[] = [
     items: [
       'La polla es un juego de pronósticos del Mundial FIFA 2026 entre amigos y clientes de Arándano Café Bar.',
       `Los ${TOP_WINNERS_COUNT} usuarios con mayor cantidad de puntos al finalizar el Mundial ocuparán el podio oficial de la Polla Mundialista Arándano 2026.`,
+      'Solo pueden ganar quienes tengan su pasaporte de la polla activado.',
     ],
   },
   {
@@ -61,6 +62,7 @@ export const REGLAMENTO_SECTIONS: ReglamentoSection[] = [
     title: '2. Cómo participar',
     items: [
       'Regístrate en la plataforma.',
+      'Para optar al podio de ganadores debes tener tu pasaporte de la polla (compra en Arándano Café Bar).',
       `Recibes ${INITIAL_CREDITS.toLocaleString('es-CO')} créditos virtuales de bienvenida.`,
       `Cada pronóstico nuevo cuesta ${PREDICTION_COST} créditos.`,
       'Editar un pronóstico antes del inicio del partido no consume créditos adicionales.',
@@ -95,7 +97,7 @@ export const REGLAMENTO_SECTIONS: ReglamentoSection[] = [
     items: [
       'La tabla se actualiza en vivo conforme terminan los partidos.',
       `Los ${TOP_WINNERS_COUNT} usuarios con mayor cantidad de puntos al finalizar el Mundial ocuparán el podio oficial de la Polla Mundialista Arándano 2026.`,
-      `Para figurar como ganador necesitas al menos ${MIN_SETTLED_PICKS_TO_WIN} pronósticos ya calificados (partidos jugados).`,
+      `Para figurar como ganador necesitas pasaporte activo y al menos ${MIN_SETTLED_PICKS_TO_WIN} pronósticos ya calificados (partidos jugados).`,
       'Desempate: 1) más puntos totales, 2) más marcadores exactos, 3) más diferencias acertadas, 4) más resultados acertados, 5) más picks calificados.',
     ],
   },

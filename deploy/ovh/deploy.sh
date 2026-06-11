@@ -76,26 +76,34 @@ if [ ! -f "$ENV_FILE" ]; then
     touch "$ENV_FILE"
 fi
 
-# Configurar DB_MODE si no existe
+# Configurar DB_MODE si no existe (postgres si hay DATABASE_URL, si no sqlite)
 if ! grep -q "^DB_MODE=" "$ENV_FILE"; then
-    echo "DB_MODE=sqlite" >> "$ENV_FILE"
-    echo -e "${GREEN}   ✅ DB_MODE=sqlite agregado${NC}"
-else
-    # Asegurar que DB_MODE es sqlite
-    sed -i 's/^DB_MODE=.*/DB_MODE=sqlite/' "$ENV_FILE"
-    echo -e "${GREEN}   ✅ DB_MODE configurado correctamente${NC}"
+    if grep -q "^DATABASE_URL=.\+" "$ENV_FILE" 2>/dev/null; then
+        echo "DB_MODE=postgres" >> "$ENV_FILE"
+        echo -e "${GREEN}   ✅ DB_MODE=postgres agregado (Neon)${NC}"
+    else
+        echo "DB_MODE=sqlite" >> "$ENV_FILE"
+        echo -e "${GREEN}   ✅ DB_MODE=sqlite agregado${NC}"
+    fi
+elif grep -q "^DATABASE_URL=.\+" "$ENV_FILE" 2>/dev/null && grep -q "^DB_MODE=sqlite" "$ENV_FILE"; then
+    echo -e "${YELLOW}   ⚠️  DATABASE_URL definido pero DB_MODE=sqlite — considera DB_MODE=postgres${NC}"
 fi
 
-# Crear directorio data si no existe
+# Crear directorio data si no existe (sqlite / backups)
 if [ ! -d "data" ]; then
     mkdir -p data
     echo -e "${GREEN}   ✅ Directorio data creado${NC}"
 fi
 
-# Verificar que la base de datos SQLite existe o se creará
-if [ ! -f "data/arandano.db" ]; then
-    echo -e "${YELLOW}   ⚠️  Base de datos SQLite no encontrada en data/arandano.db${NC}"
-    echo -e "${YELLOW}      Se creará automáticamente al iniciar la aplicación${NC}"
+if grep -q "^DB_MODE=postgres" "$ENV_FILE" 2>/dev/null; then
+    if grep -q "^DATABASE_URL=.\+" "$ENV_FILE" 2>/dev/null; then
+        echo -e "${GREEN}   ✅ Base de datos en la nube (PostgreSQL / Neon)${NC}"
+    else
+        echo -e "${RED}   ❌ DB_MODE=postgres pero falta DATABASE_URL en $ENV_FILE${NC}"
+        exit 1
+    fi
+elif [ ! -f "data/arandano.db" ]; then
+    echo -e "${YELLOW}   ⚠️  SQLite no encontrada en data/arandano.db — se creará al iniciar${NC}"
 else
     echo -e "${GREEN}   ✅ Base de datos SQLite encontrada${NC}"
 fi

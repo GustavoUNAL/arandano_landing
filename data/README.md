@@ -1,6 +1,37 @@
 # Datos — Arándano Café Bar
 
-## SQLite (producción)
+## Base en la nube (recomendado para la polla)
+
+Para que pronósticos, créditos y ranking se vean **igual en local y en el servidor**, usa **PostgreSQL (Neon)** con la misma `DATABASE_URL` en ambos `.env.local`:
+
+```env
+DB_MODE=postgres
+DATABASE_URL=postgresql://...@.../neondb?sslmode=require
+```
+
+### Configuración inicial
+
+```bash
+# 1. Crea un proyecto en https://neon.tech y copia DATABASE_URL a .env.local
+# 2. Crea tablas en Neon
+npm run init:neon
+
+# 3. (Una vez) migra datos existentes de SQLite local
+npm run migrate:sports
+```
+
+En el **servidor**, usa la misma `DATABASE_URL` en `~/arandano/.env.local` y `DB_MODE=postgres`. No hace falta copiar `arandano.db`.
+
+### Scripts
+
+| Comando | Descripción |
+|---------|-------------|
+| `npm run init:neon` | Crea esquema en Neon |
+| `npm run migrate:sports` | Copia `sports_users` y `match_predictions` desde SQLite local |
+
+---
+
+## SQLite (solo local / VPS sin nube)
 
 | Archivo | Descripción |
 |---------|-------------|

@@ -263,15 +263,25 @@ export default function MundialExplorer({
   return (
     <div className="space-y-4">
       {/* Header Mundial */}
-      <div className="relative rounded-2xl overflow-hidden border border-white/10">
-        <div className="absolute inset-0 bg-gradient-to-br from-berry-800/80 via-berry-950 to-stone-950" />
+      <div
+        className={`relative rounded-2xl overflow-hidden border ${
+          isDark ? 'border-white/10' : 'border-stone-200'
+        }`}
+      >
+        <div
+          className={`absolute inset-0 ${
+            isDark
+              ? 'bg-gradient-to-br from-berry-800/80 via-berry-950 to-stone-950'
+              : 'bg-gradient-to-br from-berry-600 via-berry-700 to-berry-900'
+          }`}
+        />
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTAgNDBIMDQwTTQwIDBWNDBaIiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utb3BhY2l0eT0iMC4wMyIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg==')] opacity-50" />
         <div className="relative px-4 py-5 flex items-center gap-4">
           <TeamCrest src={data.competition.emblem} alt="Mundial" size={56} />
           <div>
             <p className="text-berry-300 text-[10px] uppercase tracking-widest font-semibold">FIFA 2026</p>
             <h2 className="font-display text-lg font-bold">Copa Mundial</h2>
-            <p className="text-xs text-stone-400 mt-0.5">
+            <p className="text-xs text-berry-100/80 mt-0.5">
               {data.stats.totalTeams} equipos · {data.groups.length} grupos · {data.stats.totalMatches} partidos
             </p>
           </div>
