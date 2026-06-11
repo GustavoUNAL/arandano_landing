@@ -101,15 +101,20 @@ export default function PerfilInicio({
             <p className="text-berry-200/70 text-xs truncate">{userEmail}</p>
           </div>
         </div>
-        <div className="relative mt-4 flex items-end justify-between gap-3">
-          <div>
-            <p className="text-[10px] text-berry-200/70 uppercase tracking-wide">Tus créditos</p>
-            <p className="font-display text-3xl font-bold tabular-nums">{credits.toLocaleString('es-CO')}</p>
-          </div>
-          <div className="text-right text-xs text-berry-200/80 space-y-0.5 min-w-0">
-            <p>Puntos: <span className="text-white font-semibold tabular-nums">{totalPoints}</span></p>
-            <p>Picks: <span className="text-white font-semibold">{predictions.length}</span></p>
-            {onUpdateUsername && (
+        <div className="relative mt-4 grid grid-cols-3 gap-2">
+          {[
+            { label: 'Créditos disponibles', value: credits.toLocaleString('es-CO') },
+            { label: 'Pronósticos realizados', value: predictions.length.toLocaleString('es-CO') },
+            { label: 'Puntos acumulados', value: totalPoints.toLocaleString('es-CO') },
+          ].map((stat) => (
+            <div key={stat.label} className="rounded-xl bg-black/20 border border-white/10 px-2 py-2.5 text-center">
+              <p className="text-[9px] text-berry-200/70 uppercase tracking-wide leading-tight">{stat.label}</p>
+              <p className="font-display text-lg font-bold tabular-nums mt-1">{stat.value}</p>
+            </div>
+          ))}
+        </div>
+        {onUpdateUsername && (
+          <div className="relative mt-3 text-xs text-berry-200/80 min-w-0">
               <div className="mt-1">
                 {editingUsername ? (
                   <div className="space-y-1.5 text-left">
@@ -160,9 +165,8 @@ export default function PerfilInicio({
                   </button>
                 )}
               </div>
-            )}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Countdown Mundial */}
@@ -259,8 +263,8 @@ export default function PerfilInicio({
         {[
           { Icon: IconGroups, label: 'Grupos', value: `${worldCup.groups.length}`, sub: 'de 4 equipos' },
           { Icon: IconTrophy, label: 'Fases', value: `${worldCup.knockoutRounds.length}`, sub: 'eliminatorias' },
-          { Icon: IconTarget, label: 'Costo pick', value: `${predictionCost}`, sub: 'créditos' },
-          { Icon: IconBall, label: 'Saldo inicial', value: scoringRules.initialCredits.toLocaleString('es-CO'), sub: 'créditos' },
+          { Icon: IconTarget, label: 'Costo por pick', value: predictionCost.toLocaleString('es-CO'), sub: 'créditos' },
+          { Icon: IconBall, label: 'Partidos', value: `${worldCup.stats.totalMatches}`, sub: 'en el torneo' },
         ].map((s) => (
           <div key={s.label} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
             <s.Icon className="w-5 h-5 text-berry-400" />

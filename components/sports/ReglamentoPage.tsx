@@ -92,8 +92,8 @@ export default function ReglamentoPage() {
           {[
             {
               icon: '💰',
-              title: `${INITIAL_CREDITS} créditos`,
-              sub: `Al registrarte recibes ${INITIAL_CREDITS} créditos gratis.`,
+              title: `${INITIAL_CREDITS.toLocaleString('es-CO')} créditos`,
+              sub: `Al registrarte recibes ${INITIAL_CREDITS.toLocaleString('es-CO')} créditos virtuales gratis para participar durante el Mundial.`,
             },
             {
               icon: '🎯',
@@ -204,18 +204,21 @@ export default function ReglamentoPage() {
           <div className="grid sm:grid-cols-2 gap-6 text-sm">
             <div>
               <p className="font-semibold text-berry-300 mb-2">Créditos virtuales</p>
-              <ul className="space-y-2 text-stone-400">
-                <li>Al registrarte recibes {INITIAL_CREDITS} créditos gratis.</li>
-                <li>Cada pronóstico nuevo cuesta {PREDICTION_COST} créditos.</li>
-                <li>Editar antes del pitazo es gratis.</li>
+              <ul className="space-y-2 text-stone-400 list-disc list-inside">
+                <li>Al registrarte recibes {INITIAL_CREDITS.toLocaleString('es-CO')} créditos gratis.</li>
+                <li>Cada pronóstico nuevo consume {PREDICTION_COST} créditos.</li>
+                <li>Editar un pronóstico antes del inicio del partido no consume créditos adicionales.</li>
+                <li>Los créditos se utilizan únicamente para participar.</li>
               </ul>
             </div>
             <div>
               <p className="font-semibold text-berry-300 mb-2">Puntos de ranking</p>
-              <ul className="space-y-2 text-stone-400">
-                <li>Exacto: {POINTS_EXACT_SCORE} pts · Diferencia: {POINTS_GOAL_DIFFERENCE} pts · Resultado: {POINTS_CORRECT_RESULT} pt.</li>
-                <li>Solo cuentan para el ranking; todos empiezan en 0.</li>
-                <li>Los {TOP_WINNERS_COUNT} primeros clasificados ganan el podio.</li>
+              <ul className="space-y-2 text-stone-400 list-disc list-inside">
+                <li>Marcador exacto: {POINTS_EXACT_SCORE} pts.</li>
+                <li>Diferencia correcta: {POINTS_GOAL_DIFFERENCE} pts.</li>
+                <li>Resultado correcto: {POINTS_CORRECT_RESULT} pt.</li>
+                <li>Solo cuentan para el ranking.</li>
+                <li>Todos los participantes comienzan con 0 puntos.</li>
               </ul>
             </div>
           </div>

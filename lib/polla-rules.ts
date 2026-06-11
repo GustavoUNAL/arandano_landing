@@ -4,8 +4,8 @@
 
 export const POLL_NAME = 'Polla Mundialista Arándano 2026'
 
-export const INITIAL_CREDITS = 120
-export const PREDICTION_COST = 50
+export const INITIAL_CREDITS = 20_000
+export const PREDICTION_COST = 100
 export const POINTS_EXACT_SCORE = 3
 export const POINTS_GOAL_DIFFERENCE = 2
 export const POINTS_CORRECT_RESULT = 1
@@ -49,7 +49,7 @@ export const REGLAMENTO_SECTIONS: ReglamentoSection[] = [
     title: '1. Objetivo del juego',
     items: [
       'La polla es un juego de pronósticos del Mundial FIFA 2026 entre amigos y clientes de Arándano Café Bar.',
-      'Al final del torneo habrá hasta 5 ganadores según la tabla de puntos.',
+      `Los ${TOP_WINNERS_COUNT} usuarios con mayor cantidad de puntos al finalizar el Mundial ocuparán el podio oficial de la Polla Mundialista Arándano 2026.`,
     ],
   },
   {
@@ -57,8 +57,10 @@ export const REGLAMENTO_SECTIONS: ReglamentoSection[] = [
     title: '2. Cómo participar',
     items: [
       'Regístrate en la plataforma.',
-      `Recibes ${INITIAL_CREDITS} créditos virtuales de bienvenida.`,
-      `Cada pronóstico nuevo cuesta ${PREDICTION_COST} créditos. Editar un pick antes del pitazo no cuesta créditos extra.`,
+      `Recibes ${INITIAL_CREDITS.toLocaleString('es-CO')} créditos virtuales de bienvenida.`,
+      `Cada pronóstico nuevo cuesta ${PREDICTION_COST} créditos.`,
+      'Editar un pronóstico antes del inicio del partido no consume créditos adicionales.',
+      'Los créditos no influyen en la puntuación obtenida ni en la posición dentro del ranking.',
       'Puedes elegir tu nombre de usuario.',
     ],
   },
@@ -88,7 +90,7 @@ export const REGLAMENTO_SECTIONS: ReglamentoSection[] = [
     title: '5. Tabla y ganadores',
     items: [
       'La tabla se actualiza en vivo conforme terminan los partidos.',
-      `Habrá hasta ${TOP_WINNERS_COUNT} ganadores al cierre del torneo.`,
+      `Los ${TOP_WINNERS_COUNT} usuarios con mayor cantidad de puntos al finalizar el Mundial ocuparán el podio oficial de la Polla Mundialista Arándano 2026.`,
       `Para figurar como ganador necesitas al menos ${MIN_SETTLED_PICKS_TO_WIN} pronósticos ya calificados (partidos jugados).`,
       'Desempate: 1) más puntos totales, 2) más marcadores exactos, 3) más diferencias acertadas, 4) más resultados acertados, 5) más picks calificados.',
     ],
@@ -110,7 +112,7 @@ export const CONDICIONES_LEGALES: ReglamentoSection[] = [
     id: 'naturaleza',
     title: 'Naturaleza del juego',
     items: [
-      'Los créditos y puntos no tienen valor monetario ni son canjeables por productos o servicios, salvo que Arándano Café Bar comunique por separado un premio simbólico para los ganadores.',
+      'Los créditos y puntos son elementos virtuales utilizados exclusivamente dentro de la plataforma para participar y clasificar en el ranking de la Polla Mundialista Arándano 2026.',
       'La participación es gratuita: solo requiere una cuenta de Google.',
     ],
   },
@@ -166,6 +168,6 @@ export const SCORING_EXAMPLES = [
 ] as const
 
 export const REGLAMENTO_SHORT =
-  `${INITIAL_CREDITS} créditos al registrarte · ` +
+  `${INITIAL_CREDITS.toLocaleString('es-CO')} créditos al registrarte · ` +
   `${POINTS_EXACT_SCORE}/${POINTS_GOAL_DIFFERENCE}/${POINTS_CORRECT_RESULT} pts por partido · ` +
   `Hasta ${TOP_WINNERS_COUNT} ganadores`
