@@ -28,6 +28,10 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
+        SITE_URL: 'https://arandanocafe.com',
+        NEXT_PUBLIC_SITE_URL: 'https://arandanocafe.com',
+        NEXTAUTH_URL: 'https://arandanocafe.com',
+        AUTH_TRUST_HOST: 'true',
         PROJECT_ROOT: projectRoot,
         DATA_DIR: path.join(projectRoot, 'data'),
         DATABASE_PATH: path.join(projectRoot, 'data', 'arandano.db'),

@@ -42,7 +42,7 @@ console.log('\n2️⃣  Variables de entorno (.env.local)')
 const requiredVars = [
   { key: 'DB_MODE', hint: 'sqlite' },
   { key: 'ADMIN_PASSWORD', hint: 'contraseña del panel admin' },
-  { key: 'NEXTAUTH_URL', hint: 'https://tu-dominio.com' },
+  { key: 'NEXTAUTH_URL', hint: 'https://arandanocafe.com (no usar localhost en producción)' },
   { key: 'NEXTAUTH_SECRET', hint: 'openssl rand -base64 32' },
   { key: 'GOOGLE_CLIENT_ID', hint: 'Google Cloud Console' },
   { key: 'GOOGLE_CLIENT_SECRET', hint: 'Google Cloud Console' },
@@ -65,6 +65,15 @@ if (!fs.existsSync(envPath)) {
     ok('DB_MODE=sqlite')
   } else if (envContent.includes('DB_MODE=json')) {
     warn('DB_MODE=json — en producción usar sqlite')
+  }
+  const nextAuthLine = envContent.split('\n').find((l) => l.startsWith('NEXTAUTH_URL='))
+  if (nextAuthLine && /localhost|127\.0\.0\.1/i.test(nextAuthLine)) {
+    warn(
+      'NEXTAUTH_URL apunta a localhost — en el servidor usar https://arandanocafe.com y AUTH_TRUST_HOST=true'
+    )
+  }
+  if (!envContent.includes('AUTH_TRUST_HOST=true')) {
+    warn('AUTH_TRUST_HOST=true recomendado en producción (OAuth detrás de Nginx)')
   }
 }
 

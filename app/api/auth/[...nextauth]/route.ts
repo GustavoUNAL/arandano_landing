@@ -1,6 +1,24 @@
-import NextAuth from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { applyNextAuthUrlFromRequest } from '@/lib/auth-url'
+import NextAuth from 'next-auth'
+import type { NextRequest } from 'next/server'
 
 const handler = NextAuth(authOptions)
 
-export { handler as GET, handler as POST }
+type AuthRouteContext = { params: { nextauth: string[] } }
+
+async function withPublicUrl(
+  req: NextRequest,
+  context: AuthRouteContext
+) {
+  applyNextAuthUrlFromRequest(req)
+  return handler(req, context)
+}
+
+export async function GET(req: NextRequest, context: AuthRouteContext) {
+  return withPublicUrl(req, context)
+}
+
+export async function POST(req: NextRequest, context: AuthRouteContext) {
+  return withPublicUrl(req, context)
+}
