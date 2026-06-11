@@ -26,12 +26,14 @@ interface PerfilInicioProps {
   userImage?: string | null
   displayAlias?: string | null
   hasPassport?: boolean
+  hasKnockoutPassport?: boolean
   totalPoints: number
   credits: number
   predictionCost: number
   scoringRules: ScoringRules
   predictions: MatchPrediction[]
   leaderboard: LeaderboardEntry[]
+  leaderboardKnockout?: LeaderboardEntry[]
   worldCup: WorldCupFullData
   onGoMundial: () => void
   onGoJugar: () => void
@@ -55,12 +57,14 @@ export default function PerfilInicio({
   userImage,
   displayAlias,
   hasPassport = false,
+  hasKnockoutPassport = false,
   totalPoints,
   credits,
   predictionCost,
   scoringRules: _scoringRules,
   predictions,
   leaderboard,
+  leaderboardKnockout = [],
   worldCup,
   onGoMundial,
   onGoJugar,
@@ -114,22 +118,37 @@ export default function PerfilInicio({
                 <p className={`text-[10px] uppercase tracking-widest font-semibold ${theme.profileHeroMuted}`}>
                   Polla Mundialista
                 </p>
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                   <h1 className={`font-display text-xl lg:text-2xl font-bold truncate ${theme.profileHeroTitle}`}>
                     {userName ?? 'Jugador'}
                   </h1>
-                  {hasPassport ? (
+                  {hasPassport && (
                     <span
-                      className={`inline-flex items-center gap-1 shrink-0 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                      className={`inline-flex items-center gap-1 shrink-0 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${
                         isDark
                           ? 'bg-amber-500/25 text-amber-200 border border-amber-400/40'
                           : 'bg-amber-100 text-amber-800 border border-amber-300'
                       }`}
-                      title="Pasaporte activo"
+                      title="Pasaporte fase de grupos"
                     >
                       <IconPremium className="w-3 h-3" />
+                      Grupos
                     </span>
-                  ) : (
+                  )}
+                  {hasKnockoutPassport && (
+                    <span
+                      className={`inline-flex items-center gap-1 shrink-0 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                        isDark
+                          ? 'bg-berry-500/25 text-berry-200 border border-berry-400/40'
+                          : 'bg-berry-100 text-berry-800 border border-berry-300'
+                      }`}
+                      title="Pasaporte eliminatorias"
+                    >
+                      <IconPremium className="w-3 h-3" />
+                      Eliminatorias
+                    </span>
+                  )}
+                  {!hasPassport && !hasKnockoutPassport && (
                     <span
                       className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full border ${
                         isDark
@@ -352,7 +371,8 @@ export default function PerfilInicio({
 
         {/* Columna lateral: tabla + reglamento */}
         <div className="lg:col-span-5 xl:col-span-4 space-y-4 lg:space-y-6">
-          <PollaLeaderboard entries={leaderboard} isDark={isDark} />
+          <PollaLeaderboard entries={leaderboard} isDark={isDark} phase="group" />
+          <PollaLeaderboard entries={leaderboardKnockout} isDark={isDark} phase="knockout" compact />
           <PollaReglamento compact isDark={isDark} />
         </div>
       </div>

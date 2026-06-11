@@ -2,7 +2,13 @@
 
 import { IconPremium, IconTrophy } from '@/components/sports/SportsIcons'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
-import { TOP_WINNERS_COUNT } from '@/lib/polla-rules'
+import {
+  GROUP_PASSPORT_LABEL,
+  GROUP_STAGE_WINNERS_COUNT,
+  KNOCKOUT_PASSPORT_LABEL,
+  TOP_WINNERS_COUNT,
+  type PollaPhase,
+} from '@/lib/polla-rules'
 import type { LeaderboardEntry } from '@/lib/sports-polla-shared'
 
 const ANIMAL_EMOJI: Record<string, string> = {
@@ -43,26 +49,46 @@ interface PollaLeaderboardProps {
   entries: LeaderboardEntry[]
   compact?: boolean
   isDark?: boolean
+  phase?: PollaPhase
   title?: string
   subtitle?: string
+}
+
+function defaultSubtitle(phase: PollaPhase) {
+  if (phase === 'knockout') {
+    return `Solo ${KNOCKOUT_PASSPORT_LABEL} · ranking de eliminatorias`
+  }
+  return `Hasta ${GROUP_STAGE_WINNERS_COUNT} ganadores · ${GROUP_PASSPORT_LABEL}`
 }
 
 export default function PollaLeaderboard({
   entries,
   compact = false,
   isDark = true,
-  title = 'Tabla en vivo',
-  subtitle = `Hasta ${TOP_WINNERS_COUNT} ganadores con pasaporte · nombre de usuario`,
+  phase = 'group',
+  title,
+  subtitle,
 }: PollaLeaderboardProps) {
   const theme = mundialTheme(isDark)
+  const resolvedTitle =
+    title ?? (phase === 'knockout' ? 'Tabla eliminatorias' : 'Tabla fase de grupos')
+  const resolvedSubtitle = subtitle ?? defaultSubtitle(phase)
+  const maxWinners = phase === 'group' ? GROUP_STAGE_WINNERS_COUNT : TOP_WINNERS_COUNT
   const winners = entries.filter((e) => e.isWinner)
+
+  const hasPhasePassport = (entry: LeaderboardEntry) =>
+    phase === 'knockout' ? entry.hasKnockoutPassport : entry.hasPassport
 
   if (entries.length === 0) {
     return (
       <div className={`rounded-2xl border p-6 text-center ${theme.cardSoft}`}>
         <IconTrophy className={`w-8 h-8 mx-auto mb-2 ${isDark ? 'text-stone-600' : 'text-stone-400'}`} />
         <p className={`text-sm ${theme.muted}`}>Aún no hay jugadores en la tabla</p>
-        <p className={`text-xs mt-1 ${theme.mutedSm}`}>Sé el primero en pronosticar</p>
+        <p className={`text-xs mt-1 ${theme.mutedSm}`}>
+          {phase === 'knockout'
+            ? 'Aún no hay jugadores con pasaporte eliminatorias'
+            : 'Sé el primero en pronosticar'}
+        </p>
       </div>
     )
   }
@@ -72,8 +98,8 @@ export default function PollaLeaderboard({
       <div className={`px-4 py-3 border-b flex items-center gap-2 ${theme.border}`}>
         <IconTrophy className="w-4 h-4 text-berry-400 shrink-0" />
         <div className="min-w-0">
-          <h3 className="font-semibold text-sm">{title}</h3>
-          {!compact && <p className="text-[10px] text-stone-500 truncate">{subtitle}</p>}
+          <h3 className="font-semibold text-sm">{resolvedTitle}</h3>
+          {!compact && <p className="text-[10px] text-stone-500 truncate">{resolvedSubtitle}</p>}
         </div>
         <span className="ml-auto flex items-center gap-1 text-[10px] text-emerald-400 font-medium shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -84,7 +110,7 @@ export default function PollaLeaderboard({
       {winners.length > 0 && !compact && (
         <div className={`px-4 py-3 border-b ${theme.podioBox}`}>
           <p className={`text-[10px] uppercase tracking-widest font-semibold mb-2 ${theme.accentLink}`}>
-            Podio · {winners.length} de {TOP_WINNERS_COUNT} ganadores
+            Podio · {winners.length} de {maxWinners} ganadores
           </p>
           <div className="flex flex-wrap gap-2">
             {winners.map((w) => (
@@ -129,7 +155,7 @@ export default function PollaLeaderboard({
                     : entry.isCurrentUser
                       ? theme.tableRowYou
                       : theme.tableRow
-                } ${entry.hasPassport ? '' : 'opacity-45'}`}
+                } ${hasPhasePassport(entry) ? '' : 'opacity-45'}`}
               >
                 <td className="px-3 py-2.5 tabular-nums font-semibold">
                   {entry.isWinner ? (
@@ -153,23 +179,26 @@ export default function PollaLeaderboard({
                         <span className={`text-[10px] ml-1 ${theme.accentLink}`}>(tú)</span>
                       )}
                     </span>
-                    {entry.hasPassport ? (
+                    {hasPhasePassport(entry) ? (
                       <span
                         className={`inline-flex items-center shrink-0 ${
                           isDark ? 'text-amber-400' : 'text-amber-600'
                         }`}
-                        title="Pasaporte activo — puede ganar el podio"
+                        title="Pasaporte de fase activo"
                       >
                         <IconPremium className="w-3.5 h-3.5" />
                       </span>
                     ) : (
                       !compact && (
-                        <span className={`text-[9px] shrink-0 ${theme.mutedSm}`} title="Sin pasaporte — no puede ganar el podio">
+                        <span
+                          className={`text-[9px] shrink-0 ${theme.mutedSm}`}
+                          title="Sin pasaporte de esta fase"
+                        >
                           sin pasaporte
                         </span>
                       )
                     )}
-                    {!entry.qualifiesForPodium && entry.hasPassport && entry.settledCount > 0 && !compact && (
+                    {!entry.qualifiesForPodium && hasPhasePassport(entry) && entry.settledCount > 0 && !compact && (
                       <span className={`text-[9px] shrink-0 ${theme.mutedSm}`} title="Faltan picks calificados para el podio">
                         ·
                       </span>

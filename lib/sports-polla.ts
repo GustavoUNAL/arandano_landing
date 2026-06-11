@@ -10,6 +10,7 @@ import {
   MAX_SCORE_PER_TEAM,
   type MatchPrediction,
   MIN_SETTLED_PICKS_TO_WIN,
+  normalizeHasKnockoutPassport,
   normalizeHasPassport,
   PREDICTION_COST,
   POINTS_CORRECT_RESULT,
@@ -17,6 +18,7 @@ import {
   POINTS_GOAL_DIFFERENCE,
   type SportsUser,
 } from '@/lib/sports-polla-shared'
+import { GROUP_STAGE_WINNERS_COUNT, TOP_WINNERS_COUNT, type PollaPhase } from '@/lib/polla-rules'
 import { randomUUID } from 'crypto'
 
 export {
@@ -72,8 +74,14 @@ function hashUserId(id: string): number {
   return h
 }
 
-function mapSportsUser(row: SportsUser & { hasPassport?: unknown }): SportsUser {
-  return { ...row, hasPassport: normalizeHasPassport(row.hasPassport) }
+function mapSportsUser(
+  row: SportsUser & { hasPassport?: unknown; hasKnockoutPassport?: unknown }
+): SportsUser {
+  return {
+    ...row,
+    hasPassport: normalizeHasPassport(row.hasPassport),
+    hasKnockoutPassport: normalizeHasKnockoutPassport(row.hasKnockoutPassport),
+  }
 }
 
 export function generateDisplayAlias(userId: string): string {
@@ -221,11 +229,19 @@ export async function settleFinishedMatches(
   return settled
 }
 
-export async function getLeaderboard(currentUserId?: string): Promise<LeaderboardEntry[]> {
+export async function getLeaderboard(
+  currentUserId?: string,
+  phase: PollaPhase = 'group'
+): Promise<LeaderboardEntry[]> {
+  const isGroup = phase === 'group'
+  const passportFilter = isGroup ? '' : 'AND su.hasKnockoutPassport = 1'
+  const matchFilter = isGroup ? 'AND mp.matchGroup IS NOT NULL' : 'AND mp.matchGroup IS NULL'
+
   const rows = await dbAll<{
     id: string
     displayAlias: string | null
     hasPassport: number | boolean
+    hasKnockoutPassport: number | boolean
     totalPoints: number
     picksCount: number
     settledCount: number
@@ -237,6 +253,7 @@ export async function getLeaderboard(currentUserId?: string): Promise<Leaderboar
       su.id,
       su.displayAlias,
       su.hasPassport,
+      su.hasKnockoutPassport,
       COALESCE(SUM(CASE WHEN mp.settledAt IS NOT NULL THEN mp.pointsEarned ELSE 0 END), 0) AS totalPoints,
       COUNT(mp.id) AS picksCount,
       SUM(CASE WHEN mp.settledAt IS NOT NULL THEN 1 ELSE 0 END) AS settledCount,
@@ -245,7 +262,8 @@ export async function getLeaderboard(currentUserId?: string): Promise<Leaderboar
       SUM(CASE WHEN mp.pointsEarned = ? THEN 1 ELSE 0 END) AS resultHits
     FROM sports_users su
     INNER JOIN match_predictions mp ON mp.userId = su.id
-    GROUP BY su.id, su.displayAlias
+    WHERE 1=1 ${passportFilter} ${matchFilter}
+    GROUP BY su.id, su.displayAlias, su.hasPassport, su.hasKnockoutPassport
     ORDER BY
       totalPoints DESC,
       exactHits DESC,
@@ -257,9 +275,13 @@ export async function getLeaderboard(currentUserId?: string): Promise<Leaderboar
     [POINTS_EXACT_SCORE, POINTS_GOAL_DIFFERENCE, POINTS_CORRECT_RESULT]
   )
 
+  const maxWinners = isGroup ? GROUP_STAGE_WINNERS_COUNT : TOP_WINNERS_COUNT
+
   const base = rows.map((row, index) => {
     const settledCount = Number(row.settledCount)
     const hasPassport = normalizeHasPassport(row.hasPassport)
+    const hasKnockoutPassport = normalizeHasKnockoutPassport(row.hasKnockoutPassport)
+    const phasePassport = isGroup ? hasPassport : hasKnockoutPassport
     return {
       rank: index + 1,
       displayAlias: row.displayAlias ?? generateDisplayAlias(row.id),
@@ -270,14 +292,16 @@ export async function getLeaderboard(currentUserId?: string): Promise<Leaderboar
       goalDiffHits: Number(row.goalDiffHits),
       resultHits: Number(row.resultHits),
       hasPassport,
-      qualifiesForPodium: hasPassport && settledCount >= MIN_SETTLED_PICKS_TO_WIN,
+      hasKnockoutPassport,
+      phase,
+      qualifiesForPodium: phasePassport && settledCount >= MIN_SETTLED_PICKS_TO_WIN,
       isWinner: false,
       winnerRank: null as number | null,
       isCurrentUser: row.id === currentUserId,
     }
   })
 
-  return applyWinnerRanks(base)
+  return applyWinnerRanks(base, maxWinners)
 }
 
 export async function getOrCreateSportsUser(input: {
@@ -302,8 +326,8 @@ export async function getOrCreateSportsUser(input: {
   const now = new Date().toISOString()
   const alias = generateDisplayAlias(input.id)
   await dbRun(
-    `INSERT INTO sports_users (id, email, name, image, credits, displayAlias, totalPoints, hasPassport, createdAt, updatedAt)
-     VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?)`,
+    `INSERT INTO sports_users (id, email, name, image, credits, displayAlias, totalPoints, hasPassport, hasKnockoutPassport, createdAt, updatedAt)
+     VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, ?, ?)`,
     [
       input.id,
       input.email,
@@ -329,6 +353,7 @@ export async function listAllSportsUsersForAdmin(): Promise<AdminSportsUserRow[]
     displayAlias: string | null
     totalPoints: number
     hasPassport: number | boolean
+    hasKnockoutPassport: number | boolean
     createdAt: string
     updatedAt: string
     picksCount: number
@@ -343,6 +368,7 @@ export async function listAllSportsUsersForAdmin(): Promise<AdminSportsUserRow[]
       su.displayAlias,
       su.totalPoints,
       su.hasPassport,
+      su.hasKnockoutPassport,
       su.createdAt,
       su.updatedAt,
       COUNT(mp.id) AS picksCount,
@@ -367,6 +393,21 @@ export async function setUserPassport(userId: string, hasPassport: boolean): Pro
     now,
     userId,
   ])
+  if (result.changes === 0) throw new Error('Usuario no encontrado')
+  const user = await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [userId])
+  if (!user) throw new Error('Usuario no encontrado')
+  return mapSportsUser(user)
+}
+
+export async function setUserKnockoutPassport(
+  userId: string,
+  hasKnockoutPassport: boolean
+): Promise<SportsUser> {
+  const now = new Date().toISOString()
+  const result = await dbRun(
+    'UPDATE sports_users SET hasKnockoutPassport = ?, updatedAt = ? WHERE id = ?',
+    [hasKnockoutPassport ? 1 : 0, now, userId]
+  )
   if (result.changes === 0) throw new Error('Usuario no encontrado')
   const user = await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [userId])
   if (!user) throw new Error('Usuario no encontrado')

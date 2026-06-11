@@ -27,7 +27,8 @@ export async function GET() {
     await settleFinishedMatches(worldCup.allMatches)
 
     const predictions = await getUserPredictions(user.id)
-    const leaderboard = await getLeaderboard(user.id)
+    const leaderboard = await getLeaderboard(user.id, 'group')
+    const leaderboardKnockout = await getLeaderboard(user.id, 'knockout')
     const scoringRules = getScoringRules()
     const winners = leaderboard.filter((e) => e.isWinner)
     const predictionMap = Object.fromEntries(predictions.map((p) => [p.matchId, p]))
@@ -47,7 +48,9 @@ export async function GET() {
       matches,
       predictions,
       leaderboard,
+      leaderboardKnockout,
       winners,
+      winnersKnockout: leaderboardKnockout.filter((e) => e.isWinner),
       scoringRules,
       predictionCost: scoringRules.predictionCost,
     })

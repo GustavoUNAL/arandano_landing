@@ -34,6 +34,10 @@ export function normalizeHasPassport(value: unknown): boolean {
   return value === true || value === 1 || value === '1'
 }
 
+export function normalizeHasKnockoutPassport(value: unknown): boolean {
+  return value === true || value === 1 || value === '1'
+}
+
 export interface SportsUser {
   id: string
   email: string
@@ -43,6 +47,7 @@ export interface SportsUser {
   displayAlias: string | null
   totalPoints: number
   hasPassport: boolean
+  hasKnockoutPassport: boolean
   createdAt: string
   updatedAt: string
 }
@@ -56,6 +61,7 @@ export interface AdminSportsUserRow {
   displayAlias: string | null
   totalPoints: number
   hasPassport: boolean
+  hasKnockoutPassport: boolean
   picksCount: number
   settledCount: number
   createdAt: string
@@ -93,6 +99,8 @@ export interface LeaderboardEntry {
   goalDiffHits: number
   resultHits: number
   hasPassport: boolean
+  hasKnockoutPassport: boolean
+  phase: 'group' | 'knockout'
   qualifiesForPodium: boolean
   isWinner: boolean
   winnerRank: number | null
@@ -161,10 +169,13 @@ export function pointsToTier(points: number | null): PointsTier {
   return 'miss'
 }
 
-/** Marca hasta 5 ganadores entre jugadores que cumplen el mínimo de picks calificados. */
-export function applyWinnerRanks(entries: LeaderboardEntry[]): LeaderboardEntry[] {
+/** Marca ganadores entre jugadores que cumplen el mínimo de picks calificados en la fase. */
+export function applyWinnerRanks(
+  entries: LeaderboardEntry[],
+  maxWinners: number = TOP_WINNERS_COUNT
+): LeaderboardEntry[] {
   const qualified = entries.filter((e) => e.qualifiesForPodium)
-  const winnerIds = new Set(qualified.slice(0, TOP_WINNERS_COUNT).map((e) => e.displayAlias))
+  const winnerIds = new Set(qualified.slice(0, maxWinners).map((e) => e.displayAlias))
 
   return entries.map((entry) => {
     const qualifiedIndex = qualified.findIndex((q) => q.displayAlias === entry.displayAlias)

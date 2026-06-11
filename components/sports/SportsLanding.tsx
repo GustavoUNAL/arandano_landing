@@ -5,11 +5,12 @@ import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
 import { useMundialTheme } from '@/hooks/useMundialTheme'
 import PollaLeaderboard from '@/components/sports/PollaLeaderboard'
 import TeamCrest from '@/components/sports/TeamCrest'
+import PollaPremiosPanel from '@/components/sports/PollaPremiosPanel'
 import {
+  GROUP_STAGE_WINNERS_COUNT,
   INITIAL_CREDITS,
   PREDICTION_COST,
   REGLAMENTO_SHORT,
-  TOP_WINNERS_COUNT,
 } from '@/lib/polla-rules'
 import type { WorldCupData } from '@/lib/football-data'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
@@ -39,8 +40,8 @@ const STEPS = [
   },
   {
     step: '4',
-    title: 'Sube en la tabla',
-    desc: `Suma puntos con aciertos exactos, por diferencia o por resultado. Los créditos no afectan el ranking. Podio de ${TOP_WINNERS_COUNT} ganadores.`,
+    title: 'Dos premiaciones',
+    desc: `Suma puntos por fase. Grupos: ${GROUP_STAGE_WINNERS_COUNT} ganadores con pasaporte de grupos. Eliminatorias: pasaporte $30.000 COP en el café y ranking nuevo solo para quienes lo compren.`,
   },
 ]
 
@@ -62,38 +63,58 @@ function formatSeasonDates(start: string, end: string) {
 function MatchCard({
   match,
   onPredict,
+  isDark,
 }: {
   match: WorldCupData['upcomingMatches'][0]
   onPredict: () => void
+  isDark: boolean
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 hover:border-berry-500/30 transition-colors">
+    <div
+      className={`rounded-2xl border p-5 transition-colors ${
+        isDark
+          ? 'border-white/10 bg-white/5 hover:border-berry-500/30'
+          : 'border-stone-200 bg-white shadow-sm hover:border-berry-400/40 hover:shadow-md'
+      }`}
+    >
       <div className="flex items-center justify-center gap-3 mb-4">
         <div className="text-center flex-1">
           <div className="flex justify-center mb-1">
             <TeamCrest src={match.homeTeam.crest} alt={match.homeTeam.name} size={40} />
           </div>
-          <p className="text-xs text-stone-400 font-medium truncate">{match.homeTeam.shortName}</p>
+          <p className={`text-xs font-medium truncate ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
+            {match.homeTeam.shortName}
+          </p>
         </div>
-        <span className="text-stone-600 font-bold text-xs shrink-0">VS</span>
+        <span className={`font-bold text-xs shrink-0 ${isDark ? 'text-stone-600' : 'text-stone-400'}`}>VS</span>
         <div className="text-center flex-1">
           <div className="flex justify-center mb-1">
             <TeamCrest src={match.awayTeam.crest} alt={match.awayTeam.name} size={40} />
           </div>
-          <p className="text-xs text-stone-400 font-medium truncate">{match.awayTeam.shortName}</p>
+          <p className={`text-xs font-medium truncate ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
+            {match.awayTeam.shortName}
+          </p>
         </div>
       </div>
       {match.group && (
-        <p className="text-center text-[10px] text-stone-600 uppercase tracking-wide mb-1">
+        <p className={`text-center text-[10px] uppercase tracking-wide mb-1 ${isDark ? 'text-stone-600' : 'text-stone-500'}`}>
           {match.group.replace('_', ' ')}
         </p>
       )}
-      <p className="text-center text-xs text-stone-500 mb-1">{match.formattedDate}</p>
-      <p className="text-center text-xs text-berry-400 font-medium mb-4">{match.startsIn}</p>
+      <p className={`text-center text-xs mb-1 ${isDark ? 'text-stone-500' : 'text-stone-600'}`}>
+        {match.formattedDate}
+      </p>
+      <p className={`text-center text-xs font-medium mb-4 ${isDark ? 'text-berry-400' : 'text-berry-600'}`}>
+        {match.startsIn}
+      </p>
       <button
         type="button"
         onClick={onPredict}
-        className="w-full py-2.5 rounded-xl bg-berry-600/20 hover:bg-berry-600/40 border border-berry-500/30 text-berry-300 font-semibold text-sm transition-colors"
+        className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-colors ${
+          isDark
+            ? 'bg-berry-600/20 hover:bg-berry-600/40 border border-berry-500/30 text-berry-300'
+            : 'bg-berry-600 hover:bg-berry-500 text-white'
+        }`}
       >
         Pronosticar
       </button>
@@ -173,20 +194,6 @@ export default function SportsLanding() {
   const heroMatches = wcData?.upcomingMatches.slice(0, 3) ?? []
   const liveMatches = wcData?.upcomingMatches ?? []
 
-  const stats = wcData
-    ? [
-        { value: String(wcData.stats.totalMatches), label: 'Partidos' },
-        { value: String(wcData.stats.totalTeams), label: 'Selecciones' },
-        { value: '3', label: 'Países sede' },
-        { value: '1', label: 'Campeón' },
-      ]
-    : [
-        { value: '—', label: 'Partidos' },
-        { value: '—', label: 'Selecciones' },
-        { value: '3', label: 'Países sede' },
-        { value: '1', label: 'Campeón' },
-      ]
-
   const seasonDates = wcData
     ? formatSeasonDates(wcData.competition.startDate, wcData.competition.endDate)
     : '11 jun — 19 jul 2026'
@@ -215,6 +222,26 @@ export default function SportsLanding() {
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <div className="hidden md:flex items-center gap-1">
+              <a
+                href="#premios"
+                className={`text-xs font-medium px-2.5 py-2 rounded-full transition-colors ${theme.muted} hover:text-berry-500`}
+              >
+                Premios
+              </a>
+              <a
+                href="#como-jugar"
+                className={`text-xs font-medium px-2.5 py-2 rounded-full transition-colors ${theme.muted} hover:text-berry-500`}
+              >
+                Cómo jugar
+              </a>
+              <a
+                href="#partidos"
+                className={`text-xs font-medium px-2.5 py-2 rounded-full transition-colors ${theme.muted} hover:text-berry-500`}
+              >
+                Partidos
+              </a>
+            </div>
             <div className="hidden sm:flex items-center gap-2">
               <Link
                 href="/mundial/reglamento"
@@ -283,46 +310,32 @@ export default function SportsLanding() {
                   ? `${wcData.stats.totalTeams} selecciones, ${wcData.stats.totalMatches} partidos del ${seasonDates}. Desde Pasto, celebra cada gol con nosotros.`
                   : 'El torneo más grande del planeta llega en 2026. Desde Pasto, celebra cada gol con nosotros.'}
               </p>
-              <p className="text-base text-stone-300 leading-relaxed mb-8 max-w-xl font-medium">
-                ¿Quieres jugar la <span className="text-berry-300">polla mundialista</span>? Entra a jugar
-                con tus amigos y ganar. Demuestra que eres un experto.
+              <p className={`text-base leading-relaxed mb-8 max-w-xl font-medium ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>
+                Pronostica el Mundial 2026, compite con tus parceros y gana premios en{' '}
+                <span className={theme.accent}>dos fases</span>: grupos y eliminatorias.
               </p>
-              <div id="reglamento-juego" className="flex flex-col sm:flex-row gap-3 scroll-mt-24 max-w-md sm:max-w-none">
+              <div className="flex flex-col sm:flex-row gap-3 max-w-md sm:max-w-none">
                 {session ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={goToProfile}
-                      className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-berry-600 hover:bg-berry-500 text-white font-semibold rounded-xl transition-colors"
-                    >
-                      Ir a mi perfil
-                    </button>
-                    <Link
-                      href="/mundial/reglamento"
-                      className={`inline-flex items-center justify-center gap-2 px-7 py-3.5 border font-semibold rounded-xl transition-colors ${
-                        isDark
-                          ? 'border-white/20 hover:bg-white/5 text-stone-200'
-                          : 'border-stone-300 hover:bg-stone-100 text-stone-700'
-                      }`}
-                    >
-                      Reglamento de juego
-                    </Link>
-                  </>
+                  <button
+                    type="button"
+                    onClick={goToPredict}
+                    className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-berry-600 hover:bg-berry-500 text-white font-semibold rounded-xl transition-colors"
+                  >
+                    Ir a pronosticar
+                  </button>
                 ) : (
-                  <>
-                    <GoogleSignInButton label="Jugar con Google" callbackUrl={PERFIL_JUGAR_PATH} />
-                    <Link
-                      href="/mundial/reglamento"
-                      className={`inline-flex items-center justify-center gap-2 px-7 py-3.5 border font-semibold rounded-xl transition-colors ${
-                        isDark
-                          ? 'border-white/20 hover:bg-white/5 text-stone-200'
-                          : 'border-stone-300 hover:bg-stone-100 text-stone-700'
-                      }`}
-                    >
-                      Reglamento de juego
-                    </Link>
-                  </>
+                  <GoogleSignInButton label="Jugar con Google" callbackUrl={PERFIL_JUGAR_PATH} />
                 )}
+                <a
+                  href="#premios"
+                  className={`inline-flex items-center justify-center gap-2 px-7 py-3.5 border font-semibold rounded-xl transition-colors ${
+                    isDark
+                      ? 'border-white/20 hover:bg-white/5 text-stone-200'
+                      : 'border-stone-300 hover:bg-stone-100 text-stone-700'
+                  }`}
+                >
+                  Ver premios
+                </a>
               </div>
             </div>
 
@@ -363,46 +376,171 @@ export default function SportsLanding() {
         </div>
       </section>
 
-      {/* Polla en vivo */}
-      <section id="polla-vivo" className="py-20 border-t border-white/5 scroll-mt-20">
+      {/* 1. Premios — motivación antes de jugar */}
+      <section
+        id="premios"
+        className={`py-14 sm:py-20 border-t scroll-mt-20 ${theme.borderSubtle} ${
+          isDark ? 'bg-stone-950' : 'bg-white'
+        }`}
+      >
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <h2 className="font-display text-3xl sm:text-4xl font-bold text-center mb-3">Polla en vivo</h2>
-          <p className="text-stone-500 text-center text-sm mb-10">
-            Partidos reales del Mundial 2026 — pronostica antes de que arranquen
+          <div className="text-center mb-8 sm:mb-10">
+            <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${theme.accent}`}>
+              01 · Premios
+            </p>
+            <h2 className="font-display text-2xl sm:text-4xl font-bold mb-2 sm:mb-3">
+              ¿Qué puedes ganar?
+            </h2>
+            <p className={`text-sm sm:text-base max-w-2xl mx-auto ${theme.muted}`}>
+              Dos premiaciones independientes. Cada fase tiene su pasaporte y su ranking.
+            </p>
+          </div>
+          <div className="max-w-lg mx-auto">
+            <PollaPremiosPanel isDark={isDark} />
+          </div>
+        </div>
+      </section>
+
+      {/* 2. Cómo jugar — entender el juego */}
+      <section
+        id="como-jugar"
+        className={`py-14 sm:py-20 border-t scroll-mt-20 ${theme.borderSubtle} ${
+          isDark ? 'bg-gradient-to-b from-stone-950 to-berry-950/15' : 'bg-gradient-to-b from-stone-50 to-berry-50/50'
+        }`}
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8 sm:mb-14">
+            <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${theme.accent}`}>
+              02 · Cómo jugar
+            </p>
+            <h2 className="font-display text-2xl sm:text-4xl font-bold mb-2 sm:mb-3">
+              Cuatro pasos y listo
+            </h2>
+            <p className={`text-sm sm:text-base max-w-xl mx-auto ${theme.muted}`}>
+              Regístrate gratis, pronostica antes del pitazo y sube en la tabla de tu fase.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+            {STEPS.map((item) => (
+              <div
+                key={item.step}
+                className={`relative flex flex-col rounded-xl sm:rounded-2xl border p-3.5 sm:p-6 transition-all group h-full ${
+                  isDark
+                    ? 'border-white/10 bg-white/5 hover:border-berry-500/30 hover:bg-berry-950/30'
+                    : 'border-stone-200 bg-white shadow-sm hover:border-berry-400/40 hover:shadow-md'
+                }`}
+              >
+                <div
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center font-bold mb-2.5 sm:mb-4 text-sm sm:text-base shrink-0 transition-colors ${
+                    isDark
+                      ? 'bg-berry-600/20 border border-berry-500/30 text-berry-300 group-hover:bg-berry-600/30'
+                      : 'bg-berry-100 border border-berry-300/60 text-berry-700 group-hover:bg-berry-200/70'
+                  }`}
+                >
+                  {item.step}
+                </div>
+                <h3 className="font-semibold text-xs sm:text-lg mb-1 sm:mb-2 leading-snug">
+                  {item.title}
+                </h3>
+                <p className={`text-[10px] sm:text-sm leading-relaxed flex-1 ${theme.muted}`}>
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className={`text-center text-xs sm:text-sm mt-8 ${theme.muted}`}>
+            {REGLAMENTO_SHORT} ·{' '}
+            <Link href="/mundial/reglamento" className={`font-semibold ${theme.accentLink}`}>
+              Leer reglamento completo →
+            </Link>
           </p>
+        </div>
+      </section>
+
+      {/* 3. Por qué Arándano — confianza y contexto local */}
+      <section
+        className={`py-14 sm:py-16 border-t ${theme.borderSubtle} ${
+          isDark ? 'bg-stone-950' : 'bg-stone-50'
+        }`}
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8 sm:mb-10">
+            <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${theme.accent}`}>
+              03 · Arándano Café Bar
+            </p>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold">Tu tercer espacio en Pasto</h2>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {FEATURES.map((f) => (
+              <div
+                key={f.title}
+                className={`rounded-2xl border p-5 sm:p-6 transition-all hover:-translate-y-0.5 ${
+                  isDark
+                    ? 'border-white/10 bg-white/5 hover:border-berry-500/30'
+                    : 'border-stone-200 bg-white shadow-sm hover:border-berry-300/50 hover:shadow-md'
+                }`}
+              >
+                <span className="text-2xl sm:text-3xl mb-3 block">{f.icon}</span>
+                <h3 className="font-semibold text-base sm:text-lg mb-1.5">{f.title}</h3>
+                <p className={`text-sm leading-relaxed ${theme.muted}`}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Polla en vivo — acción: pronosticar */}
+      <section
+        id="partidos"
+        className={`py-14 sm:py-20 border-t scroll-mt-20 ${theme.borderSubtle} ${
+          isDark ? 'bg-stone-950' : 'bg-white'
+        }`}
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8 sm:mb-10">
+            <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${theme.accent}`}>
+              04 · A jugar
+            </p>
+            <h2 className="font-display text-2xl sm:text-4xl font-bold mb-2 sm:mb-3">Pronostica ahora</h2>
+            <p className={`text-sm sm:text-base max-w-xl mx-auto ${theme.muted}`}>
+              Partidos reales del Mundial 2026. Elige tu marcador antes de que arranquen.
+            </p>
+          </div>
           {loading ? (
-            <div className="text-center py-12 text-stone-500">Cargando partidos del Mundial…</div>
+            <div className={`text-center py-12 text-sm ${theme.muted}`}>Cargando partidos del Mundial…</div>
           ) : liveMatches.length > 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               {liveMatches.map((match) => (
-                <MatchCard key={match.id} match={match} onPredict={goToPredict} />
+                <MatchCard key={match.id} match={match} onPredict={goToPredict} isDark={isDark} />
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 text-stone-500">No hay partidos disponibles por ahora.</div>
+            <div className={`text-center py-12 text-sm ${theme.muted}`}>
+              No hay partidos disponibles por ahora.
+            </div>
           )}
-          <div className="max-w-xl mx-auto mt-12 mb-8">
-            <PollaLeaderboard entries={leaderboard} compact />
+          <div className="max-w-xl mx-auto mt-10 sm:mt-12">
+            <PollaLeaderboard entries={leaderboard} compact phase="group" isDark={isDark} />
           </div>
-          <div className="text-center">
+          <div className="text-center mt-8">
             <button
               type="button"
               onClick={goToPredict}
-              className="text-berry-400 hover:text-berry-300 font-semibold text-sm transition-colors"
+              className={`inline-flex items-center justify-center px-8 py-3.5 rounded-xl bg-berry-600 hover:bg-berry-500 text-white font-semibold text-sm transition-colors`}
             >
-              Jugar la polla →
+              Entrar y pronosticar
             </button>
           </div>
         </div>
       </section>
 
-      {/* Info Mundial 2026 */}
+      {/* 5. Mundial 2026 — contexto del torneo */}
       <section
         id="mundial"
         className={`py-12 sm:py-20 border-t scroll-mt-20 ${theme.borderSubtle} ${
           isDark
             ? 'bg-gradient-to-b from-stone-950 to-berry-950/20'
-            : 'bg-gradient-to-b from-white to-berry-50/90'
+            : 'bg-gradient-to-b from-stone-50 to-berry-50/90'
         }`}
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -412,10 +550,12 @@ export default function SportsLanding() {
                 <TeamCrest src={wcData.competition.emblem} alt="Mundial 2026" size={64} />
               </div>
             )}
+            <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${theme.accent}`}>
+              05 · El torneo
+            </p>
             <h2 className="font-display text-2xl sm:text-4xl font-bold mb-2 sm:mb-3">Mundial FIFA 2026</h2>
             <p className={`text-sm sm:text-base max-w-2xl mx-auto ${theme.muted}`}>
-              Por primera vez en la historia, el Mundial se juega en tres países. Calendario y resultados
-              actualizados en tiempo real.
+              Por primera vez en tres países. {seasonDates} · calendario y resultados en tiempo real.
             </p>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-8 sm:mb-12">
@@ -466,114 +606,24 @@ export default function SportsLanding() {
         </div>
       </section>
 
-      {/* Cómo funciona */}
+      {/* 6. CTA final — registro */}
       <section
-        className={`py-12 sm:py-20 border-t ${theme.borderSubtle} ${
-          isDark ? 'bg-stone-950' : 'bg-white'
+        id="ingresar"
+        className={`py-16 sm:py-24 border-t scroll-mt-20 ${theme.borderSubtle} ${
+          isDark
+            ? 'bg-gradient-to-b from-stone-950 to-berry-950/30'
+            : 'bg-gradient-to-b from-white to-berry-50'
         }`}
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-8 sm:mb-14">
-            <h2 className="font-display text-2xl sm:text-4xl font-bold mb-2 sm:mb-3">
-              ¿Cómo jugar la polla?
-            </h2>
-            <p className={`text-sm sm:text-base max-w-lg mx-auto ${theme.muted}`}>
-              La polla mundialista clásica, ahora en digital. Sin complicaciones, solo fútbol y amigos.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-            {STEPS.map((item) => (
-              <div
-                key={item.step}
-                className={`relative flex flex-col rounded-xl sm:rounded-2xl border p-3.5 sm:p-6 transition-all group h-full ${
-                  isDark
-                    ? 'border-white/10 bg-white/5 hover:border-berry-500/30 hover:bg-berry-950/30'
-                    : 'border-stone-200 bg-stone-50 shadow-sm hover:border-berry-400/40 hover:bg-white hover:shadow-md'
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center font-bold mb-2.5 sm:mb-4 text-sm sm:text-base shrink-0 transition-colors ${
-                    isDark
-                      ? 'bg-berry-600/20 border border-berry-500/30 text-berry-300 group-hover:bg-berry-600/30'
-                      : 'bg-berry-100 border border-berry-300/60 text-berry-700 group-hover:bg-berry-200/70'
-                  }`}
-                >
-                  {item.step}
-                </div>
-                <h3 className="font-semibold text-xs sm:text-lg mb-1 sm:mb-2 leading-snug">
-                  {item.title}
-                </h3>
-                <p className={`text-[10px] sm:text-sm leading-relaxed flex-1 ${theme.muted}`}>
-                  {item.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Características */}
-      <section className="py-20 border-t border-white/5">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <h2 className="font-display text-3xl sm:text-4xl font-bold text-center mb-14">¿Por qué jugar aquí?</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {FEATURES.map((f) => (
-              <div
-                key={f.title}
-                className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:-translate-y-1 transition-transform"
-              >
-                <span className="text-3xl mb-4 block">{f.icon}</span>
-                <h3 className="font-semibold text-lg mb-2">{f.title}</h3>
-                <p className="text-sm text-stone-400 leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Estadísticas */}
-      <section className="py-16 border-t border-white/5">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center">
-                <p className="font-display text-4xl sm:text-5xl font-bold bg-gradient-to-b from-white to-stone-400 bg-clip-text text-transparent">
-                  {stat.value}
-                </p>
-                <p className="text-stone-500 text-sm mt-2 uppercase tracking-wide">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Reglamento CTA */}
-      <section className="py-16 border-t border-white/5">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
-          <p className="text-berry-400 text-xs font-semibold uppercase tracking-widest mb-3">Antes de jugar</p>
-          <h2 className="font-display text-2xl sm:text-3xl font-bold mb-3">Lee el reglamento completo</h2>
-          <p className="text-stone-400 text-sm mb-2">{REGLAMENTO_SHORT}</p>
-          <p className="text-stone-500 text-xs mb-8 max-w-md mx-auto">
-            Créditos, puntos, ejemplos, podio de 5 ganadores y condiciones de participación explicados al detalle.
+          <p className={`text-xs font-semibold uppercase tracking-widest mb-3 ${theme.accent}`}>
+            06 · Únete
           </p>
-          <Link
-            href="/mundial/reglamento"
-            className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl border border-berry-500/40 bg-berry-950/40 text-berry-200 font-semibold hover:bg-berry-900/50 transition-colors"
-          >
-            Ver reglamento y condiciones →
-          </Link>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section id="ingresar" className={`py-24 border-t scroll-mt-20 ${isDark ? 'border-white/5' : 'border-stone-200'}`}>
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
-          <p className="text-berry-400 text-sm font-semibold uppercase tracking-widest mb-4">Polla Mundialista</p>
-          <h2 className="font-display text-3xl sm:text-4xl font-bold mb-4">
-            ¿Quieres jugar la polla mundialista?
+          <h2 className="font-display text-2xl sm:text-4xl font-bold mb-3 sm:mb-4">
+            ¿Listo para la polla?
           </h2>
-          <p className={`mb-10 leading-relaxed ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
-            Lee el reglamento, entra con Google desde tu perfil y compite con tus amigos durante el Mundial 2026.
+          <p className={`mb-8 leading-relaxed text-sm sm:text-base ${theme.muted}`}>
+            Entra con Google, recibe tus créditos de bienvenida y haz tu primer pronóstico en menos de un minuto.
           </p>
 
           <div className="max-w-sm mx-auto space-y-4">

@@ -6,18 +6,22 @@ import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const worldCup = await getWorldCupFullData()
     await settleFinishedMatches(worldCup.allMatches)
 
     const authUser = await getAuthUser()
-    const leaderboard = await getLeaderboard(authUser?.id)
+    const { searchParams } = new URL(request.url)
+    const phaseParam = searchParams.get('phase')
+    const phase = phaseParam === 'knockout' ? 'knockout' : 'group'
+    const leaderboard = await getLeaderboard(authUser?.id, phase)
     const scoringRules = getScoringRules()
     const winners = leaderboard.filter((e) => e.isWinner)
 
     return NextResponse.json({
       leaderboard,
+      phase,
       winners,
       scoringRules,
       updatedAt: new Date().toISOString(),

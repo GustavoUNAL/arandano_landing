@@ -2,13 +2,20 @@
 
 import { IconPremium, IconShield } from '@/components/sports/SportsIcons'
 import UserAvatar from '@/components/sports/UserAvatar'
+import { GROUP_PASSPORT_LABEL, KNOCKOUT_PASSPORT_LABEL } from '@/lib/polla-rules'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
 import type { AdminSportsUserRow } from '@/lib/sports-polla-shared'
 import { useCallback, useEffect, useState } from 'react'
 
 interface AdminUsersResponse {
   users: AdminSportsUserRow[]
-  stats: { total: number; withPassport: number; withoutPassport: number }
+  stats: {
+    total: number
+    withPassport: number
+    withoutPassport: number
+    withKnockoutPassport: number
+    withoutKnockoutPassport: number
+  }
 }
 
 interface PollaAdminPanelProps {
@@ -21,7 +28,9 @@ export default function PollaAdminPanel({ isDark = true }: PollaAdminPanelProps)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [savingId, setSavingId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<'all' | 'passport' | 'no-passport'>('all')
+  const [filter, setFilter] = useState<
+    'all' | 'group-passport' | 'knockout-passport' | 'no-passport'
+  >('all')
 
   const loadUsers = useCallback(async () => {
     setLoading(true)
@@ -42,30 +51,46 @@ export default function PollaAdminPanel({ isDark = true }: PollaAdminPanelProps)
     loadUsers()
   }, [loadUsers])
 
-  const togglePassport = async (user: AdminSportsUserRow) => {
-    setSavingId(user.id)
+  const recomputeStats = (users: AdminSportsUserRow[]) => {
+    const withPassport = users.filter((u) => u.hasPassport).length
+    const withKnockoutPassport = users.filter((u) => u.hasKnockoutPassport).length
+    return {
+      total: users.length,
+      withPassport,
+      withoutPassport: users.length - withPassport,
+      withKnockoutPassport,
+      withoutKnockoutPassport: users.length - withKnockoutPassport,
+    }
+  }
+
+  const togglePassport = async (user: AdminSportsUserRow, type: 'group' | 'knockout') => {
+    const saveKey = `${user.id}-${type}`
+    setSavingId(saveKey)
     try {
+      const body =
+        type === 'group'
+          ? { userId: user.id, hasPassport: !user.hasPassport }
+          : { userId: user.id, hasKnockoutPassport: !user.hasKnockoutPassport }
+
       const res = await fetch('/api/sports/admin/users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, hasPassport: !user.hasPassport }),
+        body: JSON.stringify(body),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'No se pudo actualizar')
       setData((prev) => {
         if (!prev) return prev
         const users = prev.users.map((u) =>
-          u.id === user.id ? { ...u, hasPassport: json.user.hasPassport } : u
+          u.id === user.id
+            ? {
+                ...u,
+                hasPassport: json.user.hasPassport,
+                hasKnockoutPassport: json.user.hasKnockoutPassport,
+              }
+            : u
         )
-        const withPassport = users.filter((u) => u.hasPassport).length
-        return {
-          users,
-          stats: {
-            total: users.length,
-            withPassport,
-            withoutPassport: users.length - withPassport,
-          },
-        }
+        return { users, stats: recomputeStats(users) }
       })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al guardar')
@@ -76,8 +101,9 @@ export default function PollaAdminPanel({ isDark = true }: PollaAdminPanelProps)
 
   const filtered =
     data?.users.filter((u) => {
-      if (filter === 'passport') return u.hasPassport
-      if (filter === 'no-passport') return !u.hasPassport
+      if (filter === 'group-passport') return u.hasPassport
+      if (filter === 'knockout-passport') return u.hasKnockoutPassport
+      if (filter === 'no-passport') return !u.hasPassport && !u.hasKnockoutPassport
       return true
     }) ?? []
 
@@ -122,16 +148,16 @@ export default function PollaAdminPanel({ isDark = true }: PollaAdminPanelProps)
               Panel de administración
             </h2>
             <p className={`text-sm mt-1 ${theme.muted}`}>
-              Asigna el pasaporte a quienes lo compraron. Solo ellos pueden figurar en el podio de ganadores.
+              Activa el pasaporte de grupos o el de eliminatorias tras verificar la compra en el café.
             </p>
           </div>
         </div>
         {data && (
-          <div className="mt-4 grid grid-cols-3 gap-2 lg:gap-3 max-w-lg">
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 lg:gap-3">
             {[
               { label: 'Registrados', value: data.stats.total },
-              { label: 'Con pasaporte', value: data.stats.withPassport },
-              { label: 'Sin pasaporte', value: data.stats.withoutPassport },
+              { label: 'Pasaporte grupos', value: data.stats.withPassport },
+              { label: 'Pasaporte eliminatorias', value: data.stats.withKnockoutPassport },
             ].map((s) => (
               <div
                 key={s.label}
@@ -151,7 +177,8 @@ export default function PollaAdminPanel({ isDark = true }: PollaAdminPanelProps)
         {(
           [
             { id: 'all', label: 'Todos' },
-            { id: 'passport', label: 'Con pasaporte' },
+            { id: 'group-passport', label: 'Grupos' },
+            { id: 'knockout-passport', label: 'Eliminatorias' },
             { id: 'no-passport', label: 'Sin pasaporte' },
           ] as const
         ).map((f) => (
@@ -178,11 +205,13 @@ export default function PollaAdminPanel({ isDark = true }: PollaAdminPanelProps)
         {filtered.length === 0 ? (
           <p className={`text-center py-10 text-sm ${theme.muted}`}>No hay usuarios en este filtro</p>
         ) : (
-          filtered.map((user) => (
+          filtered.map((user) => {
+            const hasAny = user.hasPassport || user.hasKnockoutPassport
+            return (
             <div
               key={user.id}
-              className={`rounded-2xl border p-4 lg:p-5 flex flex-col sm:flex-row sm:items-center gap-4 transition-all ${
-                user.hasPassport
+              className={`rounded-2xl border p-4 lg:p-5 flex flex-col lg:flex-row lg:items-center gap-4 transition-all ${
+                hasAny
                   ? isDark
                     ? 'border-amber-500/30 bg-stone-900/80'
                     : 'border-amber-200 bg-white shadow-sm'
@@ -196,13 +225,13 @@ export default function PollaAdminPanel({ isDark = true }: PollaAdminPanelProps)
                   src={user.image}
                   name={user.name}
                   size={48}
-                  className={`shrink-0 ${user.hasPassport ? '' : 'grayscale'}`}
+                  className={`shrink-0 ${hasAny ? '' : 'grayscale'}`}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p
                       className={`font-semibold truncate ${
-                        user.hasPassport ? theme.sidebarUserName : theme.muted
+                        hasAny ? theme.sidebarUserName : theme.muted
                       }`}
                     >
                       {user.displayAlias ?? user.name ?? 'Sin nombre'}
@@ -216,7 +245,19 @@ export default function PollaAdminPanel({ isDark = true }: PollaAdminPanelProps)
                         }`}
                       >
                         <IconPremium className="w-3 h-3" />
-                        Pasaporte
+                        Grupos
+                      </span>
+                    )}
+                    {user.hasKnockoutPassport && (
+                      <span
+                        className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${
+                          isDark
+                            ? 'bg-berry-500/20 text-berry-200 border border-berry-500/40'
+                            : 'bg-berry-100 text-berry-800 border border-berry-300'
+                        }`}
+                      >
+                        <IconPremium className="w-3 h-3" />
+                        Eliminatorias
                       </span>
                     )}
                   </div>
@@ -228,26 +269,46 @@ export default function PollaAdminPanel({ isDark = true }: PollaAdminPanelProps)
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => togglePassport(user)}
-                disabled={savingId === user.id}
-                className={`shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 ${
-                  user.hasPassport
-                    ? isDark
-                      ? 'border border-white/15 text-stone-300 hover:bg-white/5'
-                      : 'border border-stone-300 text-stone-600 hover:bg-stone-100'
-                    : 'bg-berry-600 hover:bg-berry-500 text-white'
-                }`}
-              >
-                {savingId === user.id
-                  ? 'Guardando…'
-                  : user.hasPassport
-                    ? 'Quitar pasaporte'
-                    : 'Asignar pasaporte'}
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => togglePassport(user, 'group')}
+                  disabled={savingId === `${user.id}-group`}
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 ${
+                    user.hasPassport
+                      ? isDark
+                        ? 'border border-white/15 text-stone-300 hover:bg-white/5'
+                        : 'border border-stone-300 text-stone-600 hover:bg-stone-100'
+                      : 'bg-amber-600 hover:bg-amber-500 text-white'
+                  }`}
+                >
+                  {savingId === `${user.id}-group`
+                    ? '…'
+                    : user.hasPassport
+                      ? `Quitar ${GROUP_PASSPORT_LABEL}`
+                      : `Asignar grupos`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => togglePassport(user, 'knockout')}
+                  disabled={savingId === `${user.id}-knockout`}
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 ${
+                    user.hasKnockoutPassport
+                      ? isDark
+                        ? 'border border-white/15 text-stone-300 hover:bg-white/5'
+                        : 'border border-stone-300 text-stone-600 hover:bg-stone-100'
+                      : 'bg-berry-600 hover:bg-berry-500 text-white'
+                  }`}
+                >
+                  {savingId === `${user.id}-knockout`
+                    ? '…'
+                    : user.hasKnockoutPassport
+                      ? 'Quitar eliminatorias'
+                      : 'Asignar eliminatorias'}
+                </button>
+              </div>
             </div>
-          ))
+          )})
         )}
       </div>
     </div>

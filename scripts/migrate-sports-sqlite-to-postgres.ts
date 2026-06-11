@@ -22,6 +22,7 @@ interface SqliteSportsUser {
   displayAlias: string | null
   totalPoints: number
   hasPassport: number
+  hasKnockoutPassport: number
   createdAt: string
   updatedAt: string
 }
@@ -59,7 +60,7 @@ async function main() {
 
   const users = sqlite
     .prepare(
-      `SELECT id, email, name, image, credits, displayAlias, totalPoints, hasPassport, createdAt, updatedAt
+      `SELECT id, email, name, image, credits, displayAlias, totalPoints, hasPassport, hasKnockoutPassport, createdAt, updatedAt
        FROM sports_users`
     )
     .all() as SqliteSportsUser[]
@@ -82,10 +83,10 @@ async function main() {
 
   for (const u of users) {
     await sql`
-      INSERT INTO sports_users (id, email, name, image, credits, displayalias, totalpoints, haspassport, createdat, updatedat)
+      INSERT INTO sports_users (id, email, name, image, credits, displayalias, totalpoints, haspassport, hasknockoutpassport, createdat, updatedat)
       VALUES (
         ${u.id}, ${u.email}, ${u.name}, ${u.image}, ${u.credits},
-        ${u.displayAlias}, ${u.totalPoints}, ${u.hasPassport ?? 0}, ${u.createdAt}, ${u.updatedAt}
+        ${u.displayAlias}, ${u.totalPoints}, ${u.hasPassport ?? 0}, ${u.hasKnockoutPassport ?? 0}, ${u.createdAt}, ${u.updatedAt}
       )
       ON CONFLICT (id) DO UPDATE SET
         email = EXCLUDED.email,
@@ -95,6 +96,7 @@ async function main() {
         displayalias = EXCLUDED.displayalias,
         totalpoints = EXCLUDED.totalpoints,
         haspassport = EXCLUDED.haspassport,
+        hasknockoutpassport = EXCLUDED.hasknockoutpassport,
         updatedat = EXCLUDED.updatedat
     `
   }

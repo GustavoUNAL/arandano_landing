@@ -48,6 +48,7 @@ interface ProfileData {
   matches: MatchWithPrediction[]
   predictions: MatchPrediction[]
   leaderboard: LeaderboardEntry[]
+  leaderboardKnockout: LeaderboardEntry[]
   predictionCost: number
   scoringRules: ScoringRules
 }
@@ -390,12 +391,14 @@ export default function PerfilDashboard() {
             userImage={user?.image}
             displayAlias={data.user.displayAlias}
             hasPassport={data.user.hasPassport}
+            hasKnockoutPassport={data.user.hasKnockoutPassport}
             totalPoints={data.user.totalPoints}
             credits={credits}
             predictionCost={predictionCost}
             scoringRules={data.scoringRules}
             predictions={data.predictions}
             leaderboard={data.leaderboard}
+            leaderboardKnockout={data.leaderboardKnockout}
             worldCup={worldCup}
             onGoMundial={() => changeTab('mundial')}
             onGoJugar={() => changeTab('jugar')}

@@ -388,6 +388,7 @@ function initializeDatabase() {
       displayAlias TEXT,
       totalPoints INTEGER NOT NULL DEFAULT 0,
       hasPassport INTEGER NOT NULL DEFAULT 0,
+      hasKnockoutPassport INTEGER NOT NULL DEFAULT 0,
       createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL
     )
@@ -422,6 +423,7 @@ function initializeDatabase() {
     'ALTER TABLE sports_users ADD COLUMN displayAlias TEXT',
     'ALTER TABLE sports_users ADD COLUMN totalPoints INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE sports_users ADD COLUMN hasPassport INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE sports_users ADD COLUMN hasKnockoutPassport INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE match_predictions ADD COLUMN actualHomeScore INTEGER',
     'ALTER TABLE match_predictions ADD COLUMN actualAwayScore INTEGER',
     'ALTER TABLE match_predictions ADD COLUMN pointsEarned INTEGER',

@@ -12,8 +12,34 @@ export const POINTS_EXACT_SCORE = 3
 export const POINTS_GOAL_DIFFERENCE = 2
 export const POINTS_CORRECT_RESULT = 1
 export const TOP_WINNERS_COUNT = 5
+export const GROUP_STAGE_WINNERS_COUNT = 3
 export const MIN_SETTLED_PICKS_TO_WIN = 5
 export const MAX_SCORE_PER_TEAM = 20
+
+export interface PollaPrize {
+  place: string
+  prize: string
+}
+
+export const GROUP_STAGE_PRIZES: PollaPrize[] = [
+  { place: '1er Lugar', prize: '100.000 COP' },
+  { place: '2do Lugar', prize: '1 Botella de Aguardiente Nariño' },
+  { place: '3er Lugar', prize: '1 Cubetazo de Cerveza' },
+]
+
+export const KNOCKOUT_PHASE_LABEL =
+  'Fase Eliminatoria (Octavos, Cuartos, Semis, Final)'
+
+export const KNOCKOUT_PASSPORT_PRICE_COP = 30_000
+
+export const GROUP_PASSPORT_LABEL = 'Pasaporte Fase de Grupos'
+
+export const KNOCKOUT_PASSPORT_LABEL = 'Pasaporte Eliminatorias'
+
+export const KNOCKOUT_PRIZES_NOTE =
+  'Los premios de la fase eliminatoria se detallarán próximamente. Solo participan quienes adquieran el Pasaporte Eliminatorias en el café.'
+
+export type PollaPhase = 'group' | 'knockout'
 
 export type PointsTier = 'exact' | 'goal_diff' | 'result' | 'miss'
 
@@ -53,60 +79,91 @@ export const REGLAMENTO_SECTIONS: ReglamentoSection[] = [
     title: '1. Objetivo del juego',
     items: [
       'La polla es un juego de pronósticos del Mundial FIFA 2026 entre amigos y clientes de Arándano Café Bar.',
-      `Los ${TOP_WINNERS_COUNT} usuarios con mayor cantidad de puntos al finalizar el Mundial ocuparán el podio oficial de la Polla Mundialista Arándano 2026.`,
-      'Solo pueden ganar quienes tengan su pasaporte de la polla activado.',
+      'Cualquier persona registrada puede pronosticar partidos y acumular puntos en la plataforma.',
+      'Habrá dos premiaciones independientes: una al cerrar la fase de grupos y otra al finalizar la fase eliminatoria (octavos, cuartos, semifinales y final).',
+      'Para optar a premios en cada fase debes tener activo el pasaporte correspondiente (ver sección 2).',
+    ],
+  },
+  {
+    id: 'pasaportes',
+    title: '2. Pasaportes de la polla',
+    items: [
+      `Existen dos pasaportes independientes. La compra se realiza en Arándano Café Bar y el equipo activa tu pasaporte en la plataforma.`,
+      `${GROUP_PASSPORT_LABEL}: necesario para participar por los premios de la fase de grupos. Sin este pasaporte puedes jugar y sumar puntos, pero no figurarás en el ranking premiado de grupos ni podrás ganar esos premios.`,
+      `${KNOCKOUT_PASSPORT_LABEL} (${KNOCKOUT_PASSPORT_PRICE_COP.toLocaleString('es-CO')} COP en el café): obligatorio para participar por los premios de octavos, cuartos, semifinales y final.`,
+      `Solo quienes compren el ${KNOCKOUT_PASSPORT_LABEL} participarán por los premios de las fases eliminatorias y la final.`,
+      'Al iniciar la fase eliminatoria se abre un ranking nuevo: solo incluye a jugadores con Pasaporte Eliminatorias y solo suma puntos de partidos de esa fase (no arrastra puntos de grupos).',
+      'Puedes tener uno, ambos o ningún pasaporte; siempre podrás pronosticar si tienes créditos, pero cada ranking premiado exige su pasaporte.',
     ],
   },
   {
     id: 'inscripcion',
-    title: '2. Cómo participar',
+    title: '3. Cómo participar',
     items: [
-      'Regístrate en la plataforma.',
-      'Para optar al podio de ganadores debes tener tu pasaporte de la polla (compra en Arándano Café Bar).',
+      'Regístrate gratis con tu cuenta de Google.',
       `Recibes ${INITIAL_CREDITS.toLocaleString('es-CO')} créditos virtuales de bienvenida.`,
       `Cada pronóstico nuevo cuesta ${PREDICTION_COST} créditos.`,
       'Editar un pronóstico antes del inicio del partido no consume créditos adicionales.',
-      'Los créditos no influyen en la puntuación obtenida ni en la posición dentro del ranking.',
-      'Puedes elegir tu nombre de usuario.',
+      'Los créditos no influyen en la puntuación ni en la posición del ranking.',
+      'Elige tu nombre de usuario público para aparecer en las tablas.',
     ],
   },
   {
     id: 'pronosticos',
-    title: '3. Pronósticos',
+    title: '4. Pronósticos',
     items: [
       'Solo puedes pronosticar antes del pitazo inicial de cada partido.',
       'Un pronóstico por partido por persona (marcador local y visitante, 0 a 20 goles).',
       'Cuando el partido termina, el sistema compara tu pick con el resultado oficial y asigna puntos.',
       'No se aceptan pronósticos después de que el partido comience ni en partidos ya calificados.',
+      'Los puntos de fase de grupos y de eliminatorias se contabilizan por separado según el partido pronosticado.',
     ],
   },
   {
     id: 'puntuacion',
-    title: '4. Sistema de puntos (por partido)',
+    title: '5. Sistema de puntos (por partido)',
     items: [
       `Marcador exacto: +${POINTS_EXACT_SCORE} puntos (acertaste ambos goles).`,
       `Diferencia de goles correcta: +${POINTS_GOAL_DIFFERENCE} puntos (misma diferencia entre local y visitante; ej. pronosticaste 3-1 y fue 2-0).`,
       `Resultado correcto: +${POINTS_CORRECT_RESULT} punto (acertaste ganador o empate, sin diferencia exacta).`,
       'Fallo: 0 puntos.',
       'En cada partido solo cuenta el mejor nivel alcanzado (no se suman niveles).',
+      'El mismo sistema de puntos aplica en grupos y en eliminatorias; lo que cambia es en qué ranking se suman.',
+    ],
+  },
+  {
+    id: 'premiaciones',
+    title: '6. Premiaciones',
+    items: [
+      '--- Fase de grupos ---',
+      `Al cerrar la fase de grupos se premia a los ${GROUP_STAGE_WINNERS_COUNT} primeros del ranking de grupos (con ${GROUP_PASSPORT_LABEL} activo y mínimo de picks calificados en esa fase):`,
+      `${GROUP_STAGE_PRIZES[0].place}: ${GROUP_STAGE_PRIZES[0].prize}`,
+      `${GROUP_STAGE_PRIZES[1].place}: ${GROUP_STAGE_PRIZES[1].prize}`,
+      `${GROUP_STAGE_PRIZES[2].place}: ${GROUP_STAGE_PRIZES[2].prize}`,
+      '--- Fase eliminatoria ---',
+      `${KNOCKOUT_PHASE_LABEL}: ${KNOCKOUT_PRIZES_NOTE}`,
+      `Requisito: ${KNOCKOUT_PASSPORT_LABEL} (${KNOCKOUT_PASSPORT_PRICE_COP.toLocaleString('es-CO')} COP en Arándano Café Bar).`,
+      'El ranking eliminatorio es independiente: empieza en cero al comenzar octavos y solo cuenta partidos de eliminatorias.',
     ],
   },
   {
     id: 'ranking',
-    title: '5. Tabla y ganadores',
+    title: '7. Tablas y ganadores',
     items: [
-      'La tabla se actualiza en vivo conforme terminan los partidos.',
-      `Los ${TOP_WINNERS_COUNT} usuarios con mayor cantidad de puntos al finalizar el Mundial ocuparán el podio oficial de la Polla Mundialista Arándano 2026.`,
-      `Para figurar como ganador necesitas pasaporte activo y al menos ${MIN_SETTLED_PICKS_TO_WIN} pronósticos ya calificados (partidos jugados).`,
-      'Desempate: 1) más puntos totales, 2) más marcadores exactos, 3) más diferencias acertadas, 4) más resultados acertados, 5) más picks calificados.',
+      'Hay dos tablas en vivo: ranking de fase de grupos y ranking de fase eliminatoria.',
+      `Ranking de grupos: solo jugadores con ${GROUP_PASSPORT_LABEL}; suma puntos de partidos de la fase de grupos.`,
+      `Ranking eliminatorio: solo jugadores con ${KNOCKOUT_PASSPORT_LABEL}; suma puntos de octavos, cuartos, semifinales y final desde que se activa el pasaporte.`,
+      `Para figurar como ganador en cada fase necesitas el pasaporte de esa fase y al menos ${MIN_SETTLED_PICKS_TO_WIN} pronósticos ya calificados en la misma.`,
+      'Desempate: 1) más puntos totales en la fase, 2) más marcadores exactos, 3) más diferencias acertadas, 4) más resultados acertados, 5) más picks calificados en la fase.',
     ],
   },
   {
     id: 'fairplay',
-    title: '6. Jugar',
+    title: '8. Juego limpio y condiciones',
     items: [
       'Una cuenta por persona. Cuentas duplicadas pueden ser descalificadas.',
       'Los resultados se toman de fuentes oficiales del torneo al finalizar cada partido.',
+      'La activación del pasaporte en la plataforma se hace tras verificar la compra en el café.',
       'Arándano Café Bar puede ajustar el reglamento ante casos excepcionales (partidos suspendidos, etc.).',
       'La participación implica aceptar este reglamento y las condiciones publicadas aquí.',
     ],
@@ -218,5 +275,4 @@ export const SCORING_EXAMPLES: ScoringExample[] = [
 
 export const REGLAMENTO_SHORT =
   `${INITIAL_CREDITS.toLocaleString('es-CO')} créditos al registrarte · ` +
-  `${POINTS_EXACT_SCORE}/${POINTS_GOAL_DIFFERENCE}/${POINTS_CORRECT_RESULT} pts por partido · ` +
-  `Hasta ${TOP_WINNERS_COUNT} ganadores`
+  `Dos rankings premiados · Eliminatorias: pasaporte ${KNOCKOUT_PASSPORT_PRICE_COP.toLocaleString('es-CO')} COP`

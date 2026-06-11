@@ -5,9 +5,12 @@ import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
 import TeamFlag from '@/components/sports/TeamFlag'
 import { useMundialTheme } from '@/hooks/useMundialTheme'
 import { mundialTheme, scoringTierClass } from '@/lib/mundial-theme-classes'
+import PollaPremiosPanel from '@/components/sports/PollaPremiosPanel'
 import {
   CONDICIONES_LEGALES,
+  GROUP_STAGE_WINNERS_COUNT,
   INITIAL_CREDITS,
+  KNOCKOUT_PASSPORT_PRICE_COP,
   MIN_SETTLED_PICKS_TO_WIN,
   POINTS_CORRECT_RESULT,
   POINTS_EXACT_SCORE,
@@ -16,7 +19,6 @@ import {
   POLL_NAME,
   REGLAMENTO_SECTIONS,
   SCORING_EXAMPLES,
-  TOP_WINNERS_COUNT,
 } from '@/lib/polla-rules'
 import { PERFIL_JUGAR_PATH } from '@/lib/perfil-routes'
 import { signIn, useSession } from 'next-auth/react'
@@ -91,8 +93,8 @@ export default function ReglamentoPage() {
                 Reglamento y condiciones
               </h1>
               <p className={`text-base sm:text-lg leading-relaxed max-w-xl ${t.muted}`}>
-                Todo lo que necesitas saber para jugar, sumar puntos y pelear por uno de los{' '}
-                {TOP_WINNERS_COUNT} puestos del podio.
+                Todo lo que necesitas saber para jugar, sumar puntos y competir por los premios de la
+                fase de grupos y de las eliminatorias.
               </p>
             </div>
           </div>
@@ -115,8 +117,8 @@ export default function ReglamentoPage() {
             },
             {
               icon: '🏆',
-              title: `${TOP_WINNERS_COUNT} ganadores`,
-              sub: `Mín. ${MIN_SETTLED_PICKS_TO_WIN} picks calificados.`,
+              title: 'Dos premiaciones',
+              sub: `Grupos: ${GROUP_STAGE_WINNERS_COUNT} ganadores. Eliminatorias: pasaporte ${KNOCKOUT_PASSPORT_PRICE_COP.toLocaleString('es-CO')} COP.`,
             },
           ].map((card) => (
             <div
@@ -135,6 +137,11 @@ export default function ReglamentoPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Premiaciones */}
+      <section className="max-w-4xl mx-auto px-4 pb-12">
+        <PollaPremiosPanel isDark={isDark} />
       </section>
 
       {/* Ejemplos de puntuación */}

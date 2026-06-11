@@ -38,6 +38,7 @@ const PG_COLUMN_MAP: Record<string, string> = {
   displayalias: 'displayAlias',
   totalpoints: 'totalPoints',
   haspassport: 'hasPassport',
+  hasknockoutpassport: 'hasKnockoutPassport',
   userid: 'userId',
   matchid: 'matchId',
   hometeamname: 'homeTeamName',
