@@ -1,5 +1,6 @@
 'use client'
 
+import MatchLivePanel from '@/components/sports/MatchLivePanel'
 import MundialExplorer from '@/components/sports/MundialExplorer'
 import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
 import PerfilInicio from '@/components/sports/PerfilInicio'
@@ -37,8 +38,13 @@ interface MatchWithPrediction {
   awayTeam: { name: string; shortName: string; tla: string; crest: string }
   startsIn: string
   formattedDate: string
+  statusLabel: string
+  isLive: boolean
+  isFinished: boolean
+  displayScore: { home: number | null; away: number | null }
   prediction: MatchPrediction | null
   canPredict: boolean
+  canViewHub: boolean
 }
 
 interface ProfileData {
@@ -46,6 +52,8 @@ interface ProfileData {
   isPollAdmin: boolean
   worldCup: WorldCupFullData
   matches: MatchWithPrediction[]
+  watchMatches: MatchWithPrediction[]
+  hasLiveMatches: boolean
   predictions: MatchPrediction[]
   leaderboard: LeaderboardEntry[]
   leaderboardKnockout: LeaderboardEntry[]
@@ -91,6 +99,8 @@ export default function PerfilDashboard() {
   const [awayScore, setAwayScore] = useState<ScoreField>('')
   const [formError, setFormError] = useState('')
   const [matchFilter, setMatchFilter] = useState('all')
+  const [matchPhase, setMatchPhase] = useState<'all' | 'live' | 'upcoming' | 'played'>('all')
+  const [liveMatchId, setLiveMatchId] = useState<number | null>(null)
 
   const loadProfile = useCallback(async () => {
     setLoading(true)
@@ -133,10 +143,11 @@ export default function PerfilDashboard() {
   }, [loadProfile])
 
   useEffect(() => {
-    if (tab !== 'inicio' && tab !== 'picks') return
-    const interval = setInterval(loadProfile, 60_000)
+    if (tab !== 'inicio' && tab !== 'picks' && tab !== 'jugar') return
+    const ms = tab === 'jugar' && data?.hasLiveMatches ? 30_000 : 60_000
+    const interval = setInterval(loadProfile, ms)
     return () => clearInterval(interval)
-  }, [tab, loadProfile])
+  }, [tab, loadProfile, data?.hasLiveMatches])
 
   const openPredict = (match: MatchWithPrediction) => {
     setActiveMatch(match)
@@ -213,9 +224,24 @@ export default function PerfilDashboard() {
   const credits = data.user.credits
   const maxScore = scoringRules.maxScorePerTeam
 
-  const groupFilters = ['all', ...new Set(matches.map((m) => m.group).filter(Boolean))] as string[]
+  const watchMatches = data.watchMatches ?? []
+  const allPlayMatches = [
+    ...new Map(
+      [...watchMatches, ...matches].map((m) => [m.id, m] as const)
+    ).values(),
+  ].sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime())
+
+  const groupFilters = ['all', ...new Set(allPlayMatches.map((m) => m.group).filter(Boolean))] as string[]
+
+  const phaseFiltered = allPlayMatches.filter((m) => {
+    if (matchPhase === 'live') return m.isLive
+    if (matchPhase === 'upcoming') return m.canPredict
+    if (matchPhase === 'played') return m.isFinished || m.canViewHub
+    return m.canPredict || m.canViewHub
+  })
+
   const filteredMatches =
-    matchFilter === 'all' ? matches : matches.filter((m) => m.group === matchFilter)
+    matchFilter === 'all' ? phaseFiltered : phaseFiltered.filter((m) => m.group === matchFilter)
 
   const mainTabs = data.isPollAdmin ? [...BASE_TABS, ADMIN_TAB] : BASE_TABS
   const tabLabel = mainTabs.find((t) => t.id === tab)?.label ?? 'Mi perfil'
@@ -449,18 +475,45 @@ export default function PerfilDashboard() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2 pb-1">
+              {(
+                [
+                  { id: 'all', label: 'Todos' },
+                  { id: 'live', label: 'En vivo' },
+                  { id: 'upcoming', label: 'Próximos' },
+                  { id: 'played', label: 'Jugados' },
+                ] as const
+              ).map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setMatchPhase(f.id)}
+                  className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                    matchPhase === f.id
+                      ? 'bg-berry-600 text-white'
+                      : isDark
+                        ? 'bg-white/5 text-stone-400'
+                        : 'bg-stone-100 text-stone-600'
+                  }`}
+                >
+                  {f.label}
+                  {f.id === 'live' && data.hasLiveMatches && (
+                    <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse align-middle" />
+                  )}
+                </button>
+              ))}
+              <span className={`w-px h-6 self-center mx-1 ${isDark ? 'bg-white/10' : 'bg-stone-200'}`} />
               <button
                 type="button"
                 onClick={() => setMatchFilter('all')}
                 className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold ${
                   matchFilter === 'all'
-                    ? 'bg-berry-600 text-white'
+                    ? 'bg-stone-600 text-white'
                     : isDark
                       ? 'bg-white/5 text-stone-400'
                       : 'bg-stone-100 text-stone-600'
                 }`}
               >
-                Todos
+                Todos los grupos
               </button>
               {groupFilters.filter((g) => g !== 'all').map((g) => (
                 <button
@@ -495,7 +548,13 @@ export default function PerfilDashboard() {
                       {match.groupLabel}
                     </span>
                   )}
-                  <span className={`text-[10px] ml-auto ${theme.accentLink}`}>{match.startsIn}</span>
+                  <span
+                    className={`text-[10px] ml-auto font-medium ${
+                      match.isLive ? 'text-emerald-400' : theme.accentLink
+                    }`}
+                  >
+                    {match.isLive ? `● ${match.statusLabel}` : match.startsIn}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <TeamCrest src={match.homeTeam.crest} alt="" size={32} />
@@ -503,25 +562,51 @@ export default function PerfilDashboard() {
                     <p className="text-xs font-medium truncate">
                       {match.homeTeam.tla} vs {match.awayTeam.tla}
                     </p>
-                    {match.prediction ? (
+                    {match.canViewHub && match.displayScore.home != null ? (
+                      <p className={`text-lg font-bold tabular-nums ${theme.accent}`}>
+                        {match.displayScore.home} - {match.displayScore.away}
+                      </p>
+                    ) : match.prediction ? (
                       <p className={`text-lg font-bold tabular-nums ${theme.accent}`}>
                         {match.prediction.homeScore} - {match.prediction.awayScore}
                       </p>
                     ) : (
                       <p className={`text-[10px] ${theme.mutedSm}`}>{match.formattedDate}</p>
                     )}
+                    {match.prediction && match.canViewHub && (
+                      <p className={`text-[10px] ${theme.mutedSm}`}>
+                        Tu pick: {match.prediction.homeScore}-{match.prediction.awayScore}
+                      </p>
+                    )}
                   </div>
                   <TeamCrest src={match.awayTeam.crest} alt="" size={32} />
                 </div>
-                {match.canPredict && (
-                  <button
-                    type="button"
-                    onClick={() => openPredict(match)}
-                    className="w-full mt-3 py-2 rounded-lg bg-berry-600 hover:bg-berry-500 text-white text-sm font-semibold"
-                  >
-                    {match.prediction ? 'Editar' : 'Pronosticar'}
-                  </button>
-                )}
+                <div className="flex gap-2 mt-3">
+                  {match.canViewHub && (
+                    <button
+                      type="button"
+                      onClick={() => setLiveMatchId(match.id)}
+                      className={`flex-1 py-2 rounded-lg text-sm font-semibold border ${
+                        match.isLive
+                          ? 'border-emerald-500/50 bg-emerald-600/20 text-emerald-300'
+                          : isDark
+                            ? 'border-white/15 text-stone-200 hover:bg-white/5'
+                            : 'border-stone-300 text-stone-700 hover:bg-stone-100'
+                      }`}
+                    >
+                      {match.isLive ? 'Ver en vivo' : 'Ver partido'}
+                    </button>
+                  )}
+                  {match.canPredict && (
+                    <button
+                      type="button"
+                      onClick={() => openPredict(match)}
+                      className="flex-1 py-2 rounded-lg bg-berry-600 hover:bg-berry-500 text-white text-sm font-semibold"
+                    >
+                      {match.prediction ? 'Editar' : 'Pronosticar'}
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
             </div>
@@ -579,6 +664,14 @@ export default function PerfilDashboard() {
           </div>
         </nav>
       </div>
+
+      {liveMatchId != null && (
+        <MatchLivePanel
+          matchId={liveMatchId}
+          isDark={isDark}
+          onClose={() => setLiveMatchId(null)}
+        />
+      )}
 
       {activeMatch && (
         <div className="fixed inset-0 z-[60] flex items-end lg:items-center justify-center bg-black/70 backdrop-blur-sm p-4">

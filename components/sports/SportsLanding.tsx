@@ -106,8 +106,13 @@ function MatchCard({
       <p className={`text-center text-xs mb-1 ${isDark ? 'text-stone-500' : 'text-stone-600'}`}>
         {match.formattedDate}
       </p>
-      <p className={`text-center text-xs font-medium mb-4 ${isDark ? 'text-berry-400' : 'text-berry-600'}`}>
-        {match.startsIn}
+      {match.isLive && match.displayScore.home != null ? (
+        <p className={`text-center text-xl font-bold tabular-nums mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+          {match.displayScore.home} - {match.displayScore.away}
+        </p>
+      ) : null}
+      <p className={`text-center text-xs font-medium mb-4 ${match.isLive ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : isDark ? 'text-berry-400' : 'text-berry-600'}`}>
+        {match.isLive ? `En vivo · ${match.statusLabel}` : match.startsIn}
       </p>
       <button
         type="button"
@@ -124,7 +129,14 @@ function MatchCard({
   )
 }
 
-function MatchRow({ match }: { match: WorldCupData['upcomingMatches'][0] }) {
+function MatchRow({
+  match,
+  isDark,
+}: {
+  match: WorldCupData['upcomingMatches'][0]
+  isDark: boolean
+}) {
+  const hasScore = match.displayScore?.home != null && match.displayScore?.away != null
   return (
     <div className="flex items-center gap-3 px-5 py-3.5 hover:bg-white/5 transition-colors">
       <TeamCrest src={match.homeTeam.crest} alt={match.homeTeam.tla} size={28} />
@@ -134,11 +146,19 @@ function MatchRow({ match }: { match: WorldCupData['upcomingMatches'][0] }) {
         <p className="text-sm font-medium truncate">
           {match.homeTeam.tla} — {match.awayTeam.tla}
         </p>
-        <p className="text-xs text-stone-500">{match.startsIn}</p>
+        <p className={`text-xs ${isDark ? 'text-stone-500' : 'text-stone-600'}`}>
+          {match.isLive ? `En vivo · ${match.statusLabel}` : match.startsIn}
+        </p>
       </div>
-      <span className="text-[10px] text-berry-400 font-medium shrink-0 uppercase">
-        {match.status === 'TIMED' ? 'Programado' : match.status}
-      </span>
+      {hasScore ? (
+        <span className={`text-sm font-bold tabular-nums shrink-0 ${match.isLive ? 'text-emerald-400' : 'text-berry-400'}`}>
+          {match.displayScore.home} - {match.displayScore.away}
+        </span>
+      ) : (
+        <span className="text-[10px] text-berry-400 font-medium shrink-0 uppercase">
+          {match.statusLabel}
+        </span>
+      )}
     </div>
   )
 }
@@ -170,9 +190,22 @@ export default function SportsLanding() {
       .catch(() => {})
       .finally(() => setLoading(false))
 
+    const refreshWc = () => {
+      fetch('/api/football/world-cup')
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.error) setWcData(data)
+        })
+        .catch(() => {})
+    }
+
     loadLeaderboard()
-    const interval = setInterval(loadLeaderboard, 60_000)
-    return () => clearInterval(interval)
+    const wcInterval = setInterval(refreshWc, 60_000)
+    const lbInterval = setInterval(loadLeaderboard, 60_000)
+    return () => {
+      clearInterval(wcInterval)
+      clearInterval(lbInterval)
+    }
   }, [])
 
   const goToProfile = () => {
@@ -193,8 +226,14 @@ export default function SportsLanding() {
     }
   }
 
-  const heroMatches = wcData?.upcomingMatches.slice(0, 3) ?? []
-  const liveMatches = wcData?.upcomingMatches ?? []
+  const heroMatches =
+    wcData?.liveMatches?.length
+      ? wcData.liveMatches.slice(0, 3)
+      : (wcData?.upcomingMatches.slice(0, 3) ?? [])
+  const liveMatches = [
+    ...(wcData?.liveMatches ?? []),
+    ...(wcData?.upcomingMatches ?? []),
+  ].slice(0, 12)
 
   const seasonDates = wcData
     ? formatSeasonDates(wcData.competition.startDate, wcData.competition.endDate)
@@ -347,7 +386,9 @@ export default function SportsLanding() {
                 <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
                   <div>
                     <p className="text-xs text-stone-500 uppercase tracking-wide">Polla en vivo</p>
-                    <p className="font-semibold text-sm mt-0.5">Próximos partidos</p>
+                    <p className="font-semibold text-sm mt-0.5">
+                      {wcData?.liveMatches?.length ? 'Partidos en juego' : 'Próximos partidos'}
+                    </p>
                   </div>
                   <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -359,7 +400,7 @@ export default function SportsLanding() {
                 ) : heroMatches.length > 0 ? (
                   <div className="divide-y divide-white/5">
                     {heroMatches.map((match) => (
-                      <MatchRow key={match.id} match={match} />
+                      <MatchRow key={match.id} match={match} isDark={isDark} />
                     ))}
                   </div>
                 ) : (

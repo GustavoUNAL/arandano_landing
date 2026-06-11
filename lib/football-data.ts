@@ -1,8 +1,16 @@
+import { isMatchFinished, isMatchLive } from '@/lib/sports-polla-shared'
 import { groupLabel, stageLabel } from '@/lib/world-cup-info'
 
 const API_BASE = 'https://api.football-data.org/v4'
 const WC_CODE = 'WC'
 const WC_SEASON = 2026
+
+export const LIVE_MATCH_STATUSES = new Set([
+  'IN_PLAY',
+  'PAUSED',
+  'EXTRA_TIME',
+  'PENALTY_SHOOTOUT',
+])
 
 export interface FootballTeam {
   id: number
@@ -10,6 +18,40 @@ export interface FootballTeam {
   shortName: string
   tla: string
   crest: string
+}
+
+export interface TeamMatchStatistics {
+  ball_possession?: number | null
+  shots?: number | null
+  shots_on_goal?: number | null
+  shots_off_goal?: number | null
+  corners?: number | null
+  fouls?: number | null
+  yellow_cards?: number | null
+  red_cards?: number | null
+  offsides?: number | null
+}
+
+export interface MatchTeam extends FootballTeam {
+  statistics?: TeamMatchStatistics | null
+}
+
+export interface MatchGoal {
+  minute: number
+  injuryTime: number | null
+  type: string
+  team: { id: number; name: string }
+  scorer: { id: number; name: string } | null
+  assist: { id: number; name: string } | null
+  score: { home: number; away: number }
+}
+
+export interface MatchScore {
+  winner: string | null
+  duration: string | null
+  fullTime: { home: number | null; away: number | null }
+  halfTime: { home: number | null; away: number | null }
+  regularTime?: { home: number | null; away: number | null } | null
 }
 
 export interface FootballTeamDetail extends FootballTeam {
@@ -29,11 +71,14 @@ export interface FootballMatch {
   matchday: number | null
   stage: string
   group: string | null
-  homeTeam: FootballTeam
-  awayTeam: FootballTeam
-  score: {
-    fullTime: { home: number | null; away: number | null }
-  }
+  minute?: number | null
+  injuryTime?: number | null
+  venue?: string | null
+  lastUpdated?: string | null
+  homeTeam: MatchTeam
+  awayTeam: MatchTeam
+  score: MatchScore
+  goals?: MatchGoal[]
 }
 
 export type EnrichedMatch = FootballMatch & {
@@ -41,7 +86,13 @@ export type EnrichedMatch = FootballMatch & {
   formattedDate: string
   stageLabel: string
   groupLabel: string | null
+  statusLabel: string
+  isLive: boolean
+  isFinished: boolean
+  displayScore: { home: number | null; away: number | null }
 }
+
+export type MatchDetail = EnrichedMatch
 
 export interface WorldCupGroup {
   id: string
@@ -70,6 +121,8 @@ export interface WorldCupData {
     playedMatches: number
   }
   upcomingMatches: EnrichedMatch[]
+  liveMatches: EnrichedMatch[]
+  recentMatches: EnrichedMatch[]
   colombiaQualified: boolean
   colombiaNextMatch: EnrichedMatch | null
 }
@@ -82,15 +135,23 @@ export interface WorldCupFullData extends WorldCupData {
   matchesByStage: Record<string, EnrichedMatch[]>
 }
 
-async function footballFetch<T>(path: string): Promise<T> {
+async function footballFetch<T>(
+  path: string,
+  options?: { live?: boolean; unfoldGoals?: boolean }
+): Promise<T> {
   const token = process.env.FOOTBALL_DATA_API_TOKEN
   if (!token) {
     throw new Error('FOOTBALL_DATA_API_TOKEN no configurado')
   }
 
+  const headers: Record<string, string> = { 'X-Auth-Token': token }
+  if (options?.unfoldGoals) {
+    headers['X-Unfold-Goals'] = 'true'
+  }
+
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'X-Auth-Token': token },
-    next: { revalidate: 3600 },
+    headers,
+    ...(options?.live ? { cache: 'no-store' } : { next: { revalidate: 90 } }),
   })
 
   if (!res.ok) {
@@ -98,6 +159,52 @@ async function footballFetch<T>(path: string): Promise<T> {
   }
 
   return res.json()
+}
+
+export function matchStatusLabel(status: string, minute?: number | null, injuryTime?: number | null): string {
+  switch (status) {
+    case 'IN_PLAY':
+    case 'EXTRA_TIME':
+      if (minute != null) {
+        const extra = injuryTime ? `+${injuryTime}` : ''
+        return `${minute}'${extra}`
+      }
+      return 'En vivo'
+    case 'PAUSED':
+      return 'Entretiempo'
+    case 'PENALTY_SHOOTOUT':
+      return 'Penales'
+    case 'FINISHED':
+      return 'Finalizado'
+    case 'AWARDED':
+      return 'Adjudicado'
+    case 'SUSPENDED':
+      return 'Suspendido'
+    case 'POSTPONED':
+      return 'Aplazado'
+    case 'CANCELLED':
+      return 'Cancelado'
+    case 'TIMED':
+      return 'Programado'
+    case 'SCHEDULED':
+      return 'Por jugar'
+    default:
+      return status
+  }
+}
+
+export function getMatchDisplayScore(match: Pick<FootballMatch, 'status' | 'score'>): {
+  home: number | null
+  away: number | null
+} {
+  const { score } = match
+  if (score.fullTime.home != null && score.fullTime.away != null) {
+    return { home: score.fullTime.home, away: score.fullTime.away }
+  }
+  if (score.halfTime?.home != null && score.halfTime?.away != null) {
+    return { home: score.halfTime.home, away: score.halfTime.away }
+  }
+  return { home: null, away: null }
 }
 
 function formatMatchDate(utcDate: string): string {
@@ -124,12 +231,18 @@ function getStartsIn(utcDate: string): string {
 }
 
 function enrichMatch(match: FootballMatch): EnrichedMatch {
+  const live = isMatchLive(match.status)
+  const finished = isMatchFinished(match.status)
   return {
     ...match,
-    startsIn: getStartsIn(match.utcDate),
+    startsIn: live ? 'En vivo' : finished ? 'Finalizado' : getStartsIn(match.utcDate),
     formattedDate: formatMatchDate(match.utcDate),
     stageLabel: stageLabel(match.stage),
     groupLabel: match.group ? groupLabel(match.group) : null,
+    statusLabel: matchStatusLabel(match.status, match.minute, match.injuryTime),
+    isLive: live,
+    isFinished: finished,
+    displayScore: getMatchDisplayScore(match),
   }
 }
 
@@ -238,7 +351,14 @@ export async function getWorldCupFullData(): Promise<WorldCupFullData> {
 
   const groupMatches = allMatches.filter((m) => m.stage === 'GROUP_STAGE')
   const knockoutMatches = allMatches.filter((m) => m.stage !== 'GROUP_STAGE')
-  const upcomingMatches = allMatches.filter((m) => m.status === 'SCHEDULED' || m.status === 'TIMED').slice(0, 8)
+  const liveMatches = allMatches.filter((m) => m.isLive)
+  const upcomingMatches = allMatches
+    .filter((m) => m.status === 'SCHEDULED' || m.status === 'TIMED')
+    .slice(0, 8)
+  const recentMatches = allMatches
+    .filter((m) => m.isFinished)
+    .slice(-12)
+    .reverse()
 
   const colombiaQualified = teams.some((t) => t.name === 'Colombia')
   const colombiaNextMatch =
@@ -264,6 +384,8 @@ export async function getWorldCupFullData(): Promise<WorldCupFullData> {
       playedMatches: allMatches.filter((m) => m.status === 'FINISHED').length,
     },
     upcomingMatches,
+    liveMatches,
+    recentMatches,
     colombiaQualified,
     colombiaNextMatch,
   }
@@ -276,6 +398,14 @@ export async function getWorldCupFullData(): Promise<WorldCupFullData> {
     allMatches,
     matchesByStage,
   }
+}
+
+export async function getMatchById(matchId: number): Promise<MatchDetail> {
+  const match = await footballFetch<FootballMatch>(`/matches/${matchId}`, {
+    live: true,
+    unfoldGoals: true,
+  })
+  return enrichMatch(match)
 }
 
 /** @deprecated Usar getWorldCupFullData */

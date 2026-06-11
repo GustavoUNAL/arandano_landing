@@ -8,8 +8,11 @@ import {
   type LeaderboardEntry,
   LEGACY_INITIAL_CREDITS,
   MAX_SCORE_PER_TEAM,
+  type MatchPickDistribution,
   type MatchPrediction,
+  type MatchPredictionStats,
   MIN_SETTLED_PICKS_TO_WIN,
+  type PublicMatchPick,
   normalizeHasKnockoutPassport,
   normalizeHasPassport,
   PREDICTION_COST,
@@ -27,8 +30,11 @@ export {
   INITIAL_CREDITS,
   isMatchPredictable,
   type LeaderboardEntry,
+  type MatchPickDistribution,
   type MatchPrediction,
+  type MatchPredictionStats,
   MIN_SETTLED_PICKS_TO_WIN,
+  type PublicMatchPick,
   PREDICTION_COST,
   POINTS_CORRECT_RESULT,
   POINTS_EXACT_SCORE,
@@ -534,4 +540,81 @@ export async function savePrediction(input: {
     prediction: (await dbGet<MatchPrediction>('SELECT * FROM match_predictions WHERE id = ?', [id]))!,
     creditsCharged: PREDICTION_COST,
   }
+}
+
+export async function getMatchPredictionStats(
+  matchId: number,
+  currentUserId?: string
+): Promise<{ stats: MatchPredictionStats; picks: PublicMatchPick[] }> {
+  const rows = await dbAll<{
+    homeScore: number
+    awayScore: number
+    count: number
+    displayAlias: string | null
+    userId: string
+  }>(
+    `SELECT
+      mp.homeScore,
+      mp.awayScore,
+      su.displayAlias,
+      su.id AS userId,
+      1 AS count
+    FROM match_predictions mp
+    INNER JOIN sports_users su ON su.id = mp.userId
+    WHERE mp.matchId = ?
+    ORDER BY mp.createdAt ASC`,
+    [matchId]
+  )
+
+  const picks: PublicMatchPick[] = rows.map((row) => ({
+    displayAlias: row.displayAlias ?? 'Jugador',
+    homeScore: row.homeScore,
+    awayScore: row.awayScore,
+    isCurrentUser: row.userId === currentUserId,
+  }))
+
+  const countMap = new Map<string, { homeScore: number; awayScore: number; count: number }>()
+  for (const row of rows) {
+    const key = `${row.homeScore}-${row.awayScore}`
+    const existing = countMap.get(key)
+    if (existing) {
+      existing.count += 1
+    } else {
+      countMap.set(key, { homeScore: row.homeScore, awayScore: row.awayScore, count: 1 })
+    }
+  }
+
+  const totalPicks = rows.length
+  const distribution: MatchPickDistribution[] = [...countMap.values()]
+    .map((item) => ({
+      ...item,
+      percentage: totalPicks > 0 ? Math.round((item.count / totalPicks) * 100) : 0,
+    }))
+    .sort((a, b) => b.count - a.count)
+
+  let homeWins = 0
+  let draws = 0
+  let awayWins = 0
+  let sumHome = 0
+  let sumAway = 0
+
+  for (const row of rows) {
+    sumHome += row.homeScore
+    sumAway += row.awayScore
+    if (row.homeScore > row.awayScore) homeWins++
+    else if (row.homeScore < row.awayScore) awayWins++
+    else draws++
+  }
+
+  const stats: MatchPredictionStats = {
+    totalPicks,
+    distribution,
+    homeWinPct: totalPicks > 0 ? Math.round((homeWins / totalPicks) * 100) : 0,
+    drawPct: totalPicks > 0 ? Math.round((draws / totalPicks) * 100) : 0,
+    awayWinPct: totalPicks > 0 ? Math.round((awayWins / totalPicks) * 100) : 0,
+    avgHomeGoals: totalPicks > 0 ? Math.round((sumHome / totalPicks) * 10) / 10 : 0,
+    avgAwayGoals: totalPicks > 0 ? Math.round((sumAway / totalPicks) * 10) / 10 : 0,
+  }
+
+  return { stats, picks }
 }

@@ -30,6 +30,32 @@ export {
 
 const PREDICTABLE_STATUSES = new Set(['SCHEDULED', 'TIMED'])
 
+export const LIVE_MATCH_STATUSES = new Set([
+  'IN_PLAY',
+  'PAUSED',
+  'EXTRA_TIME',
+  'PENALTY_SHOOTOUT',
+])
+
+export const FINISHED_MATCH_STATUSES = new Set(['FINISHED', 'AWARDED'])
+
+export function isMatchLive(status: string): boolean {
+  return LIVE_MATCH_STATUSES.has(status)
+}
+
+export function isMatchFinished(status: string): boolean {
+  return FINISHED_MATCH_STATUSES.has(status)
+}
+
+export function isMatchStarted(status: string): boolean {
+  return isMatchLive(status) || isMatchFinished(status) || status === 'SUSPENDED'
+}
+
+export function canViewMatchHub(status: string, utcDate: string): boolean {
+  if (isMatchStarted(status)) return true
+  return new Date(utcDate).getTime() <= Date.now() && !PREDICTABLE_STATUSES.has(status)
+}
+
 export function normalizeHasPassport(value: unknown): boolean {
   return value === true || value === 1 || value === '1'
 }
@@ -87,6 +113,30 @@ export interface MatchPrediction {
   settledAt: string | null
   createdAt: string
   updatedAt: string
+}
+
+export interface MatchPickDistribution {
+  homeScore: number
+  awayScore: number
+  count: number
+  percentage: number
+}
+
+export interface MatchPredictionStats {
+  totalPicks: number
+  distribution: MatchPickDistribution[]
+  homeWinPct: number
+  drawPct: number
+  awayWinPct: number
+  avgHomeGoals: number
+  avgAwayGoals: number
+}
+
+export interface PublicMatchPick {
+  displayAlias: string
+  homeScore: number
+  awayScore: number
+  isCurrentUser: boolean
 }
 
 export interface LeaderboardEntry {

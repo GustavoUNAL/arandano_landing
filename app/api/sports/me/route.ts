@@ -2,6 +2,7 @@ import { getAuthUser } from '@/lib/auth-server'
 import { isPollAdmin } from '@/lib/polla-admin'
 import { getWorldCupFullData } from '@/lib/football-data'
 import { getScoringRules } from '@/lib/polla-rules'
+import { canViewMatchHub, isMatchLive } from '@/lib/sports-polla-shared'
 import {
   getLeaderboard,
   getOrCreateSportsUser,
@@ -33,19 +34,33 @@ export async function GET() {
     const winners = leaderboard.filter((e) => e.isWinner)
     const predictionMap = Object.fromEntries(predictions.map((p) => [p.matchId, p]))
 
+    const enrichMatchRow = (m: (typeof worldCup.allMatches)[0]) => ({
+      ...m,
+      prediction: predictionMap[m.id] ?? null,
+      canPredict: isMatchPredictable(m.status, m.utcDate),
+      canViewHub: canViewMatchHub(m.status, m.utcDate),
+    })
+
     const matches = worldCup.allMatches
       .filter((m) => isMatchPredictable(m.status, m.utcDate))
-      .map((m) => ({
-        ...m,
-        prediction: predictionMap[m.id] ?? null,
-        canPredict: isMatchPredictable(m.status, m.utcDate),
-      }))
+      .map(enrichMatchRow)
+
+    const watchMatches = worldCup.allMatches
+      .filter((m) => canViewMatchHub(m.status, m.utcDate))
+      .map(enrichMatchRow)
+      .reverse()
+      .slice(0, 24)
+      .reverse()
+
+    const hasLiveMatches = worldCup.allMatches.some((m) => isMatchLive(m.status))
 
     return NextResponse.json({
       user,
       isPollAdmin: isPollAdmin(authUser.email),
       worldCup,
       matches,
+      watchMatches,
+      hasLiveMatches,
       predictions,
       leaderboard,
       leaderboardKnockout,

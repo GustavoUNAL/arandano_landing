@@ -53,10 +53,11 @@ function groupIndex(id: string) {
 function MatchCard({ match, compact }: { match: EnrichedMatch; compact?: boolean }) {
   const home = teamName(match.homeTeam)
   const away = teamName(match.awayTeam)
-  const played = match.status === 'FINISHED'
+  const played = match.isFinished
+  const live = match.isLive
   const score =
-    played && match.score.fullTime.home != null
-      ? `${match.score.fullTime.home} : ${match.score.fullTime.away}`
+    match.displayScore.home != null
+      ? `${match.displayScore.home} : ${match.displayScore.away}`
       : null
 
   return (
@@ -85,9 +86,13 @@ function MatchCard({ match, compact }: { match: EnrichedMatch; compact?: boolean
           </p>
         </div>
       </div>
-      {!score && (
-        <p className="text-center text-[10px] text-berry-400 font-medium mt-2">{match.startsIn}</p>
-      )}
+      <p
+        className={`text-center text-[10px] font-medium mt-2 ${
+          live ? 'text-emerald-400' : score ? 'text-stone-500' : 'text-berry-400'
+        }`}
+      >
+        {live ? `En vivo · ${match.statusLabel}` : score && played ? 'Finalizado' : match.startsIn}
+      </p>
     </div>
   )
 }
