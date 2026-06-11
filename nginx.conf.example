@@ -29,9 +29,9 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        # En el bloque HTTPS (443), Certbot suele poner esto. Si el login OAuth sigue
-        # enviando http://, fuerza https aquí en lugar de $scheme:
+        # En el bloque HTTPS (443) usar SIEMPRE https (OAuth / NextAuth):
         # proxy_set_header X-Forwarded-Proto https;
+        # En el bloque HTTP (80) $scheme es http — redirigir a 443 antes del login.
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
         

@@ -20,9 +20,24 @@ export async function GET(request: Request) {
   const requestOrigin = originFromHeaders(request.headers) ?? null
   const effectiveAfterRequest = ensureNextAuthUrlForOAuth(request.headers)
 
+  let nextAuthProvidersGoogle: { signinUrl?: string; callbackUrl?: string } | null = null
+  try {
+    const providersRes = await fetch(new URL('/api/auth/providers', request.url), {
+      headers: request.headers,
+      cache: 'no-store',
+    })
+    const providers = (await providersRes.json()) as { google?: { signinUrl?: string; callbackUrl?: string } }
+    nextAuthProvidersGoogle = providers.google ?? null
+  } catch {
+    nextAuthProvidersGoogle = null
+  }
+
   return NextResponse.json({
     redirectUri,
     effectiveRedirectUri: `${effectiveAfterRequest}/api/auth/callback/google`,
+    nextAuthProvidersGoogle,
+    providersMustBeHttps:
+      nextAuthProvidersGoogle?.callbackUrl?.startsWith('https://') ?? null,
     siteUrl,
     nextAuthUrl,
     configuredSiteUrl,
