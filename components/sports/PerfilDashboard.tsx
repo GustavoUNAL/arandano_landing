@@ -1,5 +1,6 @@
 'use client'
 
+import LiveMatchBroadcast from '@/components/sports/LiveMatchBroadcast'
 import MatchLivePanel from '@/components/sports/MatchLivePanel'
 import MundialExplorer from '@/components/sports/MundialExplorer'
 import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
@@ -53,6 +54,7 @@ interface ProfileData {
   worldCup: WorldCupFullData
   matches: MatchWithPrediction[]
   watchMatches: MatchWithPrediction[]
+  broadcastMatchIds: number[]
   hasLiveMatches: boolean
   predictions: MatchPrediction[]
   leaderboard: LeaderboardEntry[]
@@ -144,7 +146,7 @@ export default function PerfilDashboard() {
 
   useEffect(() => {
     if (!data?.hasLiveMatches) return
-    const interval = setInterval(loadProfile, 30_000)
+    const interval = setInterval(loadProfile, 20_000)
     return () => clearInterval(interval)
   }, [loadProfile, data?.hasLiveMatches])
 
@@ -244,7 +246,7 @@ export default function PerfilDashboard() {
 
   const mainTabs = data.isPollAdmin ? [...BASE_TABS, ADMIN_TAB] : BASE_TABS
   const tabLabel = mainTabs.find((t) => t.id === tab)?.label ?? 'Mi perfil'
-  const liveMatchIds = worldCup.liveMatches?.map((m) => m.id) ?? []
+  const liveMatchIds = data.broadcastMatchIds ?? []
 
   return (
     <div className={`min-h-screen pb-[4.5rem] lg:pb-0 transition-colors duration-300 lg:flex ${theme.page}`}>
@@ -416,6 +418,16 @@ export default function PerfilDashboard() {
         </header>
 
         <main className="flex-1 w-full max-w-lg lg:max-w-7xl mx-auto px-4 py-4 lg:px-8 xl:px-10 lg:py-8">
+        {data.hasLiveMatches && liveMatchIds.length > 0 && (
+          <LiveMatchBroadcast
+            matchIds={liveMatchIds}
+            isDark={isDark}
+            variant="inicio"
+            onOpenDetail={setLiveMatchId}
+            className="mb-5 lg:mb-8"
+          />
+        )}
+
         {tab === 'inicio' && (
           <PerfilInicio
             isDark={isDark}
@@ -432,11 +444,9 @@ export default function PerfilDashboard() {
             leaderboard={data.leaderboard}
             leaderboardKnockout={data.leaderboardKnockout}
             worldCup={worldCup}
-            liveMatchIds={liveMatchIds}
             onGoMundial={() => changeTab('mundial')}
             onGoJugar={() => changeTab('jugar')}
             onGoPicks={() => changeTab('picks')}
-            onViewLiveMatch={setLiveMatchId}
             onUpdateUsername={updateUsername}
           />
         )}

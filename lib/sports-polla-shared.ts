@@ -32,12 +32,16 @@ const PREDICTABLE_STATUSES = new Set(['SCHEDULED', 'TIMED'])
 
 export const LIVE_MATCH_STATUSES = new Set([
   'IN_PLAY',
+  'LIVE',
   'PAUSED',
   'EXTRA_TIME',
   'PENALTY_SHOOTOUT',
 ])
 
 export const FINISHED_MATCH_STATUSES = new Set(['FINISHED', 'AWARDED'])
+
+/** Ventana típica de un partido (minutos + descanso + prórroga posible). */
+const MATCH_WINDOW_MS = 3 * 60 * 60 * 1000
 
 export function isMatchLive(status: string): boolean {
   return LIVE_MATCH_STATUSES.has(status)
@@ -51,9 +55,40 @@ export function isMatchStarted(status: string): boolean {
   return isMatchLive(status) || isMatchFinished(status) || status === 'SUSPENDED'
 }
 
+/** Partido en curso o recién iniciado (aunque la API aún diga TIMED). */
+export function isMatchHappeningNow(status: string, utcDate: string): boolean {
+  if (isMatchLive(status)) return true
+  if (isMatchFinished(status)) return false
+  if (['POSTPONED', 'CANCELLED', 'SCHEDULED'].includes(status)) return false
+  const kickoff = new Date(utcDate).getTime()
+  const now = Date.now()
+  return kickoff <= now && now - kickoff < MATCH_WINDOW_MS
+}
+
 export function canViewMatchHub(status: string, utcDate: string): boolean {
-  if (isMatchStarted(status)) return true
-  return new Date(utcDate).getTime() <= Date.now() && !PREDICTABLE_STATUSES.has(status)
+  if (isMatchLive(status) || isMatchFinished(status) || status === 'SUSPENDED') return true
+  if (['POSTPONED', 'CANCELLED'].includes(status)) return false
+  // Pitazo ya pasó: permitir ver marcador/stats aunque el status siga TIMED
+  return new Date(utcDate).getTime() <= Date.now()
+}
+
+/** IDs para el bloque de transmisión en el perfil. */
+export function getBroadcastMatchIds(
+  matches: Array<{ id: number; status: string; utcDate: string; isLive?: boolean }>
+): number[] {
+  const live = matches.filter((m) => isMatchLive(m.status) || m.isLive)
+  if (live.length > 0) {
+    return live
+      .sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime())
+      .map((m) => m.id)
+  }
+  const happening = matches.filter((m) => isMatchHappeningNow(m.status, m.utcDate))
+  if (happening.length > 0) {
+    return happening
+      .sort((a, b) => new Date(b.utcDate).getTime() - new Date(a.utcDate).getTime())
+      .map((m) => m.id)
+  }
+  return []
 }
 
 export function normalizeHasPassport(value: unknown): boolean {

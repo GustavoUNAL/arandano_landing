@@ -9,7 +9,6 @@ import {
   IconTarget,
   IconTrophy,
 } from '@/components/sports/SportsIcons'
-import LiveMatchBroadcast from '@/components/sports/LiveMatchBroadcast'
 import PollaLeaderboard from '@/components/sports/PollaLeaderboard'
 import PollaReglamento from '@/components/sports/PollaReglamento'
 import TeamCrest from '@/components/sports/TeamCrest'
@@ -35,11 +34,9 @@ interface PerfilInicioProps {
   leaderboard: LeaderboardEntry[]
   leaderboardKnockout?: LeaderboardEntry[]
   worldCup: WorldCupFullData
-  liveMatchIds?: number[]
   onGoMundial: () => void
   onGoJugar: () => void
   onGoPicks: () => void
-  onViewLiveMatch?: (matchId: number) => void
   onUpdateUsername?: (displayAlias: string) => Promise<void>
 }
 
@@ -67,11 +64,9 @@ export default function PerfilInicio({
   leaderboard,
   leaderboardKnockout = [],
   worldCup,
-  liveMatchIds = [],
   onGoMundial,
   onGoJugar,
   onGoPicks,
-  onViewLiveMatch,
   onUpdateUsername,
 }: PerfilInicioProps) {
   const theme = mundialTheme(isDark)
@@ -104,15 +99,6 @@ export default function PerfilInicio({
 
   return (
     <div className="space-y-4 lg:space-y-6">
-      {liveMatchIds.length > 0 && (
-        <LiveMatchBroadcast
-          matchIds={liveMatchIds}
-          isDark={isDark}
-          variant="inicio"
-          onOpenDetail={onViewLiveMatch}
-        />
-      )}
-
       <div className="lg:grid lg:grid-cols-12 lg:gap-8 lg:items-start">
         {/* Columna principal */}
         <div className="lg:col-span-7 xl:col-span-8 space-y-4 lg:space-y-6">

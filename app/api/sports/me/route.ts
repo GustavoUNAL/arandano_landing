@@ -2,7 +2,7 @@ import { getAuthUser } from '@/lib/auth-server'
 import { isPollAdmin } from '@/lib/polla-admin'
 import { getWorldCupFullData } from '@/lib/football-data'
 import { getScoringRules } from '@/lib/polla-rules'
-import { canViewMatchHub, isMatchLive } from '@/lib/sports-polla-shared'
+import { canViewMatchHub, getBroadcastMatchIds, isMatchHappeningNow } from '@/lib/sports-polla-shared'
 import {
   getLeaderboard,
   getOrCreateSportsUser,
@@ -23,7 +23,7 @@ export async function GET() {
 
   try {
     const user = await getOrCreateSportsUser(authUser)
-    const worldCup = await getWorldCupFullData()
+    const worldCup = await getWorldCupFullData({ fresh: true })
 
     await settleFinishedMatches(worldCup.allMatches)
 
@@ -52,7 +52,8 @@ export async function GET() {
       .slice(0, 24)
       .reverse()
 
-    const hasLiveMatches = worldCup.allMatches.some((m) => isMatchLive(m.status))
+    const broadcastMatchIds = getBroadcastMatchIds(worldCup.allMatches)
+    const hasLiveMatches = broadcastMatchIds.length > 0
 
     return NextResponse.json({
       user,
@@ -60,6 +61,7 @@ export async function GET() {
       worldCup,
       matches,
       watchMatches,
+      broadcastMatchIds,
       hasLiveMatches,
       predictions,
       leaderboard,

@@ -6,7 +6,7 @@ import {
   getPrediction,
   settleFinishedMatches,
 } from '@/lib/sports-polla'
-import { canViewMatchHub } from '@/lib/sports-polla-shared'
+import { canViewMatchHub, isMatchHappeningNow } from '@/lib/sports-polla-shared'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -30,7 +30,7 @@ export async function GET(
     const user = await getOrCreateSportsUser(authUser)
     const match = await getMatchById(matchId)
 
-    if (!canViewMatchHub(match.status, match.utcDate)) {
+    if (!canViewMatchHub(match.status, match.utcDate) && !isMatchHappeningNow(match.status, match.utcDate)) {
       return NextResponse.json(
         { error: 'Este partido aún no ha comenzado' },
         { status: 400 }

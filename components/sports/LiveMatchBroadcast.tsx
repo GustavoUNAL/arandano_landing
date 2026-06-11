@@ -87,7 +87,7 @@ export default function LiveMatchBroadcast({
   }, [load])
 
   useEffect(() => {
-    const ms = variant === 'inicio' ? 25_000 : 30_000
+    const ms = variant === 'inicio' ? 15_000 : 30_000
     const interval = setInterval(load, ms)
     return () => clearInterval(interval)
   }, [load, variant])

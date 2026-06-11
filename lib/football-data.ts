@@ -1,12 +1,14 @@
-import { isMatchFinished, isMatchLive } from '@/lib/sports-polla-shared'
+import { isMatchFinished, isMatchHappeningNow, isMatchLive } from '@/lib/sports-polla-shared'
 import { groupLabel, stageLabel } from '@/lib/world-cup-info'
 
 const API_BASE = 'https://api.football-data.org/v4'
 const WC_CODE = 'WC'
+const WC_COMPETITION_ID = 2000
 const WC_SEASON = 2026
 
 export const LIVE_MATCH_STATUSES = new Set([
   'IN_PLAY',
+  'LIVE',
   'PAUSED',
   'EXTRA_TIME',
   'PENALTY_SHOOTOUT',
@@ -164,6 +166,7 @@ async function footballFetch<T>(
 export function matchStatusLabel(status: string, minute?: number | null, injuryTime?: number | null): string {
   switch (status) {
     case 'IN_PLAY':
+    case 'LIVE':
     case 'EXTRA_TIME':
       if (minute != null) {
         const extra = injuryTime ? `+${injuryTime}` : ''
@@ -231,15 +234,19 @@ function getStartsIn(utcDate: string): string {
 }
 
 function enrichMatch(match: FootballMatch): EnrichedMatch {
-  const live = isMatchLive(match.status)
+  const live = isMatchLive(match.status) || isMatchHappeningNow(match.status, match.utcDate)
   const finished = isMatchFinished(match.status)
+  const statusLabel =
+    live && match.status === 'TIMED'
+      ? 'En juego'
+      : matchStatusLabel(match.status, match.minute, match.injuryTime)
   return {
     ...match,
     startsIn: live ? 'En vivo' : finished ? 'Finalizado' : getStartsIn(match.utcDate),
     formattedDate: formatMatchDate(match.utcDate),
     stageLabel: stageLabel(match.stage),
     groupLabel: match.group ? groupLabel(match.group) : null,
-    statusLabel: matchStatusLabel(match.status, match.minute, match.injuryTime),
+    statusLabel,
     isLive: live,
     isFinished: finished,
     displayScore: getMatchDisplayScore(match),
@@ -288,15 +295,45 @@ export async function getWorldCupMatches(limit = 30): Promise<EnrichedMatch[]> {
     .map(enrichMatch)
 }
 
-async function fetchAllScheduledMatches(): Promise<EnrichedMatch[]> {
+async function fetchAllScheduledMatches(fresh = false): Promise<EnrichedMatch[]> {
   const matchesRes = await footballFetch<{
     resultSet: { count: number; played: number }
     matches: FootballMatch[]
-  }>(`/competitions/${WC_CODE}/matches?season=${WC_SEASON}&limit=120`)
+  }>(`/competitions/${WC_CODE}/matches?season=${WC_SEASON}&limit=120`, { live: fresh })
 
   return matchesRes.matches
     .sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime())
     .map(enrichMatch)
+}
+
+async function fetchLiveWorldCupMatches(): Promise<EnrichedMatch[]> {
+  const statuses = ['IN_PLAY', 'LIVE', 'PAUSED', 'EXTRA_TIME', 'PENALTY_SHOOTOUT']
+  const batches = await Promise.all(
+    statuses.map((status) =>
+      footballFetch<{ matches: FootballMatch[] }>(
+        `/matches?competitions=${WC_COMPETITION_ID}&status=${status}&limit=20`,
+        { live: true }
+      ).catch(() => ({ matches: [] as FootballMatch[] }))
+    )
+  )
+  const byId = new Map<number, EnrichedMatch>()
+  for (const batch of batches) {
+    for (const match of batch.matches) {
+      byId.set(match.id, enrichMatch(match))
+    }
+  }
+  return [...byId.values()]
+}
+
+function mergeMatchLists(base: EnrichedMatch[], updates: EnrichedMatch[]): EnrichedMatch[] {
+  const map = new Map(base.map((m) => [m.id, m]))
+  for (const m of updates) {
+    const existing = map.get(m.id)
+    map.set(m.id, existing ? { ...existing, ...m } : m)
+  }
+  return [...map.values()].sort(
+    (a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime()
+  )
 }
 
 async function fetchTeamsDetail(): Promise<FootballTeamDetail[]> {
@@ -334,8 +371,9 @@ async function fetchTeamsDetail(): Promise<FootballTeamDetail[]> {
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export async function getWorldCupFullData(): Promise<WorldCupFullData> {
-  const [competition, allMatches, teams] = await Promise.all([
+export async function getWorldCupFullData(options?: { fresh?: boolean }): Promise<WorldCupFullData> {
+  const fresh = options?.fresh ?? false
+  const [competition, scheduledMatches, liveNow, teams] = await Promise.all([
     footballFetch<{
       name: string
       emblem: string
@@ -344,14 +382,17 @@ export async function getWorldCupFullData(): Promise<WorldCupFullData> {
         endDate: string
         currentMatchday: number | null
       }
-    }>(`/competitions/${WC_CODE}`),
-    fetchAllScheduledMatches(),
+    }>(`/competitions/${WC_CODE}`, { live: fresh }),
+    fetchAllScheduledMatches(fresh),
+    fetchLiveWorldCupMatches(),
     fetchTeamsDetail(),
   ])
 
+  const allMatches = mergeMatchLists(scheduledMatches, liveNow)
+
   const groupMatches = allMatches.filter((m) => m.stage === 'GROUP_STAGE')
   const knockoutMatches = allMatches.filter((m) => m.stage !== 'GROUP_STAGE')
-  const liveMatches = allMatches.filter((m) => m.isLive)
+  const liveMatches = allMatches.filter((m) => m.isLive || isMatchLive(m.status))
   const upcomingMatches = allMatches
     .filter((m) => m.status === 'SCHEDULED' || m.status === 'TIMED')
     .slice(0, 8)
@@ -409,7 +450,7 @@ export async function getMatchById(matchId: number): Promise<MatchDetail> {
 }
 
 /** @deprecated Usar getWorldCupFullData */
-export async function getWorldCupData(): Promise<WorldCupData> {
-  const full = await getWorldCupFullData()
+export async function getWorldCupData(options?: { fresh?: boolean }): Promise<WorldCupData> {
+  const full = await getWorldCupFullData(options)
   return full
 }
