@@ -9,7 +9,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    signIn: '/sports',
+    signIn: '/mundial',
   },
   callbacks: {
     async session({ session, token }) {

@@ -9,6 +9,7 @@ import type { LeaderboardEntry } from '@/lib/sports-polla-shared'
 import { signIn, useSession } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 const STEPS = [
@@ -111,7 +112,9 @@ function MatchRow({ match }: { match: WorldCupData['upcomingMatches'][0] }) {
 }
 
 export default function SportsLanding() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const authLoading = status === 'loading'
   const [wcData, setWcData] = useState<WorldCupData | null>(null)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -140,10 +143,11 @@ export default function SportsLanding() {
   }, [])
 
   const goToLoginOrPlay = () => {
+    if (authLoading) return
     if (session) {
-      window.location.href = '/perfil'
+      router.push('/perfil')
     } else {
-      signIn('google', { callbackUrl: '/perfil' })
+      void signIn('google', { callbackUrl: '/perfil' })
     }
   }
 
@@ -183,27 +187,19 @@ export default function SportsLanding() {
           </div>
           <div className="flex items-center gap-2">
             <Link
-              href="/sports/reglamento"
+              href="/mundial/reglamento"
               className="text-xs sm:text-sm font-medium px-3 py-2 rounded-full border border-white/15 text-stone-300 hover:bg-white/5 transition-colors"
             >
               Reglamento
             </Link>
-            {session ? (
-              <Link
-                href="/perfil"
-                className="text-sm font-semibold px-4 py-2 rounded-full bg-berry-600 hover:bg-berry-500 transition-colors"
-              >
-                Mi perfil
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={goToLoginOrPlay}
-                className="text-sm font-semibold px-4 py-2 rounded-full bg-berry-600 hover:bg-berry-500 transition-colors"
-              >
-                Jugar
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={goToLoginOrPlay}
+              disabled={authLoading}
+              className="text-sm font-semibold px-4 py-2 rounded-full bg-berry-600 hover:bg-berry-500 transition-colors disabled:opacity-60"
+            >
+              {authLoading ? '…' : session ? 'Mi perfil' : 'Iniciar sesión'}
+            </button>
           </div>
         </div>
       </header>
@@ -237,13 +233,21 @@ export default function SportsLanding() {
                 ¿Quieres jugar la <span className="text-berry-300">polla mundialista</span>? Entra a jugar
                 con tus amigos y ganar. Demuestra que eres un experto.
               </p>
-              <button
-                type="button"
-                onClick={goToLoginOrPlay}
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-berry-600 hover:bg-berry-500 text-white font-semibold rounded-xl shadow-lg shadow-berry-900/40 transition-all hover:-translate-y-0.5"
-              >
-                ⚽ Jugar la polla
-              </button>
+              <div id="iniciar-sesion" className="flex flex-col sm:flex-row gap-3 scroll-mt-24">
+                <GoogleSignInButton
+                  label="Iniciar sesión con Google"
+                  loggedInLabel="⚽ Ir a mi perfil"
+                  callbackUrl="/perfil"
+                  className="!w-auto min-w-[260px]"
+                />
+                <button
+                  type="button"
+                  onClick={goToLoginOrPlay}
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 border border-white/20 hover:bg-white/5 text-stone-200 font-semibold rounded-xl transition-colors"
+                >
+                  {session ? 'Ir a mi perfil' : 'Iniciar sesión'}
+                </button>
+              </div>
             </div>
 
             {/* Polla en vivo preview */}
@@ -432,7 +436,7 @@ export default function SportsLanding() {
             Créditos, puntos, ejemplos, podio de 5 ganadores y condiciones de participación explicados al detalle.
           </p>
           <Link
-            href="/sports/reglamento"
+            href="/mundial/reglamento"
             className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl border border-berry-500/40 bg-berry-950/40 text-berry-200 font-semibold hover:bg-berry-900/50 transition-colors"
           >
             Ver reglamento y condiciones →
@@ -452,26 +456,28 @@ export default function SportsLanding() {
             y lleva la cima de la tabla durante todo el Mundial 2026.
           </p>
 
-          {session ? (
-            <div className="space-y-4">
+          <div className="max-w-sm mx-auto space-y-4">
+            {session && (
               <p className="text-berry-300 font-medium">
                 ¡Parcero, {session.user?.name?.split(' ')[0]}! Ya estás en la polla.
               </p>
-              <Link
-                href="/perfil"
-                className="inline-flex items-center justify-center px-8 py-4 bg-berry-600 hover:bg-berry-500 text-white font-semibold rounded-2xl shadow-lg shadow-berry-900/40 transition-all"
-              >
-                Ir a mi perfil
-              </Link>
-            </div>
-          ) : (
-            <div className="max-w-sm mx-auto space-y-4">
-              <GoogleSignInButton label="Jugar con Google" callbackUrl="/perfil" />
-              <p className="text-xs text-stone-600">
-                Pronósticos entre amigos · Sin dinero real · Solo competencia y pasión por el fútbol
-              </p>
-            </div>
-          )}
+            )}
+            <GoogleSignInButton
+              label="Iniciar sesión con Google"
+              loggedInLabel="Ir a mi perfil"
+              callbackUrl="/perfil"
+            />
+            <button
+              type="button"
+              onClick={goToLoginOrPlay}
+              className="w-full py-3 rounded-xl border border-white/15 text-stone-300 hover:bg-white/5 font-medium text-sm transition-colors"
+            >
+              {session ? 'Ir a mi perfil' : 'Iniciar sesión'}
+            </button>
+            <p className="text-xs text-stone-600">
+              Pronósticos entre amigos · Sin dinero real · Solo competencia y pasión por el fútbol
+            </p>
+          </div>
         </div>
       </section>
 
@@ -486,7 +492,7 @@ export default function SportsLanding() {
           </p>
           <p className="text-stone-500 text-sm mb-6">Polla mundialista · Pronósticos · Amigos · Fútbol</p>
           <p className="text-stone-600 text-xs mb-2">© 2026 Arándano Café Bar · Pasto, Colombia</p>
-          <Link href="/sports/reglamento" className="text-xs text-berry-500/80 hover:text-berry-400">
+          <Link href="/mundial/reglamento" className="text-xs text-berry-500/80 hover:text-berry-400">
             Reglamento y condiciones
           </Link>
         </div>

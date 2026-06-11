@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
-import { getDbMode } from './db-utils'
-import { getDatabase } from './db-sqlite'
+import { usesRelationalDb } from './db-utils'
+import { dbAll, dbGet, dbRun } from './db'
 
 const analyticsJsonPath = path.join(process.cwd(), 'data', 'site-analytics.json')
 
@@ -58,48 +58,23 @@ function normalizePath(pagePath: string): string {
   return p || '/'
 }
 
-function ensureAnalyticsTables(): void {
-  if (getDbMode() !== 'sqlite') return
-  const db = getDatabase()
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS site_clicks (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      path TEXT NOT NULL,
-      label TEXT NOT NULL,
-      target TEXT NOT NULL,
-      clickedAt TEXT NOT NULL
-    )
-  `)
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS site_engagement (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      path TEXT NOT NULL,
-      durationSeconds INTEGER NOT NULL,
-      recordedAt TEXT NOT NULL
-    )
-  `)
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_site_clicks_clickedAt ON site_clicks(clickedAt);
-    CREATE INDEX IF NOT EXISTS idx_site_engagement_recordedAt ON site_engagement(recordedAt);
-  `)
-}
-
-export function recordSiteClick(
+export async function recordSiteClick(
   pagePath: string,
   label: string,
   target: string
-): void {
+): Promise<void> {
   const pathNorm = normalizePath(pagePath)
   const safeLabel = (label || 'click').slice(0, 200)
   const safeTarget = (target || '').slice(0, 500)
   const clickedAt = new Date().toISOString()
 
-  if (getDbMode() === 'sqlite') {
-    ensureAnalyticsTables()
-    const db = getDatabase()
-    db.prepare(
-      'INSERT INTO site_clicks (path, label, target, clickedAt) VALUES (?, ?, ?, ?)'
-    ).run(pathNorm, safeLabel, safeTarget, clickedAt)
+  if (usesRelationalDb()) {
+    await dbRun('INSERT INTO site_clicks (path, label, target, clickedAt) VALUES (?, ?, ?, ?)', [
+      pathNorm,
+      safeLabel,
+      safeTarget,
+      clickedAt,
+    ])
     return
   }
 
@@ -108,18 +83,20 @@ export function recordSiteClick(
   writeAnalyticsJson(data)
 }
 
-export function recordPageEngagement(pagePath: string, durationSeconds: number): void {
+export async function recordPageEngagement(
+  pagePath: string,
+  durationSeconds: number
+): Promise<void> {
   const pathNorm = normalizePath(pagePath)
   const seconds = Math.max(0, Math.min(Math.round(durationSeconds), 7200))
   if (seconds < 3) return
   const recordedAt = new Date().toISOString()
 
-  if (getDbMode() === 'sqlite') {
-    ensureAnalyticsTables()
-    const db = getDatabase()
-    db.prepare(
-      'INSERT INTO site_engagement (path, durationSeconds, recordedAt) VALUES (?, ?, ?)'
-    ).run(pathNorm, seconds, recordedAt)
+  if (usesRelationalDb()) {
+    await dbRun(
+      'INSERT INTO site_engagement (path, durationSeconds, recordedAt) VALUES (?, ?, ?)',
+      [pathNorm, seconds, recordedAt]
+    )
     return
   }
 
@@ -128,36 +105,39 @@ export function recordPageEngagement(pagePath: string, durationSeconds: number):
   writeAnalyticsJson(data)
 }
 
-export function getSeoDashboard(days = 30): SeoDashboard {
+export async function getSeoDashboard(days = 30): Promise<SeoDashboard> {
   const since = new Date()
   since.setDate(since.getDate() - days)
   const sinceIso = since.toISOString()
 
-  if (getDbMode() === 'sqlite') {
-    ensureAnalyticsTables()
-    const db = getDatabase()
+  if (usesRelationalDb()) {
+    const totalVisitsRow = await dbGet<{ total: number }>(
+      'SELECT COUNT(*) AS total FROM site_visits WHERE visitedAt >= ?',
+      [sinceIso]
+    )
 
-    const totalVisitsRow = db
-      .prepare('SELECT COUNT(*) AS total FROM site_visits WHERE visitedAt >= ?')
-      .get(sinceIso) as { total: number }
+    const uniquePagesRow = await dbGet<{ total: number }>(
+      'SELECT COUNT(DISTINCT path) AS total FROM site_visits WHERE visitedAt >= ?',
+      [sinceIso]
+    )
 
-    const uniquePagesRow = db
-      .prepare('SELECT COUNT(DISTINCT path) AS total FROM site_visits WHERE visitedAt >= ?')
-      .get(sinceIso) as { total: number }
+    const totalClicksRow = await dbGet<{ total: number }>(
+      'SELECT COUNT(*) AS total FROM site_clicks WHERE clickedAt >= ?',
+      [sinceIso]
+    )
 
-    const totalClicksRow = db
-      .prepare('SELECT COUNT(*) AS total FROM site_clicks WHERE clickedAt >= ?')
-      .get(sinceIso) as { total: number }
+    const avgTimeRow = await dbGet<{ avg: number | null }>(
+      'SELECT AVG(durationSeconds) AS avg FROM site_engagement WHERE recordedAt >= ?',
+      [sinceIso]
+    )
 
-    const avgTimeRow = db
-      .prepare(
-        'SELECT AVG(durationSeconds) AS avg FROM site_engagement WHERE recordedAt >= ?'
-      )
-      .get(sinceIso) as { avg: number | null }
-
-    const pageStats = db
-      .prepare(
-        `
+    const pageStats = await dbAll<{
+      path: string
+      visits: number
+      avgTimeSeconds: number
+      totalTimeSeconds: number
+    }>(
+      `
         SELECT
           v.path,
           v.visits,
@@ -180,50 +160,43 @@ export function getSeoDashboard(days = 30): SeoDashboard {
         ) e ON e.path = v.path
         ORDER BY v.visits DESC
         LIMIT 50
-      `
-      )
-      .all(sinceIso, sinceIso) as Array<{
-        path: string
-        visits: number
-        avgTimeSeconds: number
-        totalTimeSeconds: number
-      }>
+      `,
+      [sinceIso, sinceIso]
+    )
 
-    const topClicks = db
-      .prepare(
-        `
+    const topClicks = await dbAll<ClickStat>(
+      `
         SELECT label, target, path, COUNT(*) AS clicks
         FROM site_clicks
         WHERE clickedAt >= ?
         GROUP BY label, target, path
         ORDER BY clicks DESC
         LIMIT 30
-      `
-      )
-      .all(sinceIso) as ClickStat[]
+      `,
+      [sinceIso]
+    )
 
-    const recentVisits = db
-      .prepare(
-        'SELECT path, visitedAt FROM site_visits WHERE visitedAt >= ? ORDER BY visitedAt DESC LIMIT 20'
-      )
-      .all(sinceIso) as Array<{ path: string; visitedAt: string }>
+    const recentVisits = await dbAll<{ path: string; visitedAt: string }>(
+      'SELECT path, visitedAt FROM site_visits WHERE visitedAt >= ? ORDER BY visitedAt DESC LIMIT 20',
+      [sinceIso]
+    )
 
     return {
-      totalVisits: Number(totalVisitsRow.total) || 0,
-      uniquePages: Number(uniquePagesRow.total) || 0,
-      totalClicks: Number(totalClicksRow.total) || 0,
-      avgTimeSeconds: Math.round(Number(avgTimeRow.avg) || 0),
+      totalVisits: Number(totalVisitsRow?.total) || 0,
+      uniquePages: Number(uniquePagesRow?.total) || 0,
+      totalClicks: Number(totalClicksRow?.total) || 0,
+      avgTimeSeconds: Math.round(Number(avgTimeRow?.avg) || 0),
       pageStats: pageStats.map((p) => ({
         path: p.path,
         visits: Number(p.visits),
         avgTimeSeconds: Math.round(Number(p.avgTimeSeconds)),
-        totalTimeSeconds: Number(p.totalTimeSeconds)
+        totalTimeSeconds: Number(p.totalTimeSeconds),
       })),
       topClicks: topClicks.map((c) => ({
         ...c,
-        clicks: Number(c.clicks)
+        clicks: Number(c.clicks),
       })),
-      recentVisits
+      recentVisits,
     }
   }
 
@@ -251,7 +224,7 @@ export function getSeoDashboard(days = 30): SeoDashboard {
       path: v.path,
       visits: 0,
       avgTimeSeconds: 0,
-      totalTimeSeconds: 0
+      totalTimeSeconds: 0,
     }
     existing.visits += 1
     pageMap.set(v.path, existing)
@@ -262,7 +235,7 @@ export function getSeoDashboard(days = 30): SeoDashboard {
       path: e.path,
       visits: 0,
       avgTimeSeconds: 0,
-      totalTimeSeconds: 0
+      totalTimeSeconds: 0,
     }
     existing.totalTimeSeconds += e.durationSeconds
     pageMap.set(e.path, existing)
@@ -274,10 +247,9 @@ export function getSeoDashboard(days = 30): SeoDashboard {
       avgTimeSeconds:
         engagement.filter((e) => e.path === p.path).length > 0
           ? Math.round(
-              p.totalTimeSeconds /
-                engagement.filter((e) => e.path === p.path).length
+              p.totalTimeSeconds / engagement.filter((e) => e.path === p.path).length
             )
-          : 0
+          : 0,
     }))
     .sort((a, b) => b.visits - a.visits)
     .slice(0, 50)
@@ -289,7 +261,7 @@ export function getSeoDashboard(days = 30): SeoDashboard {
       label: c.label,
       target: c.target,
       path: c.path,
-      clicks: 0
+      clicks: 0,
     }
     existing.clicks += 1
     clickMap.set(key, existing)
@@ -301,9 +273,7 @@ export function getSeoDashboard(days = 30): SeoDashboard {
 
   const avgTimeSeconds =
     engagement.length > 0
-      ? Math.round(
-          engagement.reduce((s, e) => s + e.durationSeconds, 0) / engagement.length
-        )
+      ? Math.round(engagement.reduce((s, e) => s + e.durationSeconds, 0) / engagement.length)
       : 0
 
   return {
@@ -316,6 +286,6 @@ export function getSeoDashboard(days = 30): SeoDashboard {
     recentVisits: visits
       .slice()
       .sort((a, b) => b.visitedAt.localeCompare(a.visitedAt))
-      .slice(0, 20)
+      .slice(0, 20),
   }
 }

@@ -14,7 +14,7 @@ async function parseJsonBody(request: NextRequest): Promise<Record<string, unkno
 
 export async function GET(request: NextRequest) {
   const pagePath = request.nextUrl.searchParams.get('path') || '/'
-  const pageVisits = getPageVisitCount(pagePath)
+  const pageVisits = await getPageVisitCount(pagePath)
   return NextResponse.json({ pageVisits, path: pagePath })
 }
 
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       const pagePath = typeof body.path === 'string' ? body.path : '/'
       const label = typeof body.label === 'string' ? body.label : 'click'
       const target = typeof body.target === 'string' ? body.target : ''
-      recordSiteClick(pagePath, label, target)
+      await recordSiteClick(pagePath, label, target)
       return NextResponse.json({ ok: true })
     }
 
@@ -35,12 +35,12 @@ export async function POST(request: NextRequest) {
       const pagePath = typeof body.path === 'string' ? body.path : '/'
       const durationSeconds =
         typeof body.durationSeconds === 'number' ? body.durationSeconds : 0
-      recordPageEngagement(pagePath, durationSeconds)
+      await recordPageEngagement(pagePath, durationSeconds)
       return NextResponse.json({ ok: true })
     }
 
     const pagePath = typeof body.path === 'string' ? body.path : '/'
-    const { pageVisits } = recordSiteVisit(pagePath)
+    const { pageVisits } = await recordSiteVisit(pagePath)
     return NextResponse.json({ pageVisits, path: pagePath })
   } catch (error) {
     console.error('[Visitas] Error:', error)

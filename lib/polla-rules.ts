@@ -4,7 +4,7 @@
 
 export const POLL_NAME = 'Polla Mundialista Arándano 2026'
 
-export const INITIAL_CREDITS = 2000
+export const INITIAL_CREDITS = 120
 export const PREDICTION_COST = 50
 export const POINTS_EXACT_SCORE = 3
 export const POINTS_GOAL_DIFFERENCE = 2
@@ -49,7 +49,6 @@ export const REGLAMENTO_SECTIONS: ReglamentoSection[] = [
     title: '1. Objetivo del juego',
     items: [
       'La polla es un juego de pronósticos del Mundial FIFA 2026 entre amigos y clientes de Arándano Café Bar.',
-      'No hay apuestas con dinero real: solo créditos virtuales y puntos de ranking.',
       'Al final del torneo habrá hasta 5 ganadores según la tabla de puntos.',
     ],
   },
@@ -57,10 +56,10 @@ export const REGLAMENTO_SECTIONS: ReglamentoSection[] = [
     id: 'inscripcion',
     title: '2. Cómo participar',
     items: [
-      'Ingresa con tu cuenta de Google en la plataforma.',
-      `Recibes ${INITIAL_CREDITS.toLocaleString('es-CO')} créditos virtuales de bienvenida.`,
+      'Regístrate en la plataforma.',
+      `Recibes ${INITIAL_CREDITS} créditos virtuales de bienvenida.`,
       `Cada pronóstico nuevo cuesta ${PREDICTION_COST} créditos. Editar un pick antes del pitazo no cuesta créditos extra.`,
-      'Tu nombre real no aparece en la tabla pública: se asigna un alias de animal (ej. Jaguar 742).',
+      'Puedes elegir tu nombre de usuario.',
     ],
   },
   {
@@ -96,7 +95,7 @@ export const REGLAMENTO_SECTIONS: ReglamentoSection[] = [
   },
   {
     id: 'fairplay',
-    title: '6. Juego limpio',
+    title: '6. Jugar',
     items: [
       'Una cuenta por persona. Cuentas duplicadas pueden ser descalificadas.',
       'Los resultados se toman de fuentes oficiales del torneo al finalizar cada partido.',
@@ -111,16 +110,15 @@ export const CONDICIONES_LEGALES: ReglamentoSection[] = [
     id: 'naturaleza',
     title: 'Naturaleza del juego',
     items: [
-      'Este es un juego recreativo de pronósticos deportivos sin apuestas ni premios en dinero en efectivo.',
       'Los créditos y puntos no tienen valor monetario ni son canjeables por productos o servicios, salvo que Arándano Café Bar comunique por separado un premio simbólico para los ganadores.',
       'La participación es gratuita: solo requiere una cuenta de Google.',
     ],
   },
   {
     id: 'privacidad',
-    title: 'Privacidad y alias',
+    title: 'Privacidad',
     items: [
-      'En la tabla pública solo se muestra tu alias de animal, no tu nombre ni correo.',
+      'En la tabla pública se muestra el nombre de usuario que elijas, no tu correo.',
       'Arándano Café Bar usa tu correo de Google únicamente para identificar tu cuenta y evitar duplicados.',
       'No vendemos ni compartimos tus datos con terceros con fines comerciales.',
     ],
@@ -168,6 +166,6 @@ export const SCORING_EXAMPLES = [
 ] as const
 
 export const REGLAMENTO_SHORT =
-  `Polla sin dinero real · ${INITIAL_CREDITS.toLocaleString('es-CO')} créditos iniciales · ` +
+  `${INITIAL_CREDITS} créditos al registrarte · ` +
   `${POINTS_EXACT_SCORE}/${POINTS_GOAL_DIFFERENCE}/${POINTS_CORRECT_RESULT} pts por partido · ` +
   `Hasta ${TOP_WINNERS_COUNT} ganadores`

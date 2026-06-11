@@ -4,13 +4,15 @@ import { getScoringRules } from '@/lib/polla-rules'
 import { getLeaderboard, settleFinishedMatches } from '@/lib/sports-polla'
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const worldCup = await getWorldCupFullData()
-    settleFinishedMatches(worldCup.allMatches)
+    await settleFinishedMatches(worldCup.allMatches)
 
     const authUser = await getAuthUser()
-    const leaderboard = getLeaderboard(authUser?.id)
+    const leaderboard = await getLeaderboard(authUser?.id)
     const scoringRules = getScoringRules()
     const winners = leaderboard.filter((e) => e.isWinner)
 

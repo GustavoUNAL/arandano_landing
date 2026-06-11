@@ -1,4 +1,4 @@
-import { getDatabase } from '@/lib/db-sqlite'
+import { dbAll, dbGet, dbRun, dbTransaction } from '@/lib/db'
 import {
   applyWinnerRanks,
   calculatePredictionPoints,
@@ -75,104 +75,75 @@ export function generateDisplayAlias(userId: string): string {
   return `${animal} ${num}`
 }
 
-function ensureDisplayAlias(userId: string): string {
-  const db = getDatabase()
-  const user = db.prepare('SELECT displayAlias FROM sports_users WHERE id = ?').get(userId) as
-    | { displayAlias: string | null }
-    | undefined
+async function ensureDisplayAlias(userId: string): Promise<string> {
+  const user = await dbGet<{ displayAlias: string | null }>(
+    'SELECT displayAlias FROM sports_users WHERE id = ?',
+    [userId]
+  )
 
   if (user?.displayAlias) return user.displayAlias
 
   const alias = generateDisplayAlias(userId)
   const now = new Date().toISOString()
-  db.prepare('UPDATE sports_users SET displayAlias = ?, updatedAt = ? WHERE id = ?').run(
+  await dbRun('UPDATE sports_users SET displayAlias = ?, updatedAt = ? WHERE id = ?', [
     alias,
     now,
-    userId
-  )
+    userId,
+  ])
   return alias
 }
 
-function recalculateAllTotalPoints(now: string) {
-  const db = getDatabase()
-  db.prepare(
-    `UPDATE sports_users
-     SET totalPoints = (
-       SELECT COALESCE(SUM(pointsEarned), 0)
-       FROM match_predictions mp
-       WHERE mp.userId = sports_users.id AND mp.settledAt IS NOT NULL
-     ),
-     updatedAt = ?`
-  ).run(now)
-}
-
-export function settleFinishedMatches(
+export async function settleFinishedMatches(
   finishedMatches: Array<{
     id: number
     status: string
     score: { fullTime: { home: number | null; away: number | null } }
   }>
-): number {
-  const db = getDatabase()
+): Promise<number> {
   let settled = 0
   const now = new Date().toISOString()
 
-  const getByMatch = db.prepare('SELECT * FROM match_predictions WHERE matchId = ?')
-  const updatePred = db.prepare(
-    `UPDATE match_predictions
-     SET actualHomeScore = ?, actualAwayScore = ?, pointsEarned = ?,
-         settledAt = COALESCE(settledAt, ?), updatedAt = ?
-     WHERE id = ?`
-  )
-
-  const txn = db.transaction(() => {
+  await dbTransaction(async (tx) => {
     for (const match of finishedMatches) {
       if (match.status !== 'FINISHED') continue
       const home = match.score.fullTime.home
       const away = match.score.fullTime.away
       if (home == null || away == null) continue
 
-      const preds = getByMatch.all(match.id) as MatchPrediction[]
+      const preds = await tx.all<MatchPrediction>(
+        'SELECT * FROM match_predictions WHERE matchId = ?',
+        [match.id]
+      )
       for (const p of preds) {
         const points = calculatePredictionPoints(p.homeScore, p.awayScore, home, away)
         const wasUnsettled = !p.settledAt
-        updatePred.run(home, away, points, now, now, p.id)
+        await tx.run(
+          `UPDATE match_predictions
+           SET actualHomeScore = ?, actualAwayScore = ?, pointsEarned = ?,
+               settledAt = COALESCE(settledAt, ?), updatedAt = ?
+           WHERE id = ?`,
+          [home, away, points, now, now, p.id]
+        )
         if (wasUnsettled) settled++
       }
     }
-    recalculateAllTotalPoints(now)
+    await tx.run(
+      `UPDATE sports_users
+       SET totalPoints = (
+         SELECT COALESCE(SUM(pointsEarned), 0)
+         FROM match_predictions mp
+         WHERE mp.userId = sports_users.id AND mp.settledAt IS NOT NULL
+       ),
+       updatedAt = ?`,
+      [now]
+    )
   })
-  txn()
 
   return settled
 }
 
-export function getLeaderboard(currentUserId?: string): LeaderboardEntry[] {
-  const db = getDatabase()
-  const rows = db
-    .prepare(
-      `SELECT
-        su.id,
-        su.displayAlias,
-        su.totalPoints,
-        COUNT(mp.id) AS picksCount,
-        SUM(CASE WHEN mp.settledAt IS NOT NULL THEN 1 ELSE 0 END) AS settledCount,
-        SUM(CASE WHEN mp.pointsEarned = ? THEN 1 ELSE 0 END) AS exactHits,
-        SUM(CASE WHEN mp.pointsEarned = ? THEN 1 ELSE 0 END) AS goalDiffHits,
-        SUM(CASE WHEN mp.pointsEarned = ? THEN 1 ELSE 0 END) AS resultHits
-      FROM sports_users su
-      INNER JOIN match_predictions mp ON mp.userId = su.id
-      GROUP BY su.id
-      ORDER BY
-        su.totalPoints DESC,
-        exactHits DESC,
-        goalDiffHits DESC,
-        resultHits DESC,
-        settledCount DESC,
-        su.displayAlias ASC
-      LIMIT 50`
-    )
-    .all(POINTS_EXACT_SCORE, POINTS_GOAL_DIFFERENCE, POINTS_CORRECT_RESULT) as Array<{
+export async function getLeaderboard(currentUserId?: string): Promise<LeaderboardEntry[]> {
+  const rows = await dbAll<{
     id: string
     displayAlias: string | null
     totalPoints: number
@@ -181,19 +152,41 @@ export function getLeaderboard(currentUserId?: string): LeaderboardEntry[] {
     exactHits: number
     goalDiffHits: number
     resultHits: number
-  }>
+  }>(
+    `SELECT
+      su.id,
+      su.displayAlias,
+      su.totalPoints,
+      COUNT(mp.id) AS picksCount,
+      SUM(CASE WHEN mp.settledAt IS NOT NULL THEN 1 ELSE 0 END) AS settledCount,
+      SUM(CASE WHEN mp.pointsEarned = ? THEN 1 ELSE 0 END) AS exactHits,
+      SUM(CASE WHEN mp.pointsEarned = ? THEN 1 ELSE 0 END) AS goalDiffHits,
+      SUM(CASE WHEN mp.pointsEarned = ? THEN 1 ELSE 0 END) AS resultHits
+    FROM sports_users su
+    INNER JOIN match_predictions mp ON mp.userId = su.id
+    GROUP BY su.id, su.displayAlias, su.totalPoints
+    ORDER BY
+      su.totalPoints DESC,
+      exactHits DESC,
+      goalDiffHits DESC,
+      resultHits DESC,
+      settledCount DESC,
+      su.displayAlias ASC
+    LIMIT 50`,
+    [POINTS_EXACT_SCORE, POINTS_GOAL_DIFFERENCE, POINTS_CORRECT_RESULT]
+  )
 
   const base = rows.map((row, index) => {
-    const settledCount = row.settledCount
+    const settledCount = Number(row.settledCount)
     return {
       rank: index + 1,
       displayAlias: row.displayAlias ?? generateDisplayAlias(row.id),
       totalPoints: row.totalPoints ?? 0,
-      picksCount: row.picksCount,
+      picksCount: Number(row.picksCount),
       settledCount,
-      exactHits: row.exactHits,
-      goalDiffHits: row.goalDiffHits,
-      resultHits: row.resultHits,
+      exactHits: Number(row.exactHits),
+      goalDiffHits: Number(row.goalDiffHits),
+      resultHits: Number(row.resultHits),
       qualifiesForPodium: settledCount >= MIN_SETTLED_PICKS_TO_WIN,
       isWinner: false,
       winnerRank: null as number | null,
@@ -204,62 +197,64 @@ export function getLeaderboard(currentUserId?: string): LeaderboardEntry[] {
   return applyWinnerRanks(base)
 }
 
-export function getOrCreateSportsUser(input: {
+export async function getOrCreateSportsUser(input: {
   id: string
   email: string
   name?: string | null
   image?: string | null
-}): SportsUser {
-  const db = getDatabase()
-  const existing = db
-    .prepare('SELECT * FROM sports_users WHERE id = ?')
-    .get(input.id) as SportsUser | undefined
+}): Promise<SportsUser> {
+  const existing = await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [input.id])
 
   if (existing) {
     const now = new Date().toISOString()
     const alias = existing.displayAlias ?? generateDisplayAlias(input.id)
-    db.prepare(
-      `UPDATE sports_users SET name = ?, image = ?, email = ?, displayAlias = COALESCE(displayAlias, ?), updatedAt = ? WHERE id = ?`
-    ).run(input.name ?? existing.name, input.image ?? existing.image, input.email, alias, now, input.id)
-    return db.prepare('SELECT * FROM sports_users WHERE id = ?').get(input.id) as SportsUser
+    await dbRun(
+      `UPDATE sports_users SET name = ?, image = ?, email = ?, displayAlias = COALESCE(displayAlias, ?), updatedAt = ? WHERE id = ?`,
+      [input.name ?? existing.name, input.image ?? existing.image, input.email, alias, now, input.id]
+    )
+    return (await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [input.id]))!
   }
 
   const now = new Date().toISOString()
   const alias = generateDisplayAlias(input.id)
-  db.prepare(
+  await dbRun(
     `INSERT INTO sports_users (id, email, name, image, credits, displayAlias, totalPoints, createdAt, updatedAt)
-     VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`
-  ).run(
-    input.id,
-    input.email,
-    input.name ?? null,
-    input.image ?? null,
-    INITIAL_CREDITS,
-    alias,
-    now,
-    now
+     VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+    [
+      input.id,
+      input.email,
+      input.name ?? null,
+      input.image ?? null,
+      INITIAL_CREDITS,
+      alias,
+      now,
+      now,
+    ]
   )
 
-  return db.prepare('SELECT * FROM sports_users WHERE id = ?').get(input.id) as SportsUser
+  return (await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [input.id]))!
 }
 
-export function getUserPredictions(userId: string): MatchPrediction[] {
-  const db = getDatabase()
-  return db
-    .prepare('SELECT * FROM match_predictions WHERE userId = ? ORDER BY matchDate ASC')
-    .all(userId) as MatchPrediction[]
+export async function getUserPredictions(userId: string): Promise<MatchPrediction[]> {
+  return dbAll<MatchPrediction>(
+    'SELECT * FROM match_predictions WHERE userId = ? ORDER BY matchDate ASC',
+    [userId]
+  )
 }
 
-export function getPrediction(userId: string, matchId: number): MatchPrediction | null {
-  const db = getDatabase()
+export async function getPrediction(
+  userId: string,
+  matchId: number
+): Promise<MatchPrediction | null> {
   return (
-    (db
-      .prepare('SELECT * FROM match_predictions WHERE userId = ? AND matchId = ?')
-      .get(userId, matchId) as MatchPrediction | undefined) ?? null
+    (await dbGet<MatchPrediction>(
+      'SELECT * FROM match_predictions WHERE userId = ? AND matchId = ?',
+      [userId, matchId]
+    )) ?? null
   )
 }
 
-export function savePrediction(input: {
+export async function savePrediction(input: {
   userId: string
   matchId: number
   homeTeamName: string
@@ -271,9 +266,7 @@ export function savePrediction(input: {
   matchGroup?: string | null
   homeScore: number
   awayScore: number
-}): { user: SportsUser; prediction: MatchPrediction } {
-  const db = getDatabase()
-
+}): Promise<{ user: SportsUser; prediction: MatchPrediction }> {
   if (!isMatchPredictable(input.matchStatus, input.matchDate)) {
     throw new Error('El partido ya comenzó. No puedes pronosticar.')
   }
@@ -282,9 +275,9 @@ export function savePrediction(input: {
     throw new Error('Marcador inválido.')
   }
 
-  ensureDisplayAlias(input.userId)
+  await ensureDisplayAlias(input.userId)
 
-  const existing = getPrediction(input.userId, input.matchId)
+  const existing = await getPrediction(input.userId, input.matchId)
   const now = new Date().toISOString()
 
   if (existing) {
@@ -292,60 +285,63 @@ export function savePrediction(input: {
       throw new Error('Este pronóstico ya fue calificado. No puedes editarlo.')
     }
 
-    db.prepare(
+    await dbRun(
       `UPDATE match_predictions
        SET homeScore = ?, awayScore = ?, updatedAt = ?
-       WHERE id = ?`
-    ).run(input.homeScore, input.awayScore, now, existing.id)
+       WHERE id = ?`,
+      [input.homeScore, input.awayScore, now, existing.id]
+    )
 
-    const user = db.prepare('SELECT * FROM sports_users WHERE id = ?').get(input.userId) as SportsUser
-    const prediction = db
-      .prepare('SELECT * FROM match_predictions WHERE id = ?')
-      .get(existing.id) as MatchPrediction
+    const user = (await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [
+      input.userId,
+    ]))!
+    const prediction = (await dbGet<MatchPrediction>('SELECT * FROM match_predictions WHERE id = ?', [
+      existing.id,
+    ]))!
     return { user, prediction }
   }
 
-  const user = db.prepare('SELECT * FROM sports_users WHERE id = ?').get(input.userId) as SportsUser
+  const user = await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [input.userId])
   if (!user) throw new Error('Usuario no encontrado')
   if (user.credits < PREDICTION_COST) {
     throw new Error(`Necesitas al menos ${PREDICTION_COST} créditos para pronosticar.`)
   }
 
   const id = randomUUID()
-  const txn = db.transaction(() => {
-    db.prepare(`UPDATE sports_users SET credits = credits - ?, updatedAt = ? WHERE id = ?`).run(
+  await dbTransaction(async (tx) => {
+    await tx.run(`UPDATE sports_users SET credits = credits - ?, updatedAt = ? WHERE id = ?`, [
       PREDICTION_COST,
       now,
-      input.userId
-    )
-    db.prepare(
+      input.userId,
+    ])
+    await tx.run(
       `INSERT INTO match_predictions (
         id, userId, matchId, homeTeamName, awayTeamName, homeTeamCrest, awayTeamCrest,
         matchDate, matchGroup, homeScore, awayScore, creditsWagered,
         actualHomeScore, actualAwayScore, pointsEarned, settledAt,
         createdAt, updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, ?)`
-    ).run(
-      id,
-      input.userId,
-      input.matchId,
-      input.homeTeamName,
-      input.awayTeamName,
-      input.homeTeamCrest ?? null,
-      input.awayTeamCrest ?? null,
-      input.matchDate,
-      input.matchGroup ?? null,
-      input.homeScore,
-      input.awayScore,
-      PREDICTION_COST,
-      now,
-      now
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, ?)`,
+      [
+        id,
+        input.userId,
+        input.matchId,
+        input.homeTeamName,
+        input.awayTeamName,
+        input.homeTeamCrest ?? null,
+        input.awayTeamCrest ?? null,
+        input.matchDate,
+        input.matchGroup ?? null,
+        input.homeScore,
+        input.awayScore,
+        PREDICTION_COST,
+        now,
+        now,
+      ]
     )
   })
-  txn()
 
   return {
-    user: db.prepare('SELECT * FROM sports_users WHERE id = ?').get(input.userId) as SportsUser,
-    prediction: db.prepare('SELECT * FROM match_predictions WHERE id = ?').get(id) as MatchPrediction,
+    user: (await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [input.userId]))!,
+    prediction: (await dbGet<MatchPrediction>('SELECT * FROM match_predictions WHERE id = ?', [id]))!,
   }
 }

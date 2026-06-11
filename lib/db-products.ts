@@ -21,45 +21,20 @@ import {
 } from './db-sqlite-products'
 
 export async function getProducts(): Promise<Product[]> {
-  const mode = getDbMode()
-  
-  // Usar SQLite si está configurado
-  if (mode === 'sqlite') {
-    return getProductsSQLite()
-  }
-  
-  // Usar JSON si está configurado
-  if (mode === 'json') {
-    return getProductsJSON()
-  }
-  
-  // Por defecto: SQLite
+  if (getDbMode() === 'json') return getProductsJSON()
   return getProductsSQLite()
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
-  const mode = getDbMode()
-  
-  if (mode === 'sqlite') {
-    return getProductByIdSQLite(id)
-  }
-  
-  if (mode === 'json') {
+  if (getDbMode() === 'json') {
     const products = getProductsJSON()
-    return products.find(p => p.id === id) || null
+    return products.find((p) => p.id === id) || null
   }
-  
   return getProductByIdSQLite(id)
 }
 
 export async function createProduct(product: Omit<Product, 'id'>): Promise<Product> {
-  const mode = getDbMode()
-  
-  if (mode === 'sqlite') {
-    return createProductSQLite(product)
-  }
-  
-  if (mode === 'json') {
+  if (getDbMode() === 'json') {
     const newProduct: Product = {
       ...product,
       id: `prod-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -69,18 +44,11 @@ export async function createProduct(product: Omit<Product, 'id'>): Promise<Produ
     saveProductsJSON(products)
     return newProduct
   }
-  
   return createProductSQLite(product)
 }
 
 export async function updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
-  const mode = getDbMode()
-  
-  if (mode === 'sqlite') {
-    return updateProductSQLite(id, updates)
-  }
-  
-  if (mode === 'json') {
+  if (getDbMode() === 'json') {
     const products = getProductsJSON()
     const index = products.findIndex(p => p.id === id)
     if (index === -1) return null
@@ -89,23 +57,15 @@ export async function updateProduct(id: string, updates: Partial<Product>): Prom
     saveProductsJSON(products)
     return products[index]
   }
-  
   return updateProductSQLite(id, updates)
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
-  const mode = getDbMode()
-  
-  if (mode === 'sqlite') {
-    return deleteProductSQLite(id)
-  }
-  
-  if (mode === 'json') {
+  if (getDbMode() === 'json') {
     const products = getProductsJSON()
     const filtered = products.filter(p => p.id !== id)
     saveProductsJSON(filtered)
     return filtered.length < products.length
   }
-  
   return deleteProductSQLite(id)
 }

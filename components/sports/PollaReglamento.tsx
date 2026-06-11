@@ -33,7 +33,7 @@ export default function PollaReglamento({ compact = false }: PollaReglamentoProp
         <div className="px-4 py-4">
           <p className="text-xs text-stone-400 leading-relaxed mb-4">{REGLAMENTO_SHORT}</p>
           <Link
-            href="/sports/reglamento"
+            href="/mundial/reglamento"
             className="flex items-center justify-center w-full py-2.5 rounded-xl bg-berry-600/20 border border-berry-500/30 text-berry-300 text-sm font-semibold hover:bg-berry-600/30 transition-colors"
           >
             Reglamento y condiciones completas →

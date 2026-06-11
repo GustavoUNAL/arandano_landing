@@ -1,7 +1,5 @@
-'use client'
+import { redirect } from 'next/navigation'
 
-import SportsLanding from '@/components/sports/SportsLanding'
-
-export default function SportsPage() {
-  return <SportsLanding />
+export default function SportsRedirectPage() {
+  redirect('/mundial')
 }

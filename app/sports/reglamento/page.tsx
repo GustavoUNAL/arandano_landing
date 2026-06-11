@@ -1,12 +1,5 @@
-import ReglamentoPage from '@/components/sports/ReglamentoPage'
-import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 
-export const metadata: Metadata = {
-  title: 'Reglamento y condiciones | Polla Mundialista',
-  description:
-    'Reglamento completo de la polla mundialista Arándano 2026: créditos, puntos, ganadores, pronósticos y condiciones de participación.',
-}
-
-export default function ReglamentoRoute() {
-  return <ReglamentoPage />
+export default function SportsReglamentoRedirectPage() {
+  redirect('/mundial/reglamento')
 }

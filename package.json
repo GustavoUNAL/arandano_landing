@@ -14,6 +14,7 @@
     "export:migration": "node scripts/export-sqlite-for-migration.js",
     "backup:json": "node scripts/export-json-to-backup.js",
     "backup:sqlite": "bash scripts/backup-sqlite.sh",
+    "init:neon": "npx tsx --env-file=.env scripts/init-neon-db.ts",
     "configure:env": "bash scripts/configure-server-env.sh",
     "test:api": "node scripts/test-api-functions.js",
     "pre-deploy": "node scripts/pre-deploy-check.js",
@@ -22,6 +23,7 @@
     "setup:ovh": "bash deploy/ovh/setup-ovh.sh"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@types/better-sqlite3": "^7.6.13",
     "better-sqlite3": "^11.10.0",
     "next": "^14.0.4",
@@ -29,12 +31,14 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "recharts": "^3.6.0",
+    "ws": "^8.21.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^20.10.6",
     "@types/react": "^18.2.46",
     "@types/react-dom": "^18.2.18",
+    "@types/ws": "^8.18.1",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.56.0",
     "eslint-config-next": "^14.0.4",

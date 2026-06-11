@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
-import { getDbMode } from './db-utils'
-import { getDatabase } from './db-sqlite'
+import { usesRelationalDb } from './db-utils'
+import { dbAll, dbGet, dbRun } from './db'
 
 const visitsJsonPath = path.join(process.cwd(), 'data', 'site-visits.json')
 
@@ -31,49 +31,43 @@ function normalizePath(pagePath: string): string {
   return p || '/'
 }
 
-export function getPageVisitCount(pagePath: string): number {
+export async function getPageVisitCount(pagePath: string): Promise<number> {
   const pathNorm = normalizePath(pagePath)
 
-  if (getDbMode() === 'sqlite') {
-    const db = getDatabase()
-    const row = db
-      .prepare('SELECT COUNT(*) AS total FROM site_visits WHERE path = ?')
-      .get(pathNorm) as { total: number }
-    return Number(row.total) || 0
+  if (usesRelationalDb()) {
+    const row = await dbGet<{ total: number }>(
+      'SELECT COUNT(*) AS total FROM site_visits WHERE path = ?',
+      [pathNorm]
+    )
+    return Number(row?.total) || 0
   }
 
   const data = readVisitsJson()
   return data.visits.filter((v) => v.path === pathNorm).length
 }
 
-export function recordSiteVisit(pagePath: string): { pageVisits: number } {
+export async function recordSiteVisit(pagePath: string): Promise<{ pageVisits: number }> {
   const pathNorm = normalizePath(pagePath)
   const visitedAt = new Date().toISOString()
 
-  if (getDbMode() === 'sqlite') {
-    const db = getDatabase()
-    db.prepare('INSERT INTO site_visits (path, visitedAt) VALUES (?, ?)').run(
-      pathNorm,
-      visitedAt
-    )
-    return { pageVisits: getPageVisitCount(pathNorm) }
+  if (usesRelationalDb()) {
+    await dbRun('INSERT INTO site_visits (path, visitedAt) VALUES (?, ?)', [pathNorm, visitedAt])
+    const pageVisits = await getPageVisitCount(pathNorm)
+    return { pageVisits }
   }
 
   const data = readVisitsJson()
   data.visits.push({ path: pathNorm, visitedAt })
   data.total = data.visits.length
   writeVisitsJson(data)
-  return { pageVisits: getPageVisitCount(pathNorm) }
+  return { pageVisits: await getPageVisitCount(pathNorm) }
 }
 
 /** @deprecated Usar getPageVisitCount */
-export function getSiteVisitTotal(): number {
-  if (getDbMode() === 'sqlite') {
-    const db = getDatabase()
-    const row = db.prepare('SELECT COUNT(*) AS total FROM site_visits').get() as {
-      total: number
-    }
-    return Number(row.total) || 0
+export async function getSiteVisitTotal(): Promise<number> {
+  if (usesRelationalDb()) {
+    const row = await dbGet<{ total: number }>('SELECT COUNT(*) AS total FROM site_visits')
+    return Number(row?.total) || 0
   }
   return readVisitsJson().total
 }

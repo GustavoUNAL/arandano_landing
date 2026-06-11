@@ -384,7 +384,7 @@ function initializeDatabase() {
       email TEXT NOT NULL UNIQUE,
       name TEXT,
       image TEXT,
-      credits INTEGER NOT NULL DEFAULT 2000,
+      credits INTEGER NOT NULL DEFAULT 120,
       displayAlias TEXT,
       totalPoints INTEGER NOT NULL DEFAULT 0,
       createdAt TEXT NOT NULL,

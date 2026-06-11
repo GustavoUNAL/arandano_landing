@@ -17,13 +17,13 @@ export async function GET() {
   }
 
   try {
-    const user = getOrCreateSportsUser(authUser)
+    const user = await getOrCreateSportsUser(authUser)
     const worldCup = await getWorldCupFullData()
 
-    settleFinishedMatches(worldCup.allMatches)
+    await settleFinishedMatches(worldCup.allMatches)
 
-    const predictions = getUserPredictions(user.id)
-    const leaderboard = getLeaderboard(user.id)
+    const predictions = await getUserPredictions(user.id)
+    const leaderboard = await getLeaderboard(user.id)
     const scoringRules = getScoringRules()
     const winners = leaderboard.filter((e) => e.isWinner)
     const predictionMap = Object.fromEntries(predictions.map((p) => [p.matchId, p]))

@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    getOrCreateSportsUser(authUser)
+    await getOrCreateSportsUser(authUser)
 
     const body = await request.json()
     const { matchId, homeScore, awayScore } = body
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const result = savePrediction({
+    const result = await savePrediction({
       userId: authUser.id,
       matchId: match.id,
       homeTeamName: match.homeTeam.name,

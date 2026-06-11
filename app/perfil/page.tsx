@@ -30,7 +30,7 @@ export default function PerfilPage() {
           >
             Jugar con Google
           </button>
-          <Link href="/sports" className="inline-block mt-4 text-sm text-berry-400 hover:text-berry-300">
+          <Link href="/mundial" className="inline-block mt-4 text-sm text-berry-400 hover:text-berry-300">
             Volver a la polla
           </Link>
         </div>

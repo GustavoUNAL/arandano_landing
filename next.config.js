@@ -31,6 +31,12 @@ const nextConfig = {
   output: 'standalone', // Genera build optimizado para servidores
   poweredByHeader: false, // Remover header X-Powered-By
   compress: true, // Habilitar compresión Gzip
+  async redirects() {
+    return [
+      { source: '/sports', destination: '/mundial', permanent: true },
+      { source: '/sports/reglamento', destination: '/mundial/reglamento', permanent: true },
+    ]
+  },
 }
 
 module.exports = nextConfig

@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
   try {
     const daysParam = request.nextUrl.searchParams.get('days')
     const days = daysParam ? Math.min(Math.max(parseInt(daysParam, 10) || 30, 1), 365) : 30
-    const dashboard = getSeoDashboard(days)
+    const dashboard = await getSeoDashboard(days)
     return NextResponse.json({ ...dashboard, days })
   } catch (error) {
     console.error('[SEO] Error:', error)

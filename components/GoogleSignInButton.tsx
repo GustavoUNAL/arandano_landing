@@ -1,26 +1,43 @@
 'use client'
 
-import { signIn } from 'next-auth/react'
+import { signIn, useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 interface GoogleSignInButtonProps {
   callbackUrl?: string
   className?: string
   label?: string
+  loggedInLabel?: string
 }
 
 export default function GoogleSignInButton({
   callbackUrl = '/perfil',
   className = '',
   label = 'Continuar con Google',
+  loggedInLabel = 'Ir a mi perfil',
 }: GoogleSignInButtonProps) {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const isLoading = status === 'loading'
+
+  const handleClick = () => {
+    if (isLoading) return
+    if (session) {
+      router.push(callbackUrl)
+      return
+    }
+    void signIn('google', { callbackUrl })
+  }
+
   return (
     <button
       type="button"
-      onClick={() => signIn('google', { callbackUrl })}
-      className={`group relative w-full flex items-center justify-center gap-3 px-6 py-4 bg-white hover:bg-stone-50 text-stone-800 font-semibold rounded-2xl border border-stone-200 shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-berry-900/10 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 ${className}`}
+      onClick={handleClick}
+      disabled={isLoading}
+      className={`group relative w-full flex items-center justify-center gap-3 px-6 py-4 bg-white hover:bg-stone-50 text-stone-800 font-semibold rounded-2xl border border-stone-200 shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-berry-900/10 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:pointer-events-none ${className}`}
     >
-      <GoogleIcon />
-      <span>{label}</span>
+      {!session && <GoogleIcon />}
+      <span>{isLoading ? 'Cargando…' : session ? loggedInLabel : label}</span>
       <span className="absolute inset-0 rounded-2xl ring-2 ring-berry-400/0 group-hover:ring-berry-400/30 transition-all duration-300" />
     </button>
   )

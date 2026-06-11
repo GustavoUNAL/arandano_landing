@@ -37,7 +37,7 @@ export default function ReglamentoPage() {
     <div className="min-h-screen bg-stone-950 text-white">
       <header className="sticky top-0 z-50 border-b border-white/10 bg-stone-950/90 backdrop-blur-xl">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
-          <Link href="/sports" className="text-sm text-berry-400 font-medium shrink-0">
+          <Link href="/mundial" className="text-sm text-berry-400 font-medium shrink-0">
             ← Polla
           </Link>
           <span className="font-display font-bold text-sm truncate">Reglamento</span>
@@ -78,7 +78,7 @@ export default function ReglamentoPage() {
                 Reglamento y condiciones
               </h1>
               <p className="text-stone-400 text-base sm:text-lg leading-relaxed max-w-xl">
-                Todo lo que necesitas saber para jugar limpio, sumar puntos y pelear por uno de los{' '}
+                Todo lo que necesitas saber para jugar, sumar puntos y pelear por uno de los{' '}
                 {TOP_WINNERS_COUNT} puestos del podio.
               </p>
             </div>
@@ -92,18 +92,18 @@ export default function ReglamentoPage() {
           {[
             {
               icon: '💰',
-              title: `${INITIAL_CREDITS.toLocaleString('es-CO')} créditos`,
-              sub: 'Saldo inicial virtual',
+              title: `${INITIAL_CREDITS} créditos`,
+              sub: `Al registrarte recibes ${INITIAL_CREDITS} créditos gratis.`,
             },
             {
               icon: '🎯',
               title: `${POINTS_EXACT_SCORE} · ${POINTS_GOAL_DIFFERENCE} · ${POINTS_CORRECT_RESULT} pts`,
-              sub: 'Exacto · Dif. · Resultado',
+              sub: `Exacto (${POINTS_EXACT_SCORE}): marcador idéntico. Dif. (${POINTS_GOAL_DIFFERENCE}): misma diferencia de goles. Resultado (${POINTS_CORRECT_RESULT}): ganador o empate correcto.`,
             },
             {
               icon: '🏆',
               title: `${TOP_WINNERS_COUNT} ganadores`,
-              sub: `Mín. ${MIN_SETTLED_PICKS_TO_WIN} picks calificados`,
+              sub: `Mín. ${MIN_SETTLED_PICKS_TO_WIN} picks calificados.`,
             },
           ].map((card) => (
             <div
@@ -187,9 +187,8 @@ export default function ReglamentoPage() {
               <h3 className="font-semibold text-berry-300 mb-4">{section.title}</h3>
               <ul className="space-y-3">
                 {section.items.map((item) => (
-                  <li key={item} className="flex gap-3 text-sm text-stone-300 leading-relaxed">
-                    <span className="text-berry-500 shrink-0 mt-1">●</span>
-                    <span>{item}</span>
+                  <li key={item} className="text-sm text-stone-300 leading-relaxed">
+                    {item}
                   </li>
                 ))}
               </ul>
@@ -206,19 +205,17 @@ export default function ReglamentoPage() {
             <div>
               <p className="font-semibold text-berry-300 mb-2">Créditos virtuales</p>
               <ul className="space-y-2 text-stone-400">
-                <li>· Empiezas con {INITIAL_CREDITS.toLocaleString('es-CO')} créditos.</li>
-                <li>· Cada pronóstico nuevo cuesta {PREDICTION_COST} créditos.</li>
-                <li>· Editar antes del pitazo es gratis.</li>
-                <li>· No tienen valor en dinero real.</li>
+                <li>Al registrarte recibes {INITIAL_CREDITS} créditos gratis.</li>
+                <li>Cada pronóstico nuevo cuesta {PREDICTION_COST} créditos.</li>
+                <li>Editar antes del pitazo es gratis.</li>
               </ul>
             </div>
             <div>
               <p className="font-semibold text-berry-300 mb-2">Puntos de ranking</p>
               <ul className="space-y-2 text-stone-400">
-                <li>· Todos empiezan con 0 puntos.</li>
-                <li>· Solo los ganas acertando resultados.</li>
-                <li>· Definen tu posición en la tabla.</li>
-                <li>· Los 5 primeros clasificados ganan el podio.</li>
+                <li>Exacto: {POINTS_EXACT_SCORE} pts · Diferencia: {POINTS_GOAL_DIFFERENCE} pts · Resultado: {POINTS_CORRECT_RESULT} pt.</li>
+                <li>Solo cuentan para el ranking; todos empiezan en 0.</li>
+                <li>Los {TOP_WINNERS_COUNT} primeros clasificados ganan el podio.</li>
               </ul>
             </div>
           </div>
@@ -268,7 +265,7 @@ export default function ReglamentoPage() {
             {session ? 'Ir a mi perfil' : 'Jugar con Google'}
           </button>
           <p className="mt-4">
-            <Link href="/sports" className="text-xs text-berry-400 hover:text-berry-300">
+            <Link href="/mundial" className="text-xs text-berry-400 hover:text-berry-300">
               Volver a la polla →
             </Link>
           </p>

@@ -153,17 +153,17 @@ export default function PerfilDashboard() {
       <header className="sticky top-0 z-40 border-b border-white/10 bg-stone-950/95 backdrop-blur-xl safe-area-top">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 shrink-0">
-            <Link href="/sports" className="text-xs text-berry-400 font-medium">
+            <Link href="/mundial" className="text-xs text-berry-400 font-medium">
               ← Polla
             </Link>
-            <Link href="/sports/reglamento" className="text-[10px] text-stone-500 hover:text-berry-400">
+            <Link href="/mundial/reglamento" className="text-[10px] text-stone-500 hover:text-berry-400">
               Reglamento
             </Link>
           </div>
           <span className="font-display font-bold text-sm truncate">Mi perfil</span>
           <button
             type="button"
-            onClick={() => signOut({ callbackUrl: '/sports' })}
+            onClick={() => signOut({ callbackUrl: '/mundial' })}
             className="text-xs text-stone-500 shrink-0"
           >
             Salir
