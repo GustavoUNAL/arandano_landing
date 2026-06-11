@@ -10,6 +10,15 @@ function isProduction(): boolean {
   return process.env.NODE_ENV === 'production'
 }
 
+/** En producción fuerza https y quita barra final (evita redirect_uri http). */
+function canonicalizeOrigin(url: string): string {
+  let origin = normalizeOrigin(url.trim())
+  if (isProduction() && !LOCALHOST_RE.test(origin) && origin.startsWith('http://')) {
+    origin = origin.replace(/^http:\/\//, 'https://')
+  }
+  return origin
+}
+
 /** Origen canónico para OAuth (SITE_URL tiene prioridad sobre NEXTAUTH_URL localhost). */
 export function getConfiguredSiteUrl(): string | undefined {
   const candidates = [
@@ -19,9 +28,13 @@ export function getConfiguredSiteUrl(): string | undefined {
   ].filter((v): v is string => Boolean(v))
 
   for (const raw of candidates) {
-    const origin = normalizeOrigin(raw)
+    const origin = canonicalizeOrigin(raw)
     if (isProduction() && LOCALHOST_RE.test(origin)) continue
     return origin
+  }
+
+  if (isProduction()) {
+    return 'https://arandanocafe.com'
   }
 
   return undefined
@@ -91,15 +104,28 @@ export function resolvePublicOrigin(headers?: Headers): string {
   return 'http://localhost:3000'
 }
 
+export function ensureNextAuthUrlForOAuth(reqHeaders?: Headers): string {
+  bootstrapNextAuthUrl()
+  if (reqHeaders) {
+    applyNextAuthUrl(resolvePublicOrigin(reqHeaders))
+  }
+  const url = canonicalizeOrigin(process.env.NEXTAUTH_URL ?? getConfiguredSiteUrl() ?? '')
+  if (url) {
+    process.env.NEXTAUTH_URL = url
+    return url
+  }
+  return 'http://localhost:3000'
+}
+
 export function applyNextAuthUrl(origin: string): string {
   const configured = getConfiguredSiteUrl()
   if (configured) {
-    const canonical = normalizeOrigin(configured)
+    const canonical = canonicalizeOrigin(configured)
     process.env.NEXTAUTH_URL = canonical
     return canonical
   }
 
-  const normalized = normalizeOrigin(origin)
+  const normalized = canonicalizeOrigin(origin)
   const current = process.env.NEXTAUTH_URL ?? ''
 
   if (shouldTrustRequestHost() || LOCALHOST_RE.test(current) || !current) {

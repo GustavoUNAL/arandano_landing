@@ -1,5 +1,5 @@
 import {
-  applyNextAuthUrl,
+  ensureNextAuthUrlForOAuth,
   getConfiguredSiteUrl,
   getGoogleOAuthRedirectUri,
   originFromHeaders,
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   const nextAuthUrl = process.env.NEXTAUTH_URL ?? null
   const configuredSiteUrl = getConfiguredSiteUrl() ?? null
   const requestOrigin = originFromHeaders(request.headers) ?? null
-  const effectiveAfterRequest = applyNextAuthUrl(requestOrigin ?? 'http://localhost:3000')
+  const effectiveAfterRequest = ensureNextAuthUrlForOAuth(request.headers)
 
   return NextResponse.json({
     redirectUri,
