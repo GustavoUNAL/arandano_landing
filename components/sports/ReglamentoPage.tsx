@@ -1,6 +1,9 @@
 'use client'
 
 import { IconInfo, IconTarget, IconTrophy } from '@/components/sports/SportsIcons'
+import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
+import { useMundialTheme } from '@/hooks/useMundialTheme'
+import { mundialTheme, scoringTierClass } from '@/lib/mundial-theme-classes'
 import {
   CONDICIONES_LEGALES,
   INITIAL_CREDITS,
@@ -18,15 +21,10 @@ import { signIn, useSession } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
 
-const TIER_STYLES = {
-  emerald: 'border-emerald-500/40 bg-emerald-950/30 text-emerald-300',
-  sky: 'border-sky-500/40 bg-sky-950/30 text-sky-300',
-  amber: 'border-amber-500/40 bg-amber-950/30 text-amber-300',
-  stone: 'border-white/10 bg-white/5 text-stone-400',
-} as const
-
 export default function ReglamentoPage() {
   const { data: session } = useSession()
+  const { isDark, toggleTheme } = useMundialTheme()
+  const t = mundialTheme(isDark)
 
   const goPlay = () => {
     if (session) window.location.href = '/perfil'
@@ -34,28 +32,41 @@ export default function ReglamentoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-950 text-white">
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-stone-950/90 backdrop-blur-xl">
+    <div className={`min-h-screen transition-colors duration-300 ${t.page}`}>
+      <header
+        className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-colors ${t.header}`}
+      >
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
           <Link href="/mundial" className="text-sm text-berry-400 font-medium shrink-0">
             ← Polla
           </Link>
           <span className="font-display font-bold text-sm truncate">Reglamento</span>
-          <button
-            type="button"
-            onClick={goPlay}
-            className="text-xs font-semibold px-3 py-1.5 rounded-full bg-berry-600 hover:bg-berry-500 shrink-0"
-          >
-            Jugar
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={goPlay}
+              className="hidden sm:inline-flex text-xs font-semibold px-3 py-1.5 rounded-full bg-berry-600 hover:bg-berry-500 text-white shrink-0"
+            >
+              Jugar
+            </button>
+            <MundialThemeToggle isDark={isDark} onToggle={toggleTheme} />
+          </div>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-white/10">
+      <section className={`relative overflow-hidden border-b transition-colors ${t.border}`}>
         <div className="absolute inset-0 pointer-events-none" aria-hidden>
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-berry-600/25 rounded-full blur-[100px]" />
-          <div className="absolute bottom-0 right-0 w-72 h-72 bg-emerald-600/10 rounded-full blur-[80px]" />
+          <div
+            className={`absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full blur-[100px] ${
+              isDark ? 'bg-berry-600/25' : 'bg-berry-400/20'
+            }`}
+          />
+          <div
+            className={`absolute bottom-0 right-0 w-72 h-72 rounded-full blur-[80px] ${
+              isDark ? 'bg-emerald-600/10' : 'bg-emerald-400/15'
+            }`}
+          />
         </div>
         <div className="relative max-w-4xl mx-auto px-4 py-14 sm:py-20">
           <div className="flex flex-col sm:flex-row items-center gap-8">
@@ -77,7 +88,7 @@ export default function ReglamentoPage() {
               <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-4">
                 Reglamento y condiciones
               </h1>
-              <p className="text-stone-400 text-base sm:text-lg leading-relaxed max-w-xl">
+              <p className={`text-base sm:text-lg leading-relaxed max-w-xl ${t.muted}`}>
                 Todo lo que necesitas saber para jugar, sumar puntos y pelear por uno de los{' '}
                 {TOP_WINNERS_COUNT} puestos del podio.
               </p>
@@ -108,11 +119,17 @@ export default function ReglamentoPage() {
           ].map((card) => (
             <div
               key={card.title}
-              className="rounded-2xl border border-white/10 bg-stone-900/90 backdrop-blur p-4 text-center shadow-xl"
+              className={`rounded-2xl border backdrop-blur p-4 text-center shadow-xl transition-colors ${t.card}`}
             >
               <span className="text-2xl">{card.icon}</span>
-              <p className="font-display font-bold text-berry-300 mt-2 text-sm sm:text-base">{card.title}</p>
-              <p className="text-[10px] text-stone-500 mt-1">{card.sub}</p>
+              <p
+                className={`font-display font-bold mt-2 text-sm sm:text-base ${
+                  isDark ? 'text-berry-300' : 'text-berry-600'
+                }`}
+              >
+                {card.title}
+              </p>
+              <p className={`text-[10px] mt-1 ${t.mutedSm}`}>{card.sub}</p>
             </div>
           ))}
         </div>
@@ -120,19 +137,19 @@ export default function ReglamentoPage() {
 
       {/* Galería ambiente */}
       <section className="max-w-4xl mx-auto px-4 py-12">
-        <div className="grid grid-cols-3 gap-2 sm:gap-3 rounded-2xl overflow-hidden border border-white/10 h-40 sm:h-52">
+        <div className={`grid grid-cols-3 gap-2 sm:gap-3 rounded-2xl overflow-hidden border h-40 sm:h-52 transition-colors ${t.border}`}>
           {[
             { src: '/images/showcase/coctel.png', alt: 'Ambiente Arándano' },
             { src: '/images/showcase/frappe.png', alt: 'Café Arándano' },
             { src: '/images/logo.png', alt: 'Arándano Café Bar' },
           ].map((img) => (
-            <div key={img.src} className="relative bg-stone-900">
+            <div key={img.src} className={`relative transition-colors ${t.galleryBg}`}>
               <Image src={img.src} alt={img.alt} fill className="object-cover opacity-90" sizes="33vw" />
-              <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 to-transparent" />
+              <div className={`absolute inset-0 bg-gradient-to-t ${t.galleryOverlay} to-transparent`} />
             </div>
           ))}
         </div>
-        <p className="text-center text-xs text-stone-500 mt-3">
+        <p className={`text-center text-xs mt-3 ${t.mutedSm}`}>
           Vive el Mundial desde tu tercer espacio en Pasto · Arándano Café Bar
         </p>
       </section>
@@ -147,18 +164,20 @@ export default function ReglamentoPage() {
           {SCORING_EXAMPLES.map((ex) => (
             <div
               key={ex.label}
-              className={`rounded-2xl border p-5 ${TIER_STYLES[ex.color]}`}
+              className={`rounded-2xl border p-5 transition-colors ${scoringTierClass(ex.color, isDark)}`}
             >
               <p className="text-xs uppercase tracking-wide opacity-80 mb-3">{ex.label}</p>
               <div className="flex items-center justify-center gap-4 mb-3">
                 <div className="text-center">
-                  <p className="text-[10px] text-stone-500 mb-1">Tu pick</p>
+                  <p className={`text-[10px] mb-1 ${t.mutedSm}`}>Tu pick</p>
                   <p className="font-display text-2xl font-bold tabular-nums">{ex.prediction}</p>
                 </div>
-                <span className="text-stone-600">→</span>
+                <span className={t.arrow}>→</span>
                 <div className="text-center">
-                  <p className="text-[10px] text-stone-500 mb-1">Real</p>
-                  <p className="font-display text-2xl font-bold tabular-nums text-white">{ex.result}</p>
+                  <p className={`text-[10px] mb-1 ${t.mutedSm}`}>Real</p>
+                  <p className={`font-display text-2xl font-bold tabular-nums ${t.resultText}`}>
+                    {ex.result}
+                  </p>
                 </div>
               </div>
               <p className="text-center font-bold text-lg">
@@ -167,7 +186,7 @@ export default function ReglamentoPage() {
             </div>
           ))}
         </div>
-        <p className="text-xs text-stone-500 mt-4 text-center">
+        <p className={`text-xs mt-4 text-center ${t.mutedSm}`}>
           En cada partido solo se otorga el mejor nivel alcanzado (no se suman).
         </p>
       </section>
@@ -182,12 +201,16 @@ export default function ReglamentoPage() {
           {REGLAMENTO_SECTIONS.map((section) => (
             <article
               key={section.id}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-6"
+              className={`rounded-2xl border p-6 transition-colors ${t.cardSoft}`}
             >
-              <h3 className="font-semibold text-berry-300 mb-4">{section.title}</h3>
+              <h3
+                className={`font-semibold mb-4 ${isDark ? 'text-berry-300' : 'text-berry-600'}`}
+              >
+                {section.title}
+              </h3>
               <ul className="space-y-3">
                 {section.items.map((item) => (
-                  <li key={item} className="text-sm text-stone-300 leading-relaxed">
+                  <li key={item} className={`text-sm leading-relaxed ${t.body}`}>
                     {item}
                   </li>
                 ))}
@@ -199,12 +222,14 @@ export default function ReglamentoPage() {
 
       {/* Créditos explicados */}
       <section className="max-w-4xl mx-auto px-4 pb-12">
-        <div className="rounded-2xl border border-berry-500/20 bg-gradient-to-br from-berry-950/50 to-stone-950 p-6 sm:p-8">
+        <div className={`rounded-2xl border p-6 sm:p-8 transition-colors ${t.creditsBox}`}>
           <h2 className="font-display text-xl font-bold mb-4">Créditos vs puntos</h2>
           <div className="grid sm:grid-cols-2 gap-6 text-sm">
             <div>
-              <p className="font-semibold text-berry-300 mb-2">Créditos virtuales</p>
-              <ul className="space-y-2 text-stone-400 list-disc list-inside">
+              <p className={`font-semibold mb-2 ${isDark ? 'text-berry-300' : 'text-berry-600'}`}>
+                Créditos virtuales
+              </p>
+              <ul className={`space-y-2 list-disc list-inside ${t.muted}`}>
                 <li>Al registrarte recibes {INITIAL_CREDITS.toLocaleString('es-CO')} créditos gratis.</li>
                 <li>Cada pronóstico nuevo consume {PREDICTION_COST} créditos.</li>
                 <li>Editar un pronóstico antes del inicio del partido no consume créditos adicionales.</li>
@@ -212,8 +237,10 @@ export default function ReglamentoPage() {
               </ul>
             </div>
             <div>
-              <p className="font-semibold text-berry-300 mb-2">Puntos de ranking</p>
-              <ul className="space-y-2 text-stone-400 list-disc list-inside">
+              <p className={`font-semibold mb-2 ${isDark ? 'text-berry-300' : 'text-berry-600'}`}>
+                Puntos de ranking
+              </p>
+              <ul className={`space-y-2 list-disc list-inside ${t.muted}`}>
                 <li>Marcador exacto: {POINTS_EXACT_SCORE} pts.</li>
                 <li>Diferencia correcta: {POINTS_GOAL_DIFFERENCE} pts.</li>
                 <li>Resultado correcto: {POINTS_CORRECT_RESULT} pt.</li>
@@ -228,19 +255,22 @@ export default function ReglamentoPage() {
       {/* Condiciones legales */}
       <section className="max-w-4xl mx-auto px-4 pb-16">
         <div className="flex items-center gap-2 mb-6">
-          <IconInfo className="w-5 h-5 text-stone-400" />
+          <IconInfo className={`w-5 h-5 ${isDark ? 'text-stone-400' : 'text-stone-500'}`} />
           <h2 className="font-display text-2xl font-bold">Condiciones y privacidad</h2>
         </div>
         <div className="space-y-4">
           {CONDICIONES_LEGALES.map((section) => (
             <article
               key={section.id}
-              className="rounded-xl border border-white/5 bg-stone-900/50 p-5"
+              className={`rounded-xl border p-5 transition-colors ${t.cardLegal}`}
             >
-              <h3 className="font-semibold text-stone-200 mb-3 text-sm">{section.title}</h3>
+              <h3 className={`font-semibold mb-3 text-sm ${t.legalTitle}`}>{section.title}</h3>
               <ul className="space-y-2">
                 {section.items.map((item) => (
-                  <li key={item} className="text-xs text-stone-500 leading-relaxed pl-3 border-l border-white/10">
+                  <li
+                    key={item}
+                    className={`text-xs leading-relaxed pl-3 border-l ${t.legalBorder} ${t.mutedSm}`}
+                  >
                     {item}
                   </li>
                 ))}
@@ -251,13 +281,13 @@ export default function ReglamentoPage() {
       </section>
 
       {/* CTA */}
-      <section className="border-t border-white/10 bg-berry-950/30 py-14">
+      <section className={`border-t py-14 transition-colors ${t.ctaSection}`}>
         <div className="max-w-4xl mx-auto px-4 text-center">
           <div className="relative w-16 h-16 mx-auto mb-4">
             <Image src="/images/logo.png" alt="Arándano" fill className="object-contain" sizes="64px" />
           </div>
           <h2 className="font-display text-2xl font-bold mb-3">¿Listo para jugar?</h2>
-          <p className="text-stone-400 text-sm mb-6 max-w-md mx-auto">
+          <p className={`text-sm mb-6 max-w-md mx-auto ${t.muted}`}>
             Acepta el reglamento al participar. Entra con Google y empieza a pronosticar antes del pitazo.
           </p>
           <button
@@ -275,8 +305,8 @@ export default function ReglamentoPage() {
         </div>
       </section>
 
-      <footer className="border-t border-white/10 py-8 text-center">
-        <p className="text-stone-600 text-xs">© 2026 Arándano Café Bar · Pasto, Colombia</p>
+      <footer className={`border-t py-8 text-center transition-colors ${t.footer}`}>
+        <p className={`text-xs ${t.footerMuted}`}>© 2026 Arándano Café Bar · Pasto, Colombia</p>
       </footer>
     </div>
   )

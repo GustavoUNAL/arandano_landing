@@ -1,7 +1,9 @@
 import { authOptions } from '@/lib/auth'
-import { applyNextAuthUrlFromRequest } from '@/lib/auth-url'
+import { applyNextAuthUrlFromRequest, bootstrapNextAuthUrl } from '@/lib/auth-url'
 import NextAuth from 'next-auth'
 import type { NextRequest } from 'next/server'
+
+bootstrapNextAuthUrl()
 
 const handler = NextAuth(authOptions)
 

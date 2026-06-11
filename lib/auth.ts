@@ -1,6 +1,8 @@
-import { usesSecureCookies } from '@/lib/auth-url'
+import { bootstrapNextAuthUrl, usesSecureCookies } from '@/lib/auth-url'
 import type { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
+
+bootstrapNextAuthUrl()
 
 export const authOptions: NextAuthOptions = {
   providers: [

@@ -27,6 +27,7 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+deploy/ovh/env.server
 
 # Firebase
 # firebase-service-account.json - Comentado para permitir subir al servidor

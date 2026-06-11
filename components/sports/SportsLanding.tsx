@@ -1,6 +1,7 @@
 'use client'
 
-import GoogleSignInButton from '@/components/GoogleSignInButton'
+import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
+import { useMundialTheme } from '@/hooks/useMundialTheme'
 import PollaLeaderboard from '@/components/sports/PollaLeaderboard'
 import TeamCrest from '@/components/sports/TeamCrest'
 import {
@@ -123,6 +124,7 @@ export default function SportsLanding() {
   const [wcData, setWcData] = useState<WorldCupData | null>(null)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const { isDark, toggleTheme } = useMundialTheme()
 
   const loadLeaderboard = () => {
     fetch('/api/sports/leaderboard')
@@ -178,33 +180,48 @@ export default function SportsLanding() {
     : '11 jun — 19 jul 2026'
 
   return (
-    <div className="min-h-screen bg-stone-950 text-white">
+    <div
+      className={`min-h-screen transition-colors duration-300 ${
+        isDark ? 'bg-stone-950 text-white' : 'bg-stone-50 text-stone-900'
+      }`}
+    >
       {/* Nav */}
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-stone-950/80 backdrop-blur-xl">
+      <header
+        className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-colors ${
+          isDark ? 'border-white/10 bg-stone-950/80' : 'border-stone-200 bg-white/90'
+        }`}
+      >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="relative w-9 h-9">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="relative w-9 h-9 shrink-0">
               <Image src="/images/logo.png" alt="Arándano Café Bar" fill className="object-contain" sizes="36px" />
             </div>
-            <span className="font-display font-bold text-lg leading-tight">
+            <span className="font-display font-bold text-lg leading-tight truncate">
               Arándano <span className="text-berry-400 text-sm font-semibold block -mt-0.5">Café Bar</span>
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/mundial/reglamento"
-              className="text-xs sm:text-sm font-medium px-3 py-2 rounded-full border border-white/15 text-stone-300 hover:bg-white/5 transition-colors"
-            >
-              Reglamento
-            </Link>
-            <button
-              type="button"
-              onClick={goToLoginOrPlay}
-              disabled={authLoading}
-              className="text-sm font-semibold px-4 py-2 rounded-full bg-berry-600 hover:bg-berry-500 transition-colors disabled:opacity-60"
-            >
-              {authLoading ? '…' : session ? 'Mi perfil' : 'Iniciar sesión'}
-            </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="hidden sm:flex items-center gap-2">
+              <Link
+                href="/mundial/reglamento"
+                className={`text-sm font-medium px-3 py-2 rounded-full border transition-colors ${
+                  isDark
+                    ? 'border-white/15 text-stone-300 hover:bg-white/5'
+                    : 'border-stone-300 text-stone-600 hover:bg-stone-100'
+                }`}
+              >
+                Reglamento
+              </Link>
+              <button
+                type="button"
+                onClick={goToLoginOrPlay}
+                disabled={authLoading}
+                className="text-sm font-semibold px-4 py-2 rounded-full bg-berry-600 hover:bg-berry-500 text-white transition-colors disabled:opacity-60"
+              >
+                {authLoading ? '…' : session ? 'Mi perfil' : 'Iniciar sesión'}
+              </button>
+            </div>
+            <MundialThemeToggle isDark={isDark} onToggle={toggleTheme} />
           </div>
         </div>
       </header>
@@ -238,20 +255,26 @@ export default function SportsLanding() {
                 ¿Quieres jugar la <span className="text-berry-300">polla mundialista</span>? Entra a jugar
                 con tus amigos y ganar. Demuestra que eres un experto.
               </p>
-              <div id="iniciar-sesion" className="flex flex-col sm:flex-row gap-3 scroll-mt-24">
-                <GoogleSignInButton
-                  label="Iniciar sesión con Google"
-                  loggedInLabel="⚽ Ir a mi perfil"
-                  callbackUrl="/perfil"
-                  className="!w-auto min-w-[260px]"
-                />
-                <button
-                  type="button"
-                  onClick={goToLoginOrPlay}
-                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 border border-white/20 hover:bg-white/5 text-stone-200 font-semibold rounded-xl transition-colors"
+              <div id="reglamento-juego" className="flex flex-col sm:flex-row gap-3 scroll-mt-24">
+                <Link
+                  href="/mundial/reglamento"
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-berry-600 hover:bg-berry-500 text-white font-semibold rounded-xl transition-colors min-w-[260px]"
                 >
-                  {session ? 'Ir a mi perfil' : 'Iniciar sesión'}
-                </button>
+                  Reglamento de juego
+                </Link>
+                {session && (
+                  <button
+                    type="button"
+                    onClick={goToLoginOrPlay}
+                    className={`inline-flex items-center justify-center gap-2 px-7 py-3.5 border font-semibold rounded-xl transition-colors ${
+                      isDark
+                        ? 'border-white/20 hover:bg-white/5 text-stone-200'
+                        : 'border-stone-300 hover:bg-stone-100 text-stone-700'
+                    }`}
+                  >
+                    Ir a mi perfil
+                  </button>
+                )}
               </div>
             </div>
 
@@ -449,16 +472,15 @@ export default function SportsLanding() {
         </div>
       </section>
 
-      {/* CTA + Login */}
-      <section id="ingresar" className="py-24 border-t border-white/5 scroll-mt-20">
+      {/* CTA */}
+      <section id="ingresar" className={`py-24 border-t scroll-mt-20 ${isDark ? 'border-white/5' : 'border-stone-200'}`}>
         <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
           <p className="text-berry-400 text-sm font-semibold uppercase tracking-widest mb-4">Polla Mundialista</p>
           <h2 className="font-display text-3xl sm:text-4xl font-bold mb-4">
             ¿Quieres jugar la polla mundialista?
           </h2>
-          <p className="text-stone-400 mb-10 leading-relaxed">
-            Entra a jugar con tus amigos y ganar. Demuestra que eres un experto del fútbol
-            y lleva la cima de la tabla durante todo el Mundial 2026.
+          <p className={`mb-10 leading-relaxed ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
+            Lee el reglamento, entra con Google desde tu perfil y compite con tus amigos durante el Mundial 2026.
           </p>
 
           <div className="max-w-sm mx-auto space-y-4">
@@ -467,19 +489,26 @@ export default function SportsLanding() {
                 ¡Parcero, {session.user?.name?.split(' ')[0]}! Ya estás en la polla.
               </p>
             )}
-            <GoogleSignInButton
-              label="Iniciar sesión con Google"
-              loggedInLabel="Ir a mi perfil"
-              callbackUrl="/perfil"
-            />
-            <button
-              type="button"
-              onClick={goToLoginOrPlay}
-              className="w-full py-3 rounded-xl border border-white/15 text-stone-300 hover:bg-white/5 font-medium text-sm transition-colors"
+            <Link
+              href="/mundial/reglamento"
+              className="flex w-full items-center justify-center px-6 py-4 bg-berry-600 hover:bg-berry-500 text-white font-semibold rounded-2xl transition-colors"
             >
-              {session ? 'Ir a mi perfil' : 'Iniciar sesión'}
-            </button>
-            <p className="text-xs text-stone-600">
+              Reglamento de juego
+            </Link>
+            {session ? (
+              <button
+                type="button"
+                onClick={goToLoginOrPlay}
+                className={`w-full py-3 rounded-xl border font-medium text-sm transition-colors ${
+                  isDark
+                    ? 'border-white/15 text-stone-300 hover:bg-white/5'
+                    : 'border-stone-300 text-stone-700 hover:bg-stone-100'
+                }`}
+              >
+                Ir a mi perfil
+              </button>
+            ) : null}
+            <p className={`text-xs ${isDark ? 'text-stone-600' : 'text-stone-500'}`}>
               Pronósticos entre amigos · Sin dinero real · Solo competencia y pasión por el fútbol
             </p>
           </div>
@@ -487,15 +516,15 @@ export default function SportsLanding() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 py-12 bg-stone-950">
+      <footer
+        className={`border-t py-12 transition-colors ${
+          isDark ? 'border-white/10 bg-stone-950' : 'border-stone-200 bg-stone-100'
+        }`}
+      >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
-          <p className="font-display text-xl font-bold mb-2">
+          <p className="font-display text-xl font-bold mb-4">
             Arándano <span className="text-berry-400">Café Bar</span>
           </p>
-          <p className="text-stone-500 text-sm leading-relaxed max-w-md mx-auto mb-1">
-            Vive el Mundial 2026 desde tu tercer espacio en Pasto.
-          </p>
-          <p className="text-stone-500 text-sm mb-6">Polla mundialista · Pronósticos · Amigos · Fútbol</p>
           <p className="text-stone-600 text-xs mb-2">© 2026 Arándano Café Bar · Pasto, Colombia</p>
           <Link href="/mundial/reglamento" className="text-xs text-berry-500/80 hover:text-berry-400">
             Reglamento y condiciones
