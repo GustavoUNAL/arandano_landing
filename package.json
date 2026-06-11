@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "bash scripts/post-build-standalone.sh",
     "start": "next start",
     "lint": "next lint",
     "migrate:sqlite": "node scripts/migrate-to-sqlite.js",

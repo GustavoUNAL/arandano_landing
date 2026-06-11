@@ -35,6 +35,7 @@ const nextConfig = {
     return [
       { source: '/sports', destination: '/mundial', permanent: true },
       { source: '/sports/reglamento', destination: '/mundial/reglamento', permanent: true },
+      { source: '/favicon.ico', destination: '/favicon-32.png', permanent: true },
     ]
   },
 }

@@ -57,11 +57,12 @@ npm run deploy:ovh
 
 ```bash
 npm ci
-npm run build
-cp .env.local .next/standalone/.env.local   # Next.js lee env desde cwd standalone
+npm run build   # postbuild copia public/ y .next/static → .next/standalone/
 pm2 start ecosystem.config.js
 pm2 save
 ```
+
+Tras cada `npm run build`, el script `postbuild` ejecuta `scripts/post-build-standalone.sh` (copia `public/`, `.next/static` y `.env.local` al standalone). Sin esto, verás **ChunkLoadError 404** e imágenes rotas.
 
 ## Verificación
 

@@ -151,11 +151,9 @@ if npm run build; then
     if [ -f ".next/standalone/server.js" ]; then
         echo -e "${GREEN}   ✅ Servidor standalone generado correctamente${NC}"
         
-        # Variables de entorno para el servidor standalone (cwd = .next/standalone)
-        if [ -f ".env.local" ]; then
-            cp .env.local .next/standalone/.env.local
-            echo -e "${GREEN}   ✅ .env.local copiado al build standalone${NC}"
-        fi
+        # public/, .next/static y .env.local → standalone (también corre en npm postbuild)
+        bash scripts/post-build-standalone.sh
+        echo -e "${GREEN}   ✅ Assets standalone sincronizados (public + chunks JS)${NC}"
 
         # SQLite usa PROJECT_ROOT/DATABASE_PATH (ecosystem.config.js), no la copia en standalone
         echo -e "${GREEN}   ✅ Build standalone listo (BD: data/arandano.db en raíz del proyecto)${NC}"
