@@ -1,7 +1,10 @@
 import { getAuthUser } from '@/lib/auth-server'
 import { getWorldCupFullData } from '@/lib/football-data'
+import { getScoringRules } from '@/lib/polla-rules'
 import { getOrCreateSportsUser, isMatchPredictable, savePrediction } from '@/lib/sports-polla'
 import { NextResponse } from 'next/server'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: Request) {
   const authUser = await getAuthUser()
@@ -46,7 +49,14 @@ export async function POST(request: Request) {
       awayScore: Number(awayScore),
     })
 
-    return NextResponse.json(result)
+    return NextResponse.json({
+      ...result,
+      scoringRules: getScoringRules(),
+      message:
+        result.creditsCharged > 0
+          ? `Pronóstico guardado. Se descontaron ${result.creditsCharged} créditos.`
+          : 'Pronóstico actualizado sin costo adicional.',
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Error desconocido'
     return NextResponse.json({ error: message }, { status: 400 })

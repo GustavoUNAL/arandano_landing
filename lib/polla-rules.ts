@@ -5,6 +5,8 @@
 export const POLL_NAME = 'Polla Mundialista Arándano 2026'
 
 export const INITIAL_CREDITS = 20_000
+/** Saldo de bienvenida antes del reglamento vigente (migración automática). */
+export const LEGACY_INITIAL_CREDITS = 120
 export const PREDICTION_COST = 100
 export const POINTS_EXACT_SCORE = 3
 export const POINTS_GOAL_DIFFERENCE = 2
@@ -21,6 +23,7 @@ export interface ScoringRules {
   correctResult: number
   initialCredits: number
   predictionCost: number
+  maxScorePerTeam: number
   topWinners: number
   minSettledPicksToWin: number
 }
@@ -32,6 +35,7 @@ export function getScoringRules(): ScoringRules {
     correctResult: POINTS_CORRECT_RESULT,
     initialCredits: INITIAL_CREDITS,
     predictionCost: PREDICTION_COST,
+    maxScorePerTeam: MAX_SCORE_PER_TEAM,
     topWinners: TOP_WINNERS_COUNT,
     minSettledPicksToWin: MIN_SETTLED_PICKS_TO_WIN,
   }

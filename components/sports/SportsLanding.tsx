@@ -3,7 +3,12 @@
 import GoogleSignInButton from '@/components/GoogleSignInButton'
 import PollaLeaderboard from '@/components/sports/PollaLeaderboard'
 import TeamCrest from '@/components/sports/TeamCrest'
-import { REGLAMENTO_SHORT } from '@/lib/polla-rules'
+import {
+  INITIAL_CREDITS,
+  PREDICTION_COST,
+  REGLAMENTO_SHORT,
+  TOP_WINNERS_COUNT,
+} from '@/lib/polla-rules'
 import type { WorldCupData } from '@/lib/football-data'
 import type { LeaderboardEntry } from '@/lib/sports-polla-shared'
 import { signIn, useSession } from 'next-auth/react'
@@ -16,22 +21,22 @@ const STEPS = [
   {
     step: '1',
     title: 'Entra a jugar',
-    desc: 'Ingresa con Google y únete a la polla mundialista de Arándano.',
+    desc: 'Ingresa con Google y recibe tus créditos virtuales de bienvenida.',
   },
   {
     step: '2',
-    title: 'Arma tu polla',
-    desc: 'Invita a tus amigos y compite en la misma liga privada.',
+    title: 'Elige tu usuario',
+    desc: 'Define el nombre con el que aparecerás en la tabla pública del ranking.',
   },
   {
     step: '3',
     title: 'Haz tus pronósticos',
-    desc: 'Predice resultados de cada partido antes de que empiece el encuentro.',
+    desc: `Cada pick nuevo cuesta ${PREDICTION_COST} créditos (${INITIAL_CREDITS.toLocaleString('es-CO')} de bienvenida). Editar antes del pitazo no consume créditos extra.`,
   },
   {
     step: '4',
     title: 'Sube en la tabla',
-    desc: 'Suma puntos con aciertos exactos, por diferencia o por resultado. Hasta 5 ganadores.',
+    desc: `Suma puntos con aciertos exactos, por diferencia o por resultado. Los créditos no afectan el ranking. Podio de ${TOP_WINNERS_COUNT} ganadores.`,
   },
 ]
 

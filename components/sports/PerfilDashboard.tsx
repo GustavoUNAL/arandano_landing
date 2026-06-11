@@ -152,8 +152,9 @@ export default function PerfilDashboard() {
     )
   }
 
-  const { worldCup, matches, predictionCost } = data
+  const { worldCup, matches, predictionCost, scoringRules } = data
   const credits = data.user.credits
+  const maxScore = scoringRules.maxScorePerTeam
 
   const groupFilters = ['all', ...new Set(matches.map((m) => m.group).filter(Boolean))] as string[]
   const filteredMatches =
@@ -208,7 +209,7 @@ export default function PerfilDashboard() {
         {tab === 'jugar' && (
           <div className="space-y-3">
             <p className="text-xs text-stone-500">
-              Pronostica antes del pitazo · {predictionCost} créditos c/u
+              Pronostica antes del pitazo · {predictionCost} créditos por pick nuevo · editar es gratis
             </p>
             <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
               <button
@@ -335,9 +336,11 @@ export default function PerfilDashboard() {
                   type="number"
                   inputMode="numeric"
                   min={0}
-                  max={20}
+                  max={maxScore}
                   value={homeScore}
-                  onChange={(e) => setHomeScore(Math.max(0, Math.min(20, Number(e.target.value))))}
+                  onChange={(e) =>
+                    setHomeScore(Math.max(0, Math.min(maxScore, Number(e.target.value))))
+                  }
                   className="w-14 h-12 text-center text-xl font-bold rounded-xl bg-stone-800 border border-white/10 text-white focus:ring-2 focus:ring-berry-500 focus:outline-none"
                 />
               </div>
@@ -348,16 +351,23 @@ export default function PerfilDashboard() {
                   type="number"
                   inputMode="numeric"
                   min={0}
-                  max={20}
+                  max={maxScore}
                   value={awayScore}
-                  onChange={(e) => setAwayScore(Math.max(0, Math.min(20, Number(e.target.value))))}
+                  onChange={(e) =>
+                    setAwayScore(Math.max(0, Math.min(maxScore, Number(e.target.value))))
+                  }
                   className="w-14 h-12 text-center text-xl font-bold rounded-xl bg-stone-800 border border-white/10 text-white focus:ring-2 focus:ring-berry-500 focus:outline-none"
                 />
               </div>
             </div>
-            {!activeMatch.prediction && (
+            {activeMatch.prediction ? (
+              <p className="text-center text-[10px] text-emerald-400/90 mb-3">
+                Editar antes del pitazo no consume créditos adicionales
+              </p>
+            ) : (
               <p className="text-center text-[10px] text-stone-500 mb-3">
-                Costo: {predictionCost} créditos · Saldo: {credits - predictionCost}
+                Costo: {predictionCost} créditos · Saldo tras guardar:{' '}
+                {(credits - predictionCost).toLocaleString('es-CO')}
               </p>
             )}
             {formError && <p className="text-red-400 text-xs text-center mb-3">{formError}</p>}
@@ -375,7 +385,7 @@ export default function PerfilDashboard() {
                 disabled={saving || (!activeMatch.prediction && credits < predictionCost)}
                 className="flex-1 py-3 rounded-xl bg-berry-600 disabled:opacity-50 text-white font-semibold"
               >
-                {saving ? 'Guardando…' : 'Confirmar'}
+                {saving ? 'Guardando…' : activeMatch.prediction ? 'Guardar cambios' : 'Confirmar pick'}
               </button>
             </div>
           </div>

@@ -15,6 +15,7 @@
     "backup:json": "node scripts/export-json-to-backup.js",
     "backup:sqlite": "bash scripts/backup-sqlite.sh",
     "init:neon": "npx tsx --env-file=.env scripts/init-neon-db.ts",
+    "migrate:polla-credits": "npx tsx --env-file=.env scripts/migrate-polla-credits.ts",
     "configure:env": "bash scripts/configure-server-env.sh",
     "test:api": "node scripts/test-api-functions.js",
     "pre-deploy": "node scripts/pre-deploy-check.js",
