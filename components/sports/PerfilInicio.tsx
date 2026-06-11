@@ -37,6 +37,7 @@ interface PerfilInicioProps {
   onGoMundial: () => void
   onGoJugar: () => void
   onGoPicks: () => void
+  onViewLiveMatch?: (matchId: number) => void
   onUpdateUsername?: (displayAlias: string) => Promise<void>
 }
 

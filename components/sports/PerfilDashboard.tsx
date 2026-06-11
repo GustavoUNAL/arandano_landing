@@ -1,5 +1,6 @@
 'use client'
 
+import LiveMatchBroadcast from '@/components/sports/LiveMatchBroadcast'
 import MatchLivePanel from '@/components/sports/MatchLivePanel'
 import MundialExplorer from '@/components/sports/MundialExplorer'
 import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
@@ -143,11 +144,10 @@ export default function PerfilDashboard() {
   }, [loadProfile])
 
   useEffect(() => {
-    if (tab !== 'inicio' && tab !== 'picks' && tab !== 'jugar') return
-    const ms = tab === 'jugar' && data?.hasLiveMatches ? 30_000 : 60_000
-    const interval = setInterval(loadProfile, ms)
+    if (!data?.hasLiveMatches) return
+    const interval = setInterval(loadProfile, 30_000)
     return () => clearInterval(interval)
-  }, [tab, loadProfile, data?.hasLiveMatches])
+  }, [loadProfile, data?.hasLiveMatches])
 
   const openPredict = (match: MatchWithPrediction) => {
     setActiveMatch(match)
@@ -245,6 +245,7 @@ export default function PerfilDashboard() {
 
   const mainTabs = data.isPollAdmin ? [...BASE_TABS, ADMIN_TAB] : BASE_TABS
   const tabLabel = mainTabs.find((t) => t.id === tab)?.label ?? 'Mi perfil'
+  const liveMatchIds = worldCup.liveMatches?.map((m) => m.id) ?? []
 
   return (
     <div className={`min-h-screen pb-[4.5rem] lg:pb-0 transition-colors duration-300 lg:flex ${theme.page}`}>
@@ -348,7 +349,14 @@ export default function PerfilDashboard() {
               </Link>
             </div>
             <span className={`font-display font-bold text-sm truncate ${isDark ? 'text-white' : 'text-stone-900'}`}>
-              {tabLabel}
+              {data.hasLiveMatches ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  En vivo
+                </span>
+              ) : (
+                tabLabel
+              )}
             </span>
             <div className="flex items-center gap-2 shrink-0">
               <MundialThemeToggle isDark={isDark} onToggle={toggleTheme} />
@@ -409,6 +417,15 @@ export default function PerfilDashboard() {
         </header>
 
         <main className="flex-1 w-full max-w-lg lg:max-w-7xl mx-auto px-4 py-4 lg:px-8 xl:px-10 lg:py-8">
+        {data.hasLiveMatches && liveMatchIds.length > 0 && (
+          <LiveMatchBroadcast
+            matchIds={liveMatchIds}
+            isDark={isDark}
+            onOpenDetail={setLiveMatchId}
+            className="mb-5 lg:mb-8"
+          />
+        )}
+
         {tab === 'inicio' && (
           <PerfilInicio
             isDark={isDark}
