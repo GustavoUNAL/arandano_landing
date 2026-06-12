@@ -23,7 +23,7 @@ export async function GET() {
 
   try {
     const user = await getOrCreateSportsUser(authUser)
-    const worldCup = await getWorldCupFullData({ fresh: true })
+    const worldCup = await getWorldCupFullData()
 
     await settleFinishedMatches(worldCup.allMatches)
 

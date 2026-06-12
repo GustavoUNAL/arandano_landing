@@ -92,6 +92,7 @@ const usesPostgres = envContent.includes('DB_MODE=postgres')
 
 if (usesPostgres) {
   ok('Polla y café usan PostgreSQL (Neon) — mismo DATABASE_URL en local y servidor')
+  console.log('\n   Ejecuta en local o VPS: npm run check:neon')
 } else {
 const dbPath = path.join(root, 'data', 'arandano.db')
 if (fs.existsSync(dbPath)) {
@@ -172,9 +173,10 @@ if (errors.length === 0) {
     console.log('')
   }
   console.log('Despliegue:')
+  console.log('  npm run check:neon    # verificar Neon')
   console.log('  npm run deploy:ovh')
   console.log('  o: npm run build && pm2 start ecosystem.config.js')
-  console.log('\nVer DEPLOY.md para OAuth Google y backups.\n')
+  console.log('\nVer DEPLOY.md para OAuth Google, Neon SQL y backups.\n')
 } else {
   console.log('  ❌ CORRIGE ESTOS ERRORES ANTES DE DESPLEGAR')
   console.log('═══════════════════════════════════════════════════════════\n')

@@ -318,17 +318,19 @@ export async function getOrCreateSportsUser(input: {
   name?: string | null
   image?: string | null
 }): Promise<SportsUser> {
-  const existing = await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [input.id])
+  let existing =
+    (await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [input.id])) ??
+    (await dbGet<SportsUser>('SELECT * FROM sports_users WHERE LOWER(email) = LOWER(?)', [input.email]))
 
   if (existing) {
     const now = new Date().toISOString()
-    const alias = existing.displayAlias ?? generateDisplayAlias(input.id)
+    const alias = existing.displayAlias ?? generateDisplayAlias(existing.id)
     await dbRun(
       `UPDATE sports_users SET name = ?, image = ?, email = ?, displayAlias = COALESCE(displayAlias, ?), updatedAt = ? WHERE id = ?`,
-      [input.name ?? existing.name, input.image ?? existing.image, input.email, alias, now, input.id]
+      [input.name ?? existing.name, input.image ?? existing.image, input.email, alias, now, existing.id]
     )
-    await syncWelcomeCreditsIfNeeded(input.id)
-    return mapSportsUser((await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [input.id]))!)
+    await syncWelcomeCreditsIfNeeded(existing.id)
+    return mapSportsUser((await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [existing.id]))!)
   }
 
   const now = new Date().toISOString()

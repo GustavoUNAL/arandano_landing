@@ -56,6 +56,19 @@ const PG_COLUMN_MAP: Record<string, string> = {
   settledat: 'settledAt',
   avgtimeseconds: 'avgTimeSeconds',
   totaltimeseconds: 'totalTimeSeconds',
+  shortname: 'shortName',
+  areaname: 'areaName',
+  areaflag: 'areaFlag',
+  clubcolors: 'clubColors',
+  squadsize: 'squadSize',
+  syncedat: 'syncedAt',
+  utcdate: 'utcDate',
+  hometeamid: 'homeTeamId',
+  awayteamid: 'awayTeamId',
+  scorejson: 'scoreJson',
+  startdate: 'startDate',
+  enddate: 'endDate',
+  currentmatchday: 'currentMatchday',
 }
 
 let sql: NeonQueryFunction<false, false> | null = null
@@ -94,8 +107,9 @@ async function ensureSchema(): Promise<void> {
 
   schemaInitPromise = (async () => {
     await ensurePostgresSchema(getSql())
-    await seedProductsIfEmpty()
+    // Marcar listo antes del seed: seedProductsIfEmpty usa dbAll/dbRun y volvería a entrar en ensureSchema → deadlock.
     appSchemaReady = true
+    await seedProductsIfEmpty()
   })()
 
   return schemaInitPromise

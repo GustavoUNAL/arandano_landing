@@ -37,6 +37,7 @@ interface PerfilInicioProps {
   onGoMundial: () => void
   onGoJugar: () => void
   onGoPicks: () => void
+  onPlayMatch?: (matchId: number) => void
   onUpdateUsername?: (displayAlias: string) => Promise<void>
 }
 
@@ -67,6 +68,7 @@ export default function PerfilInicio({
   onGoMundial,
   onGoJugar,
   onGoPicks,
+  onPlayMatch,
   onUpdateUsername,
 }: PerfilInicioProps) {
   const theme = mundialTheme(isDark)
@@ -322,9 +324,11 @@ export default function PerfilInicio({
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               {upcoming.map((m) => (
-                <div
+                <button
                   key={m.id}
-                  className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${theme.cardSoft}`}
+                  type="button"
+                  onClick={() => (onPlayMatch ? onPlayMatch(m.id) : onGoJugar())}
+                  className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all hover:scale-[1.01] hover:border-berry-500/40 hover:shadow-md ${theme.cardSoft}`}
                 >
                   <TeamCrest src={m.homeTeam.crest} alt="" size={28} />
                   <div className="flex-1 min-w-0 text-center">
@@ -334,10 +338,10 @@ export default function PerfilInicio({
                     <p className={`text-[10px] ${theme.mutedSm}`}>{m.formattedDate}</p>
                   </div>
                   <TeamCrest src={m.awayTeam.crest} alt="" size={28} />
-                  <span className={`text-[10px] font-medium w-12 text-right shrink-0 ${theme.accentLink}`}>
-                    {m.startsIn}
+                  <span className={`text-[10px] font-bold w-14 text-right shrink-0 ${theme.accent}`}>
+                    Jugar →
                   </span>
-                </div>
+                </button>
               ))}
             </div>
           </section>

@@ -51,6 +51,8 @@ interface LiveMatchBroadcastProps {
   isDark?: boolean
   onOpenDetail?: (matchId: number) => void
   className?: string
+  /** Pronósticos del usuario (desde /api/sports/me) */
+  userPredictions?: MatchPrediction[]
   /** inicio: tiempo y estadísticas más visibles en la pestaña Inicio */
   variant?: 'default' | 'inicio'
 }
@@ -60,6 +62,7 @@ export default function LiveMatchBroadcast({
   isDark = true,
   onOpenDetail,
   className = '',
+  userPredictions = [],
   variant = 'default',
 }: LiveMatchBroadcastProps) {
   const theme = mundialTheme(isDark)
@@ -87,7 +90,7 @@ export default function LiveMatchBroadcast({
   }, [load])
 
   useEffect(() => {
-    const ms = variant === 'inicio' ? 15_000 : 30_000
+    const ms = variant === 'inicio' ? 30_000 : 45_000
     const interval = setInterval(load, ms)
     return () => clearInterval(interval)
   }, [load, variant])
@@ -96,6 +99,8 @@ export default function LiveMatchBroadcast({
 
   const match = data?.match
   const score = match?.displayScore
+  const userPick =
+    userPredictions.find((p) => p.matchId === matchId) ?? data?.userPrediction ?? null
   const homeStats = match?.homeTeam.statistics
   const awayStats = match?.awayTeam.statistics
   const hasMatchStats =
@@ -169,20 +174,19 @@ export default function LiveMatchBroadcast({
           </div>
         ) : match ? (
           <>
-            {/* Marcador principal */}
+            {/* Marcadores: en vivo + tu pronóstico */}
             <div className="flex items-center gap-3 sm:gap-6 mb-4">
               <div className="flex-1 text-center min-w-0">
                 <TeamCrest src={match.homeTeam.crest} alt="" size={52} className="mx-auto mb-2 sm:w-16 sm:h-16" />
                 <p className={`text-sm sm:text-base font-bold truncate ${isDark ? 'text-white' : 'text-stone-900'}`}>
                   {match.homeTeam.shortName}
                 </p>
-                <p className={`text-[10px] hidden sm:block truncate ${theme.mutedSm}`}>{match.homeTeam.name}</p>
               </div>
 
-              <div className="shrink-0 text-center px-2">
+              <div className="shrink-0 flex flex-col gap-2 min-w-[9rem] sm:min-w-[11rem]">
                 {variant === 'inicio' && (
                   <div
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-2 ${
+                    className={`inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full mx-auto ${
                       isDark
                         ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300'
                         : 'bg-emerald-100 border border-emerald-300 text-emerald-800'
@@ -192,24 +196,59 @@ export default function LiveMatchBroadcast({
                     <span className="text-sm font-bold tabular-nums">{match.statusLabel}</span>
                   </div>
                 )}
-                <p
-                  className={`font-display font-bold tabular-nums leading-none ${
-                    variant === 'inicio'
-                      ? 'text-5xl sm:text-6xl lg:text-7xl'
-                      : 'text-4xl sm:text-5xl lg:text-6xl'
-                  } ${isDark ? 'text-white' : 'text-stone-900'}`}
+
+                <div
+                  className={`rounded-xl border px-3 py-2 text-center ${
+                    isDark ? 'border-emerald-500/30 bg-black/30' : 'border-emerald-200 bg-white'
+                  }`}
                 >
-                  {score?.home ?? '–'}
-                  <span className={`mx-1 sm:mx-2 text-2xl sm:text-3xl ${theme.muted}`}>:</span>
-                  {score?.away ?? '–'}
-                </p>
+                  <p className={`text-[9px] uppercase tracking-wide mb-0.5 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                    Marcador en vivo
+                  </p>
+                  <p
+                    className={`font-display font-bold tabular-nums leading-none ${
+                      variant === 'inicio' ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'
+                    } ${isDark ? 'text-white' : 'text-stone-900'}`}
+                  >
+                    {score?.home ?? '–'}
+                    <span className={`mx-1 text-lg ${theme.muted}`}>:</span>
+                    {score?.away ?? '–'}
+                  </p>
+                </div>
+
+                <div
+                  className={`rounded-xl border px-3 py-2 text-center ${
+                    userPick
+                      ? isDark
+                        ? 'border-berry-500/50 bg-berry-950/40'
+                        : 'border-berry-300 bg-berry-50'
+                      : isDark
+                        ? 'border-white/10 bg-black/20'
+                        : 'border-stone-200 bg-stone-50'
+                  }`}
+                >
+                  <p className={`text-[9px] uppercase tracking-wide mb-0.5 ${theme.accent}`}>
+                    Tu marcador
+                  </p>
+                  {userPick ? (
+                    <p
+                      className={`font-display font-bold tabular-nums leading-none ${
+                        variant === 'inicio' ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'
+                      } ${isDark ? 'text-berry-300' : 'text-berry-700'}`}
+                    >
+                      {userPick.homeScore}
+                      <span className={`mx-1 text-lg ${theme.muted}`}>:</span>
+                      {userPick.awayScore}
+                    </p>
+                  ) : (
+                    <p className={`text-xs py-1 ${theme.muted}`}>Sin pronóstico</p>
+                  )}
+                </div>
+
                 {match.score.halfTime.home != null && (
-                  <p className={`text-[10px] sm:text-xs mt-1.5 ${theme.mutedSm}`}>
+                  <p className={`text-[10px] text-center ${theme.mutedSm}`}>
                     HT {match.score.halfTime.home}-{match.score.halfTime.away}
                   </p>
-                )}
-                {match.groupLabel && (
-                  <p className={`text-[10px] mt-1 ${theme.accent}`}>{match.groupLabel}</p>
                 )}
               </div>
 
@@ -218,7 +257,6 @@ export default function LiveMatchBroadcast({
                 <p className={`text-sm sm:text-base font-bold truncate ${isDark ? 'text-white' : 'text-stone-900'}`}>
                   {match.awayTeam.shortName}
                 </p>
-                <p className={`text-[10px] hidden sm:block truncate ${theme.mutedSm}`}>{match.awayTeam.name}</p>
               </div>
             </div>
 
@@ -283,9 +321,9 @@ export default function LiveMatchBroadcast({
               </div>
             )}
 
-            {/* Polla comunitaria */}
-            <div className={`grid sm:grid-cols-2 gap-3 mb-4 ${hasMatchStats ? '' : 'sm:grid-cols-1'}`}>
-              {data && (
+            {/* Polla comunitaria — sin repetir tu pick (ya está arriba) */}
+            <div className={`mb-4 ${hasMatchStats ? '' : ''}`}>
+              {data && data.stats.totalPicks > 0 && (
                 <div
                   className={`rounded-xl border p-3 ${
                     isDark ? 'border-berry-500/25 bg-berry-950/25' : 'border-berry-200 bg-berry-50/80'
@@ -294,36 +332,23 @@ export default function LiveMatchBroadcast({
                   <p className={`text-[10px] uppercase tracking-wide mb-2 ${theme.mutedSm}`}>
                     Polla · {data.stats.totalPicks} pick{data.stats.totalPicks !== 1 ? 's' : ''}
                   </p>
-                  {data.userPrediction ? (
-                    <p className="text-sm mb-2">
-                      Tu pronóstico:{' '}
-                      <span className={`font-bold tabular-nums ${theme.accent}`}>
-                        {data.userPrediction.homeScore}-{data.userPrediction.awayScore}
-                      </span>
-                    </p>
-                  ) : (
-                    <p className={`text-xs mb-2 ${theme.muted}`}>Aún no pronosticaste este partido</p>
-                  )}
-                  {data.stats.totalPicks > 0 && (
-                    <div className="flex gap-2 text-[10px]">
-                      <span>
-                        Local <strong>{data.stats.homeWinPct}%</strong>
-                      </span>
-                      <span>
-                        Emp. <strong>{data.stats.drawPct}%</strong>
-                      </span>
-                      <span>
-                        Vis. <strong>{data.stats.awayWinPct}%</strong>
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex gap-2 text-[10px]">
+                    <span>
+                      Local <strong>{data.stats.homeWinPct}%</strong>
+                    </span>
+                    <span>
+                      Emp. <strong>{data.stats.drawPct}%</strong>
+                    </span>
+                    <span>
+                      Vis. <strong>{data.stats.awayWinPct}%</strong>
+                    </span>
+                  </div>
                   {data.stats.distribution[0] && (
                     <p className={`text-[10px] mt-1.5 ${theme.mutedSm}`}>
                       Marcador más común:{' '}
                       <span className="font-semibold tabular-nums">
                         {data.stats.distribution[0].homeScore}-{data.stats.distribution[0].awayScore}
-                      </span>{' '}
-                      ({data.stats.distribution[0].count})
+                      </span>
                     </p>
                   )}
                 </div>

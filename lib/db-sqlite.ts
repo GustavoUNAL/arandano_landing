@@ -419,6 +419,52 @@ function initializeDatabase() {
     )
   `)
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sports_teams (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      shortName TEXT,
+      tla TEXT,
+      crest TEXT,
+      areaName TEXT,
+      areaFlag TEXT,
+      coach TEXT,
+      founded INTEGER,
+      clubColors TEXT,
+      squadSize INTEGER,
+      website TEXT,
+      syncedAt TEXT NOT NULL
+    )
+  `)
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sports_competition (
+      id TEXT PRIMARY KEY DEFAULT 'WC',
+      name TEXT NOT NULL,
+      emblem TEXT,
+      startDate TEXT,
+      endDate TEXT,
+      currentMatchday INTEGER,
+      syncedAt TEXT NOT NULL
+    )
+  `)
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sports_matches (
+      id INTEGER PRIMARY KEY,
+      utcDate TEXT NOT NULL,
+      status TEXT NOT NULL,
+      matchday INTEGER,
+      stage TEXT NOT NULL,
+      matchGroup TEXT,
+      venue TEXT,
+      homeTeamId INTEGER NOT NULL,
+      awayTeamId INTEGER NOT NULL,
+      scoreJson TEXT NOT NULL DEFAULT '{}',
+      syncedAt TEXT NOT NULL
+    )
+  `)
+
   const sportsMigrations = [
     'ALTER TABLE sports_users ADD COLUMN displayAlias TEXT',
     'ALTER TABLE sports_users ADD COLUMN totalPoints INTEGER NOT NULL DEFAULT 0',
@@ -459,6 +505,9 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_match_predictions_settledAt ON match_predictions(settledAt);
     CREATE INDEX IF NOT EXISTS idx_sports_users_totalPoints ON sports_users(totalPoints);
     CREATE INDEX IF NOT EXISTS idx_sports_users_displayAlias ON sports_users(displayAlias);
+    CREATE INDEX IF NOT EXISTS idx_sports_matches_utcDate ON sports_matches(utcDate);
+    CREATE INDEX IF NOT EXISTS idx_sports_matches_status ON sports_matches(status);
+    CREATE INDEX IF NOT EXISTS idx_sports_matches_stage ON sports_matches(stage);
   `)
 }
 

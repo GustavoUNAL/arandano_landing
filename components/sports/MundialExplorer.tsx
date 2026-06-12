@@ -1,7 +1,8 @@
 'use client'
 
 import type { EnrichedMatch, FootballTeamDetail, KnockoutRound, WorldCupFullData, WorldCupGroup } from '@/lib/football-data'
-import { MUNDIAL_2026 } from '@/lib/world-cup-info'
+import { canViewMatchHub, isMatchHappeningNow } from '@/lib/sports-polla-shared'
+import { getFinishedMatchWinner, winnerBadge } from '@/lib/match-display'
 import {
   IconBall,
   IconGlobe,
@@ -10,7 +11,8 @@ import {
 } from '@/components/sports/SportsIcons'
 import TeamCrest from '@/components/sports/TeamCrest'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
-import { useMemo, useState } from 'react'
+import { MUNDIAL_2026 } from '@/lib/world-cup-info'
+import { useCallback, useMemo, useState } from 'react'
 
 type MundialTab = 'info' | 'grupos' | 'llaves' | 'equipos'
 
@@ -50,28 +52,58 @@ function groupIndex(id: string) {
   return letter.charCodeAt(0) - 65
 }
 
-function MatchCard({ match, compact }: { match: EnrichedMatch; compact?: boolean }) {
+function MatchCard({
+  match,
+  compact,
+  selected,
+  onSelect,
+}: {
+  match: EnrichedMatch
+  compact?: boolean
+  selected?: boolean
+  onSelect?: (match: EnrichedMatch) => void
+}) {
   const home = teamName(match.homeTeam)
   const away = teamName(match.awayTeam)
   const played = match.isFinished
   const live = match.isLive
+  const winner = getFinishedMatchWinner(match)
   const score =
     match.displayScore.home != null
       ? `${match.displayScore.home} : ${match.displayScore.away}`
       : null
 
   return (
-    <div className={`rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent ${compact ? 'p-2.5' : 'p-3'}`}>
+    <button
+      type="button"
+      onClick={() => onSelect?.(match)}
+      className={`w-full text-left rounded-xl border transition-all ${
+        selected
+          ? 'border-emerald-400/50 bg-emerald-950/30 ring-1 ring-emerald-500/30'
+          : live
+            ? 'border-emerald-500/40 bg-emerald-950/20 hover:border-emerald-400/50'
+            : 'border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent hover:border-emerald-500/30 hover:bg-white/[0.08]'
+      } ${compact ? 'p-2.5' : 'p-3'}`}
+    >
       <div className="flex items-center gap-2">
-        <div className="flex-1 flex flex-col items-center gap-1 min-w-0">
-          <TeamCrest src={match.homeTeam.crest} alt={home ?? 'Local'} size={compact ? 32 : 36} />
+        <div
+          className={`flex-1 flex flex-col items-center gap-1 min-w-0 rounded-lg py-1 ${
+            winner === 'home' ? 'bg-yellow-500/10 ring-1 ring-yellow-400/30' : ''
+          }`}
+        >
+          <div className="relative">
+            <TeamCrest src={match.homeTeam.crest} alt={home ?? 'Local'} size={compact ? 32 : 36} />
+            {winner === 'home' && (
+              <span className="absolute -top-1 -right-1 text-sm drop-shadow">⭐</span>
+            )}
+          </div>
           <p className="text-[10px] font-semibold text-stone-300 truncate w-full text-center">
             {home ?? <span className="text-stone-600 italic">Por definir</span>}
           </p>
         </div>
         <div className="shrink-0 flex flex-col items-center gap-1 px-1">
           {score ? (
-            <p className="font-display text-lg font-bold text-berry-300 tabular-nums">{score}</p>
+            <p className="font-display text-lg font-bold text-emerald-300 tabular-nums">{score}</p>
           ) : (
             <div className="w-8 h-8 rounded-full bg-stone-800 border border-white/10 flex items-center justify-center">
               <span className="text-[9px] font-bold text-stone-500">VS</span>
@@ -79,8 +111,17 @@ function MatchCard({ match, compact }: { match: EnrichedMatch; compact?: boolean
           )}
           <p className="text-[9px] text-stone-500 whitespace-nowrap">{match.formattedDate.split(',')[0]}</p>
         </div>
-        <div className="flex-1 flex flex-col items-center gap-1 min-w-0">
-          <TeamCrest src={match.awayTeam.crest} alt={away ?? 'Visitante'} size={compact ? 32 : 36} />
+        <div
+          className={`flex-1 flex flex-col items-center gap-1 min-w-0 rounded-lg py-1 ${
+            winner === 'away' ? 'bg-yellow-500/10 ring-1 ring-yellow-400/30' : ''
+          }`}
+        >
+          <div className="relative">
+            <TeamCrest src={match.awayTeam.crest} alt={away ?? 'Visitante'} size={compact ? 32 : 36} />
+            {winner === 'away' && (
+              <span className="absolute -top-1 -right-1 text-sm drop-shadow">⭐</span>
+            )}
+          </div>
           <p className="text-[10px] font-semibold text-stone-300 truncate w-full text-center">
             {away ?? <span className="text-stone-600 italic">Por definir</span>}
           </p>
@@ -88,16 +129,225 @@ function MatchCard({ match, compact }: { match: EnrichedMatch; compact?: boolean
       </div>
       <p
         className={`text-center text-[10px] font-medium mt-2 ${
-          live ? 'text-emerald-400' : score ? 'text-stone-500' : 'text-berry-400'
+          live ? 'text-emerald-400' : winner === 'draw' ? 'text-amber-400' : played ? 'text-stone-400' : 'text-emerald-400/80'
         }`}
       >
-        {live ? `En vivo · ${match.statusLabel}` : score && played ? 'Finalizado' : match.startsIn}
+        {live
+          ? `🔴 En vivo · ${match.statusLabel}`
+          : winner === 'draw'
+            ? '🤝 Empate'
+            : winner
+              ? '🏁 Finalizado'
+              : score && played
+                ? 'Finalizado'
+                : match.startsIn}
       </p>
+      {match.venue && !compact && (
+        <p className="text-center text-[9px] text-stone-500 mt-1 truncate">{match.venue}</p>
+      )}
+    </button>
+  )
+}
+
+function StatPill({ label, home, away }: { label: string; home: number | null | undefined; away: number | null | undefined }) {
+  if (home == null && away == null) return null
+  return (
+    <div className="flex items-center justify-between text-[11px] py-1.5 border-b border-white/5 last:border-0">
+      <span className="font-semibold tabular-nums w-8 text-right">{home ?? 0}</span>
+      <span className="text-stone-500 uppercase text-[9px] tracking-wide flex-1 text-center">{label}</span>
+      <span className="font-semibold tabular-nums w-8">{away ?? 0}</span>
     </div>
   )
 }
 
-function GroupStandings({ group, accent }: { group: WorldCupGroup; accent: string }) {
+function MatchDetailPanel({
+  match,
+  loading,
+  liveData,
+  onClose,
+  isDark,
+}: {
+  match: EnrichedMatch
+  loading: boolean
+  liveData: {
+    match: EnrichedMatch
+    stats?: { totalPicks: number; homeWinPct: number; drawPct: number; awayWinPct: number }
+    userPrediction?: { homeScore: number; awayScore: number } | null
+  } | null
+  onClose: () => void
+  isDark: boolean
+}) {
+  const m = liveData?.match ?? match
+  const score = m.displayScore
+  const winner = getFinishedMatchWinner(m)
+
+  return (
+    <div
+      className={`rounded-2xl border overflow-hidden ${
+        isDark ? 'border-emerald-500/25 bg-stone-900/95' : 'border-emerald-200 bg-white shadow-lg'
+      }`}
+    >
+      <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-emerald-950/40">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+          {m.isLive ? '🔴 Partido en vivo' : winner ? 'Detalle del partido' : 'Detalle del partido'}
+        </p>
+        <button type="button" onClick={onClose} className="text-stone-500 hover:text-white text-sm px-2">
+          ✕
+        </button>
+      </div>
+
+      {winner && (
+        <div
+          className={`px-4 py-2 text-center text-xs font-semibold ${
+            winner === 'draw'
+              ? 'bg-amber-500/15 text-amber-200 border-b border-amber-500/20'
+              : 'bg-gradient-to-r from-yellow-600/20 via-yellow-500/10 to-yellow-600/20 text-yellow-100 border-b border-yellow-500/25'
+          }`}
+        >
+          {winner === 'draw' ? (
+            '🤝 Empate'
+          ) : winner === 'home' ? (
+            <>⭐ Gana {m.homeTeam.shortName}</>
+          ) : (
+            <>⭐ Gana {m.awayTeam.shortName}</>
+          )}
+          {m.stage === 'FINAL' && winner !== 'draw' && ' · 🏆 Campeón'}
+        </div>
+      )}
+
+      <div className="p-4 space-y-4">
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex-1 text-center rounded-xl py-2 ${
+              winner === 'home' ? 'bg-yellow-500/10 ring-1 ring-yellow-400/40' : ''
+            }`}
+          >
+            <div className="relative inline-block">
+              <TeamCrest src={m.homeTeam.crest} alt="" size={48} className="mx-auto mb-2" />
+              {winnerBadge(winner, 'home') && (
+                <span className="absolute -top-1 -right-2 text-lg">{winnerBadge(winner, 'home')}</span>
+              )}
+            </div>
+            <p className="text-xs font-bold truncate">{m.homeTeam.shortName}</p>
+          </div>
+          <div className="shrink-0 text-center px-2">
+            {m.isLive && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 mb-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                {m.statusLabel}
+              </span>
+            )}
+            <p className="font-display text-3xl font-bold tabular-nums text-white">
+              {score?.home ?? '–'}
+              <span className="text-stone-500 mx-1">:</span>
+              {score?.away ?? '–'}
+            </p>
+            {m.score.halfTime.home != null && (
+              <p className="text-[10px] text-stone-500 mt-1">
+                HT {m.score.halfTime.home}-{m.score.halfTime.away}
+              </p>
+            )}
+          </div>
+          <div
+            className={`flex-1 text-center rounded-xl py-2 ${
+              winner === 'away' ? 'bg-yellow-500/10 ring-1 ring-yellow-400/40' : ''
+            }`}
+          >
+            <div className="relative inline-block">
+              <TeamCrest src={m.awayTeam.crest} alt="" size={48} className="mx-auto mb-2" />
+              {winnerBadge(winner, 'away') && (
+                <span className="absolute -top-1 -right-2 text-lg">{winnerBadge(winner, 'away')}</span>
+              )}
+            </div>
+            <p className="text-xs font-bold truncate">{m.awayTeam.shortName}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 text-[11px]">
+          <div className={`rounded-lg px-3 py-2 ${isDark ? 'bg-black/30' : 'bg-stone-50'}`}>
+            <p className="text-stone-500 text-[9px] uppercase">Fase</p>
+            <p className="font-medium">{m.stageLabel}</p>
+          </div>
+          {m.groupLabel && (
+            <div className={`rounded-lg px-3 py-2 ${isDark ? 'bg-black/30' : 'bg-stone-50'}`}>
+              <p className="text-stone-500 text-[9px] uppercase">Grupo</p>
+              <p className="font-medium">{m.groupLabel}</p>
+            </div>
+          )}
+          <div className={`rounded-lg px-3 py-2 col-span-2 ${isDark ? 'bg-black/30' : 'bg-stone-50'}`}>
+            <p className="text-stone-500 text-[9px] uppercase">Fecha</p>
+            <p className="font-medium">{m.formattedDate}</p>
+          </div>
+          {m.venue && (
+            <div className={`rounded-lg px-3 py-2 col-span-2 ${isDark ? 'bg-black/30' : 'bg-stone-50'}`}>
+              <p className="text-stone-500 text-[9px] uppercase">Sede</p>
+              <p className="font-medium">{m.venue}</p>
+            </div>
+          )}
+        </div>
+
+        {liveData?.userPrediction && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-center">
+            <p className="text-[9px] uppercase text-amber-300 mb-1">Tu marcador</p>
+            <p className="font-display text-xl font-bold tabular-nums text-amber-100">
+              {liveData.userPrediction.homeScore} : {liveData.userPrediction.awayScore}
+            </p>
+          </div>
+        )}
+
+        {loading && (
+          <p className="text-center text-xs text-stone-500 animate-pulse">Cargando estadísticas…</p>
+        )}
+
+        {(m.homeTeam.statistics || m.awayTeam.statistics) && (
+          <div>
+            <p className="text-xs font-semibold text-emerald-400 mb-2">Estadísticas en vivo</p>
+            <StatPill label="Posesión %" home={m.homeTeam.statistics?.ball_possession} away={m.awayTeam.statistics?.ball_possession} />
+            <StatPill label="Tiros" home={m.homeTeam.statistics?.shots} away={m.awayTeam.statistics?.shots} />
+            <StatPill label="A puerta" home={m.homeTeam.statistics?.shots_on_goal} away={m.awayTeam.statistics?.shots_on_goal} />
+            <StatPill label="Córners" home={m.homeTeam.statistics?.corners} away={m.awayTeam.statistics?.corners} />
+            <StatPill label="Faltas" home={m.homeTeam.statistics?.fouls} away={m.awayTeam.statistics?.fouls} />
+          </div>
+        )}
+
+        {liveData?.stats && liveData.stats.totalPicks > 0 && (
+          <div className={`rounded-xl border px-3 py-2 ${isDark ? 'border-white/10 bg-black/20' : 'border-stone-200'}`}>
+            <p className="text-[10px] uppercase text-stone-500 mb-1">Polla · {liveData.stats.totalPicks} picks</p>
+            <p className="text-[11px] text-stone-400">
+              Local {liveData.stats.homeWinPct}% · Empate {liveData.stats.drawPct}% · Visitante {liveData.stats.awayWinPct}%
+            </p>
+          </div>
+        )}
+
+        {m.goals && m.goals.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-emerald-400 mb-2">Goles</p>
+            <ul className="space-y-1">
+              {[...m.goals].reverse().slice(0, 8).map((g, i) => (
+                <li key={`${g.minute}-${i}`} className="text-[11px] flex gap-2 text-stone-300">
+                  <span className="text-emerald-400 font-bold tabular-nums">{g.minute}&apos;</span>
+                  <span className="truncate">{g.scorer?.name ?? 'Gol'}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function GroupStandings({
+  group,
+  accent,
+  onSelect,
+  selectedId,
+}: {
+  group: WorldCupGroup
+  accent: string
+  onSelect?: (match: EnrichedMatch) => void
+  selectedId?: number | null
+}) {
   const letter = group.id.replace('GROUP_', '')
   return (
     <div className={`rounded-2xl border bg-gradient-to-b to-transparent overflow-hidden ${accent}`}>
@@ -134,22 +384,32 @@ function GroupStandings({ group, accent }: { group: WorldCupGroup; accent: strin
       <div className="px-3 pb-3 space-y-2">
         <p className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider px-1 pt-1">Calendario</p>
         {group.matches.map((m) => (
-          <MatchCard key={m.id} match={m} compact />
+          <MatchCard key={m.id} match={m} compact onSelect={onSelect} selected={selectedId === m.id} />
         ))}
       </div>
     </div>
   )
 }
 
-function BracketRound({ round, isFinal }: { round: KnockoutRound; isFinal?: boolean }) {
+function BracketRound({
+  round,
+  isFinal,
+  onSelect,
+  selectedId,
+}: {
+  round: KnockoutRound
+  isFinal?: boolean
+  onSelect?: (match: EnrichedMatch) => void
+  selectedId?: number | null
+}) {
   const icon = PHASE_ICONS[round.stage] ?? '⚽'
   return (
     <div className="relative pl-6">
-      <div className="absolute left-2 top-0 bottom-0 w-px bg-gradient-to-b from-berry-500/50 via-berry-500/20 to-transparent" />
-      <div className="absolute left-0.5 top-4 w-3 h-3 rounded-full bg-berry-600 border-2 border-stone-950 shadow shadow-berry-500/50" />
+      <div className="absolute left-2 top-0 bottom-0 w-px bg-gradient-to-b from-emerald-500/50 via-emerald-500/20 to-transparent" />
+      <div className="absolute left-0.5 top-4 w-3 h-3 rounded-full bg-emerald-600 border-2 border-stone-950 shadow shadow-emerald-500/50" />
       <div className={`ml-2 rounded-2xl border overflow-hidden ${
         isFinal
-          ? 'border-yellow-500/40 bg-gradient-to-br from-yellow-950/30 via-berry-950/50 to-stone-950'
+          ? 'border-yellow-500/40 bg-gradient-to-br from-yellow-950/30 via-emerald-950/40 to-stone-950'
           : 'border-white/10 bg-white/[0.03]'
       }`}>
         <div className={`px-4 py-3 flex items-center justify-between border-b border-white/10 ${
@@ -163,9 +423,9 @@ function BracketRound({ round, isFinal }: { round: KnockoutRound; isFinal?: bool
             {round.matches.length} {round.matches.length === 1 ? 'partido' : 'partidos'}
           </span>
         </div>
-        <div className="p-3 space-y-2">
+        <div className="p-3 grid gap-2 sm:grid-cols-2">
           {round.matches.map((m) => (
-            <MatchCard key={m.id} match={m} />
+            <MatchCard key={m.id} match={m} onSelect={onSelect} selected={selectedId === m.id} />
           ))}
         </div>
       </div>
@@ -182,7 +442,7 @@ function TeamCard({ team, rank }: { team: FootballTeamDetail; rank: number }) {
       className={`rounded-xl border overflow-hidden transition-all ${
         isColombia
           ? 'border-yellow-500/30 bg-gradient-to-r from-yellow-950/20 to-stone-950'
-          : 'border-white/10 bg-white/[0.03] hover:border-berry-500/20'
+          : 'border-white/10 bg-white/[0.03] hover:border-emerald-500/20'
       }`}
     >
       <button
@@ -244,6 +504,40 @@ export default function MundialExplorer({
   const [teamSearch, setTeamSearch] = useState('')
   const [activeGroup, setActiveGroup] = useState(data.groups[0]?.id ?? '')
   const [groupsView, setGroupsView] = useState<'single' | 'all'>('single')
+  const [selectedMatch, setSelectedMatch] = useState<EnrichedMatch | null>(null)
+  const [liveDetail, setLiveDetail] = useState<{
+    match: EnrichedMatch
+    stats?: { totalPicks: number; homeWinPct: number; drawPct: number; awayWinPct: number }
+    userPrediction?: { homeScore: number; awayScore: number } | null
+  } | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+
+  const loadMatchDetail = useCallback(async (match: EnrichedMatch) => {
+    setSelectedMatch(match)
+    setLiveDetail(null)
+    const needsApi =
+      match.isLive ||
+      match.isFinished ||
+      canViewMatchHub(match.status, match.utcDate) ||
+      isMatchHappeningNow(match.status, match.utcDate)
+    if (!needsApi) return
+    setDetailLoading(true)
+    try {
+      const res = await fetch(`/api/sports/matches/${match.id}`)
+      if (res.ok) {
+        const json = await res.json()
+        setLiveDetail({
+          match: json.match,
+          stats: json.stats,
+          userPrediction: json.userPrediction,
+        })
+      }
+    } catch {
+      /* datos básicos del catálogo */
+    } finally {
+      setDetailLoading(false)
+    }
+  }, [])
 
   const filteredTeams = useMemo(() => {
     const q = teamSearch.trim().toLowerCase()
@@ -276,17 +570,17 @@ export default function MundialExplorer({
         <div
           className={`absolute inset-0 ${
             isDark
-              ? 'bg-gradient-to-br from-berry-800/80 via-berry-950 to-stone-950'
-              : 'bg-gradient-to-br from-berry-600 via-berry-700 to-berry-900'
+              ? 'bg-gradient-to-br from-emerald-800/90 via-stone-900 to-stone-950'
+              : 'bg-gradient-to-br from-emerald-500 via-teal-600 to-emerald-900'
           }`}
         />
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTAgNDBIMDQwTTQwIDBWNDBaIiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utb3BhY2l0eT0iMC4wMyIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg==')] opacity-50" />
         <div className="relative px-4 py-5 flex items-center gap-4">
           <TeamCrest src={data.competition.emblem} alt="Mundial" size={56} />
           <div>
-            <p className="text-berry-300 text-[10px] uppercase tracking-widest font-semibold">FIFA 2026</p>
-            <h2 className="font-display text-lg font-bold">Copa Mundial</h2>
-            <p className="text-xs text-berry-100/80 mt-0.5">
+            <p className="text-emerald-200/90 text-[10px] uppercase tracking-widest font-semibold">FIFA 2026</p>
+            <h2 className="font-display text-lg font-bold text-white">Copa Mundial</h2>
+            <p className="text-xs text-stone-300 mt-0.5">
               {data.stats.totalTeams} equipos · {data.groups.length} grupos · {data.stats.totalMatches} partidos
             </p>
           </div>
@@ -306,7 +600,7 @@ export default function MundialExplorer({
             onClick={() => setTab(t.id)}
             className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl text-[10px] font-semibold transition-all ${
               tab === t.id
-                ? 'bg-berry-600 text-white shadow-lg shadow-berry-900/40'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
                 : isDark
                   ? 'text-stone-500 hover:text-stone-300'
                   : 'text-stone-600 hover:text-stone-900'
@@ -318,6 +612,19 @@ export default function MundialExplorer({
         ))}
       </div>
 
+      {selectedMatch && (
+        <MatchDetailPanel
+          match={selectedMatch}
+          loading={detailLoading}
+          liveData={liveDetail}
+          onClose={() => {
+            setSelectedMatch(null)
+            setLiveDetail(null)
+          }}
+          isDark={isDark}
+        />
+      )}
+
       {tab === 'grupos' && (
         <div className="space-y-4">
           <div className="flex gap-2">
@@ -325,7 +632,7 @@ export default function MundialExplorer({
               type="button"
               onClick={() => setGroupsView('single')}
               className={`flex-1 py-2 rounded-xl text-xs font-semibold ${
-                groupsView === 'single' ? 'bg-berry-600 text-white' : inactiveBtn
+                groupsView === 'single' ? 'bg-emerald-600 text-white' : inactiveBtn
               }`}
             >
               Por grupo
@@ -334,7 +641,7 @@ export default function MundialExplorer({
               type="button"
               onClick={() => setGroupsView('all')}
               className={`flex-1 py-2 rounded-xl text-xs font-semibold ${
-                groupsView === 'all' ? 'bg-berry-600 text-white' : inactiveBtn
+                groupsView === 'all' ? 'bg-emerald-600 text-white' : inactiveBtn
               }`}
             >
               Ver todos
@@ -352,7 +659,7 @@ export default function MundialExplorer({
                     onClick={() => setActiveGroup(g.id)}
                     className={`shrink-0 w-10 h-10 rounded-xl font-display font-bold text-sm transition-all ${
                       activeGroup === g.id
-                        ? 'bg-berry-600 text-white scale-110 shadow-lg shadow-berry-900/40'
+                        ? 'bg-emerald-600 text-white scale-110 shadow-lg shadow-emerald-900/30'
                         : inactiveChip
                     }`}
                   >
@@ -367,6 +674,8 @@ export default function MundialExplorer({
             <GroupStandings
               group={selectedGroup}
               accent={GROUP_ACCENTS[groupIndex(selectedGroup.id) % GROUP_ACCENTS.length]}
+              onSelect={loadMatchDetail}
+              selectedId={selectedMatch?.id ?? null}
             />
           )}
 
@@ -377,6 +686,8 @@ export default function MundialExplorer({
                   key={g.id}
                   group={g}
                   accent={GROUP_ACCENTS[groupIndex(g.id) % GROUP_ACCENTS.length]}
+                  onSelect={loadMatchDetail}
+                  selectedId={selectedMatch?.id ?? null}
                 />
               ))}
             </div>
@@ -397,6 +708,8 @@ export default function MundialExplorer({
                 key={round.stage}
                 round={round}
                 isFinal={round.stage === 'FINAL'}
+                onSelect={loadMatchDetail}
+                selectedId={selectedMatch?.id ?? null}
               />
             ))}
           </div>
@@ -415,7 +728,7 @@ export default function MundialExplorer({
               placeholder="Buscar por país o código..."
               value={teamSearch}
               onChange={(e) => setTeamSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-3 rounded-xl bg-stone-900/80 border border-white/10 text-sm text-white placeholder:text-stone-600 focus:outline-none focus:ring-2 focus:ring-berry-500/50"
+              className="w-full pl-9 pr-4 py-3 rounded-xl bg-stone-900/80 border border-white/10 text-sm text-white placeholder:text-stone-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
             />
           </div>
           <p className="text-xs text-stone-500 text-center">{filteredTeams.length} selecciones clasificadas</p>
@@ -451,7 +764,7 @@ export default function MundialExplorer({
             <div className="divide-y divide-white/5">
               {MUNDIAL_2026.phases.map((p, i) => (
                 <div key={p.key} className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-8 h-8 rounded-lg bg-berry-600/20 border border-berry-500/20 flex items-center justify-center text-xs font-bold text-berry-300">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-600/20 border border-emerald-500/20 flex items-center justify-center text-xs font-bold text-emerald-300">
                     {i + 1}
                   </div>
                   <div className="flex-1">
@@ -460,7 +773,7 @@ export default function MundialExplorer({
                   </div>
                   <div className="h-1.5 w-16 rounded-full bg-stone-800 overflow-hidden">
                     <div
-                      className="h-full bg-berry-500 rounded-full"
+                      className="h-full bg-emerald-500 rounded-full"
                       style={{ width: `${(p.matches / 72) * 100}%` }}
                     />
                   </div>
@@ -473,7 +786,7 @@ export default function MundialExplorer({
             <h4 className="font-semibold text-sm">¿Cómo funciona?</h4>
             {MUNDIAL_2026.format.map((line, i) => (
               <div key={line} className="flex gap-3">
-                <div className="w-6 h-6 rounded-full bg-berry-600/30 flex items-center justify-center shrink-0 text-[10px] font-bold text-berry-300">
+                <div className="w-6 h-6 rounded-full bg-emerald-600/30 flex items-center justify-center shrink-0 text-[10px] font-bold text-emerald-300">
                   {i + 1}
                 </div>
                 <p className="text-xs text-stone-400 leading-relaxed pt-0.5">{line}</p>
@@ -481,10 +794,10 @@ export default function MundialExplorer({
             ))}
           </div>
 
-          <div className="rounded-xl border border-berry-500/20 bg-berry-950/20 p-4 text-center text-xs text-stone-400">
-            <p className="font-semibold text-berry-300 mb-1">Partido inaugural</p>
+          <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-4 text-center text-xs text-stone-400">
+            <p className="font-semibold text-emerald-300 mb-1">Partido inaugural</p>
             <p>{MUNDIAL_2026.openingMatch}</p>
-            <p className="mt-2 font-semibold text-berry-300">Gran final</p>
+            <p className="mt-2 font-semibold text-emerald-300">Gran final</p>
             <p>{MUNDIAL_2026.finalVenue}</p>
           </div>
         </div>

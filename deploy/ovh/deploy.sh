@@ -86,7 +86,14 @@ if ! grep -q "^DB_MODE=" "$ENV_FILE"; then
         echo -e "${GREEN}   ✅ DB_MODE=sqlite agregado${NC}"
     fi
 elif grep -q "^DATABASE_URL=.\+" "$ENV_FILE" 2>/dev/null && grep -q "^DB_MODE=sqlite" "$ENV_FILE"; then
-    echo -e "${YELLOW}   ⚠️  DATABASE_URL definido pero DB_MODE=sqlite — considera DB_MODE=postgres${NC}"
+    echo -e "${YELLOW}   ⚠️  DATABASE_URL definido pero DB_MODE=sqlite — los datos nuevos NO van a Neon${NC}"
+    if [ -f "data/arandano.db" ]; then
+        SQLITE_USERS=$(sqlite3 data/arandano.db "SELECT COUNT(*) FROM sports_users;" 2>/dev/null || echo "0")
+        if [ "$SQLITE_USERS" != "0" ]; then
+            echo -e "${YELLOW}   ⚠️  Hay $SQLITE_USERS usuario(s) en SQLite sin migrar a Neon${NC}"
+            echo -e "${CYAN}   → Ejecuta una vez: bash scripts/migrate-server-to-neon.sh${NC}"
+        fi
+    fi
 fi
 
 # Crear directorio data si no existe (sqlite / backups)
@@ -126,17 +133,22 @@ fi
 
 echo ""
 
-# 4. Verificar base de datos SQLite
-echo -e "${CYAN}4️⃣  Verificando base de datos SQLite...${NC}"
+# 4. Verificar base de datos
+echo -e "${CYAN}4️⃣  Verificando base de datos...${NC}"
 
-if [ -f "data/arandano.db" ]; then
+if grep -q "^DB_MODE=postgres" "$ENV_FILE" 2>/dev/null; then
+    if npm run check:neon 2>/dev/null; then
+        echo -e "${GREEN}   ✅ Neon (PostgreSQL) accesible${NC}"
+    else
+        echo -e "${YELLOW}   ⚠️  No se pudo verificar Neon — revisa DATABASE_URL en .env.local${NC}"
+    fi
+elif [ -f "data/arandano.db" ]; then
     echo -e "${GREEN}   ✅ Base de datos SQLite encontrada${NC}"
     if command -v sqlite3 &> /dev/null; then
         bash scripts/backup-sqlite.sh 2>/dev/null && echo -e "${GREEN}   ✅ Backup SQLite creado${NC}" || true
     fi
 else
-    echo -e "${YELLOW}   ⚠️  Base de datos SQLite no existe${NC}"
-    echo -e "${YELLOW}      Se creará automáticamente al iniciar la aplicación${NC}"
+    echo -e "${YELLOW}   ⚠️  Base de datos SQLite no existe — se creará al iniciar${NC}"
 fi
 
 echo ""
@@ -163,8 +175,12 @@ if npm run build; then
         bash scripts/post-build-standalone.sh
         echo -e "${GREEN}   ✅ Assets standalone sincronizados (public + chunks JS)${NC}"
 
-        # SQLite usa PROJECT_ROOT/DATABASE_PATH (ecosystem.config.js), no la copia en standalone
-        echo -e "${GREEN}   ✅ Build standalone listo (BD: data/arandano.db en raíz del proyecto)${NC}"
+        echo -e "${GREEN}   ✅ Build standalone listo${NC}"
+        if grep -q "^DB_MODE=postgres" "$ENV_FILE" 2>/dev/null; then
+            echo -e "${GREEN}   ✅ BD remota: Neon (DATABASE_URL en .env.local)${NC}"
+        else
+            echo -e "${GREEN}   ✅ BD local: data/arandano.db (PROJECT_ROOT en ecosystem.config.js)${NC}"
+        fi
     else
         echo -e "${RED}   ❌ Error: Servidor standalone no encontrado${NC}"
         echo -e "${YELLOW}   Verifica la configuración de next.config.js${NC}"
@@ -298,7 +314,11 @@ if command -v nginx &> /dev/null; then
 fi
 echo ""
 echo -e "${CYAN}🔧 Diagnóstico:${NC}"
-echo "   - Verificar BD:     ${GREEN}ls -la data/arandano.db${NC}"
+if grep -q "^DB_MODE=postgres" "$ENV_FILE" 2>/dev/null; then
+    echo "   - Verificar Neon:   ${GREEN}npm run check:neon${NC}"
+else
+    echo "   - Verificar BD:     ${GREEN}ls -la data/arandano.db${NC}"
+fi
 echo "   - Test API:        ${GREEN}npm run test:api${NC}"
 echo ""
 

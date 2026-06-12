@@ -2,6 +2,7 @@
 
 import TeamCrest from '@/components/sports/TeamCrest'
 import type { MatchDetail } from '@/lib/football-data'
+import { getFinishedMatchWinner, winnerBadge } from '@/lib/match-display'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
 import type {
   MatchPrediction,
@@ -89,6 +90,7 @@ export default function MatchLivePanel({ matchId, isDark = true, onClose }: Matc
 
   const match = data?.match
   const score = match?.displayScore
+  const winner = match ? getFinishedMatchWinner(match) : null
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end lg:items-center justify-center bg-black/75 backdrop-blur-sm p-0 lg:p-4">
@@ -132,6 +134,25 @@ export default function MatchLivePanel({ matchId, isDark = true, onClose }: Matc
           <div className="p-4 sm:p-5 space-y-5">
             {/* Marcador */}
             <div className={`rounded-2xl border p-4 ${theme.cardSoft}`}>
+              {winner && (
+                <div
+                  className={`mb-3 py-1.5 px-3 rounded-lg text-center text-xs font-bold ${
+                    winner === 'draw'
+                      ? isDark
+                        ? 'bg-amber-500/15 text-amber-200'
+                        : 'bg-amber-50 text-amber-800'
+                      : isDark
+                        ? 'bg-yellow-500/15 text-yellow-100'
+                        : 'bg-yellow-50 text-yellow-900'
+                  }`}
+                >
+                  {winner === 'draw'
+                    ? '🤝 Empate'
+                    : winner === 'home'
+                      ? `⭐ Gana ${match.homeTeam.shortName}`
+                      : `⭐ Gana ${match.awayTeam.shortName}`}
+                </div>
+              )}
               <div className="flex items-center justify-center gap-2 mb-3">
                 {match.isLive && (
                   <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase text-emerald-400">
@@ -139,29 +160,80 @@ export default function MatchLivePanel({ matchId, isDark = true, onClose }: Matc
                     En vivo · {match.statusLabel}
                   </span>
                 )}
-                {match.isFinished && (
+                {match.isFinished && !match.isLive && (
                   <span className={`text-[10px] font-bold uppercase ${theme.mutedSm}`}>
                     {match.statusLabel}
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-3">
-                <div className="flex-1 text-center">
-                  <TeamCrest src={match.homeTeam.crest} alt="" size={44} className="mx-auto mb-2" />
+                <div
+                  className={`flex-1 text-center rounded-xl py-2 ${
+                    winner === 'home' ? (isDark ? 'bg-yellow-500/10 ring-1 ring-yellow-400/30' : 'bg-yellow-50') : ''
+                  }`}
+                >
+                  <div className="relative inline-block">
+                    <TeamCrest src={match.homeTeam.crest} alt="" size={44} className="mx-auto mb-2" />
+                    {winnerBadge(winner, 'home') && (
+                      <span className="absolute -top-1 -right-2 text-base">{winnerBadge(winner, 'home')}</span>
+                    )}
+                  </div>
                   <p className="text-xs font-semibold truncate">{match.homeTeam.shortName}</p>
                 </div>
-                <div className="shrink-0 text-center px-2">
-                  <p className="font-display text-3xl font-bold tabular-nums">
-                    {score?.home ?? '–'} : {score?.away ?? '–'}
-                  </p>
+                <div className="shrink-0 flex flex-col gap-2 min-w-[7.5rem]">
+                  <div
+                    className={`rounded-xl border px-3 py-2 text-center ${
+                      isDark ? 'border-emerald-500/30 bg-black/20' : 'border-emerald-200 bg-white'
+                    }`}
+                  >
+                    <p className={`text-[9px] uppercase tracking-wide mb-0.5 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                      Marcador en vivo
+                    </p>
+                    <p className="font-display text-2xl font-bold tabular-nums">
+                      {score?.home ?? '–'}
+                      <span className={`mx-1 text-base ${theme.muted}`}>:</span>
+                      {score?.away ?? '–'}
+                    </p>
+                  </div>
+                  <div
+                    className={`rounded-xl border px-3 py-2 text-center ${
+                      data.userPrediction
+                        ? isDark
+                          ? 'border-berry-500/50 bg-berry-950/40'
+                          : 'border-berry-300 bg-berry-50'
+                        : isDark
+                          ? 'border-white/10 bg-black/20'
+                          : 'border-stone-200 bg-stone-50'
+                    }`}
+                  >
+                    <p className={`text-[9px] uppercase tracking-wide mb-0.5 ${theme.accent}`}>Tu marcador</p>
+                    {data.userPrediction ? (
+                      <p className={`font-display text-2xl font-bold tabular-nums ${isDark ? 'text-berry-300' : 'text-berry-700'}`}>
+                        {data.userPrediction.homeScore}
+                        <span className={`mx-1 text-base ${theme.muted}`}>:</span>
+                        {data.userPrediction.awayScore}
+                      </p>
+                    ) : (
+                      <p className={`text-xs py-1 ${theme.muted}`}>Sin pronóstico</p>
+                    )}
+                  </div>
                   {match.score.halfTime.home != null && match.score.halfTime.away != null && (
-                    <p className={`text-[10px] mt-1 ${theme.mutedSm}`}>
+                    <p className={`text-[10px] text-center ${theme.mutedSm}`}>
                       HT {match.score.halfTime.home}-{match.score.halfTime.away}
                     </p>
                   )}
                 </div>
-                <div className="flex-1 text-center">
-                  <TeamCrest src={match.awayTeam.crest} alt="" size={44} className="mx-auto mb-2" />
+                <div
+                  className={`flex-1 text-center rounded-xl py-2 ${
+                    winner === 'away' ? (isDark ? 'bg-yellow-500/10 ring-1 ring-yellow-400/30' : 'bg-yellow-50') : ''
+                  }`}
+                >
+                  <div className="relative inline-block">
+                    <TeamCrest src={match.awayTeam.crest} alt="" size={44} className="mx-auto mb-2" />
+                    {winnerBadge(winner, 'away') && (
+                      <span className="absolute -top-1 -right-2 text-base">{winnerBadge(winner, 'away')}</span>
+                    )}
+                  </div>
                   <p className="text-xs font-semibold truncate">{match.awayTeam.shortName}</p>
                 </div>
               </div>
@@ -169,16 +241,6 @@ export default function MatchLivePanel({ matchId, isDark = true, onClose }: Matc
                 <p className={`text-center text-[10px] mt-3 ${theme.mutedSm}`}>{match.venue}</p>
               )}
             </div>
-
-            {/* Tu pick */}
-            {data.userPrediction && (
-              <div className={`rounded-xl border px-3 py-2.5 ${isDark ? 'border-berry-500/30 bg-berry-950/20' : 'border-berry-200 bg-berry-50'}`}>
-                <p className={`text-[10px] uppercase tracking-wide mb-1 ${theme.accent}`}>Tu pronóstico</p>
-                <p className="font-bold tabular-nums">
-                  {data.userPrediction.homeScore} - {data.userPrediction.awayScore}
-                </p>
-              </div>
-            )}
 
             {/* Goles */}
             {match.goals && match.goals.length > 0 && (
@@ -191,7 +253,7 @@ export default function MatchLivePanel({ matchId, isDark = true, onClose }: Matc
                       className={`flex items-center gap-2 text-xs rounded-lg px-3 py-2 ${theme.cardSoft}`}
                     >
                       <span className={`font-bold tabular-nums shrink-0 ${theme.accent}`}>
-                        {goal.minute}'
+                        {`${goal.minute}'`}
                       </span>
                       <TeamCrest
                         src={

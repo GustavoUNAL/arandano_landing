@@ -183,6 +183,49 @@ const SCHEMA_STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS idx_match_predictions_userid ON match_predictions(userid)`,
   `CREATE INDEX IF NOT EXISTS idx_match_predictions_matchid ON match_predictions(matchid)`,
   `CREATE INDEX IF NOT EXISTS idx_match_predictions_settledat ON match_predictions(settledat)`,
+
+  `CREATE TABLE IF NOT EXISTS sports_teams (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    shortname TEXT,
+    tla TEXT,
+    crest TEXT,
+    areaname TEXT,
+    areaflag TEXT,
+    coach TEXT,
+    founded INTEGER,
+    clubcolors TEXT,
+    squadsize INTEGER,
+    website TEXT,
+    syncedat TEXT NOT NULL
+  )`,
+
+  `CREATE TABLE IF NOT EXISTS sports_competition (
+    id TEXT PRIMARY KEY DEFAULT 'WC',
+    name TEXT NOT NULL,
+    emblem TEXT,
+    startdate TEXT,
+    enddate TEXT,
+    currentmatchday INTEGER,
+    syncedat TEXT NOT NULL
+  )`,
+
+  `CREATE TABLE IF NOT EXISTS sports_matches (
+    id INTEGER PRIMARY KEY,
+    utcdate TEXT NOT NULL,
+    status TEXT NOT NULL,
+    matchday INTEGER,
+    stage TEXT NOT NULL,
+    matchgroup TEXT,
+    venue TEXT,
+    hometeamid INTEGER NOT NULL,
+    awayteamid INTEGER NOT NULL,
+    scorejson TEXT NOT NULL DEFAULT '{}',
+    syncedat TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_sports_matches_utcdate ON sports_matches(utcdate)`,
+  `CREATE INDEX IF NOT EXISTS idx_sports_matches_status ON sports_matches(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_sports_matches_stage ON sports_matches(stage)`,
 ]
 
 let schemaReady = false

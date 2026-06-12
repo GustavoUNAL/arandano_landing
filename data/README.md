@@ -27,7 +27,35 @@ En el **servidor**, usa la misma `DATABASE_URL` en `~/arandano/.env.local` y `DB
 | Comando | Descripción |
 |---------|-------------|
 | `npm run init:neon` | Crea esquema en Neon |
-| `npm run migrate:sports` | Copia `sports_users` y `match_predictions` desde SQLite local |
+### Migrar SQLite del servidor → Neon (sin perder datos)
+
+Si el servidor guardó usuarios en `data/arandano.db` pero Neon está vacío:
+
+**En el servidor (recomendado):**
+
+```bash
+cd ~/arandano
+# .env.local debe tener DATABASE_URL de Neon
+bash scripts/migrate-server-to-neon.sh
+pm2 restart arandano-app
+```
+
+**Desde tu Mac (si tienes SSH):**
+
+```bash
+SSH_HOST=usuario@servidor npm run pull:server-db
+npm run migrate:local-to-neon
+```
+
+Luego en `.env.local` local: `DB_MODE=postgres` (y la misma `DATABASE_URL`).
+
+| Comando | Descripción |
+|---------|-------------|
+| `npm run migrate:server-to-neon` | En el VPS: backup + migrar + activar postgres |
+| `npm run migrate:local-to-neon` | Desde Mac con SQLite descargada del servidor |
+| `npm run migrate:to-neon` | Solo copia SQLite → Neon (sin cambiar DB_MODE) |
+| `npm run pull:remote-db` | Copia polla + catálogo del Mundial desde Neon → SQLite local |
+| `npm run sync:sports-football` | Sincroniza equipos/partidos desde football-data.org → BD |
 
 ---
 

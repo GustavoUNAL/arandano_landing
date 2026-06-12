@@ -13,3 +13,7 @@ export function perfilPathForTab(tab: PerfilTab): string {
   if (tab === 'inicio') return PERFIL_PATH
   return `${PERFIL_PATH}?tab=${tab}`
 }
+
+export function perfilPathForPlayMatch(matchId: number): string {
+  return `${PERFIL_PATH}?tab=jugar&match=${matchId}`
+}

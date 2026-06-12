@@ -1,10 +1,26 @@
+import {
+  fetchLiveMatchesFromApi,
+  fetchMatchLiveDetailFromApi,
+  fetchRecentlyFinishedFromApi,
+  needsFinishedRefresh,
+} from '@/lib/football-api'
+import { ensureFootballCatalogSynced } from '@/lib/sports-football-sync'
+import {
+  buildCatalogStats,
+  buildFootballMatchFromStored,
+  getStoredCompetition,
+  getStoredMatchRows,
+  getStoredMatchRow,
+  getStoredTeams,
+  hasFootballDataInDb,
+  updateStoredMatchesBatch,
+} from '@/lib/sports-football-db'
 import { isMatchFinished, isMatchHappeningNow, isMatchLive } from '@/lib/sports-polla-shared'
 import { groupLabel, stageLabel } from '@/lib/world-cup-info'
 
-const API_BASE = 'https://api.football-data.org/v4'
-const WC_CODE = 'WC'
-const WC_COMPETITION_ID = 2000
-const WC_SEASON = 2026
+export const WC_CODE = 'WC'
+export const WC_COMPETITION_ID = 2000
+export const WC_SEASON = 2026
 
 export const LIVE_MATCH_STATUSES = new Set([
   'IN_PLAY',
@@ -137,31 +153,17 @@ export interface WorldCupFullData extends WorldCupData {
   matchesByStage: Record<string, EnrichedMatch[]>
 }
 
-async function footballFetch<T>(
-  path: string,
-  options?: { live?: boolean; unfoldGoals?: boolean }
-): Promise<T> {
-  const token = process.env.FOOTBALL_DATA_API_TOKEN
-  if (!token) {
-    throw new Error('FOOTBALL_DATA_API_TOKEN no configurado')
-  }
 
-  const headers: Record<string, string> = { 'X-Auth-Token': token }
-  if (options?.unfoldGoals) {
-    headers['X-Unfold-Goals'] = 'true'
-  }
+/** Caché en memoria — datos estáticos vienen de BD; API solo en vivo */
+let wcFullCache: { data: WorldCupFullData; at: number } | null = null
+const matchDetailCache = new Map<number, { data: MatchDetail; at: number }>()
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers,
-    ...(options?.live ? { cache: 'no-store' } : { next: { revalidate: 90 } }),
-  })
+const WC_FULL_CACHE_MS = 60_000
+const MATCH_DETAIL_CACHE_MS = 30_000
+const MATCH_DETAIL_STALE_MS = 5 * 60_000
 
-  if (!res.ok) {
-    throw new Error(`football-data.org error: ${res.status}`)
-  }
-
-  return res.json()
-}
+let wcFullInflight: Promise<WorldCupFullData> | null = null
+const matchDetailInflight = new Map<number, Promise<MatchDetail>>()
 
 export function matchStatusLabel(status: string, minute?: number | null, injuryTime?: number | null): string {
   switch (status) {
@@ -287,45 +289,13 @@ function buildKnockoutRounds(matches: EnrichedMatch[]): KnockoutRound[] {
 }
 
 export async function getWorldCupMatches(limit = 30): Promise<EnrichedMatch[]> {
-  const matchesRes = await footballFetch<{ matches: FootballMatch[] }>(
-    `/competitions/${WC_CODE}/matches?season=${WC_SEASON}&status=SCHEDULED&limit=${limit}`
-  )
-  return matchesRes.matches
-    .sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime())
-    .map(enrichMatch)
+  const full = await getWorldCupFullData()
+  return full.allMatches
+    .filter((m) => m.status === 'SCHEDULED' || m.status === 'TIMED')
+    .slice(0, limit)
 }
 
-async function fetchAllScheduledMatches(fresh = false): Promise<EnrichedMatch[]> {
-  const matchesRes = await footballFetch<{
-    resultSet: { count: number; played: number }
-    matches: FootballMatch[]
-  }>(`/competitions/${WC_CODE}/matches?season=${WC_SEASON}&limit=120`, { live: fresh })
-
-  return matchesRes.matches
-    .sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime())
-    .map(enrichMatch)
-}
-
-async function fetchLiveWorldCupMatches(): Promise<EnrichedMatch[]> {
-  const statuses = ['IN_PLAY', 'LIVE', 'PAUSED', 'EXTRA_TIME', 'PENALTY_SHOOTOUT']
-  const batches = await Promise.all(
-    statuses.map((status) =>
-      footballFetch<{ matches: FootballMatch[] }>(
-        `/matches?competitions=${WC_COMPETITION_ID}&status=${status}&limit=20`,
-        { live: true }
-      ).catch(() => ({ matches: [] as FootballMatch[] }))
-    )
-  )
-  const byId = new Map<number, EnrichedMatch>()
-  for (const batch of batches) {
-    for (const match of batch.matches) {
-      byId.set(match.id, enrichMatch(match))
-    }
-  }
-  return [...byId.values()]
-}
-
-function mergeMatchLists(base: EnrichedMatch[], updates: EnrichedMatch[]): EnrichedMatch[] {
+function mergeFootballMatches(base: FootballMatch[], updates: FootballMatch[]): FootballMatch[] {
   const map = new Map(base.map((m) => [m.id, m]))
   for (const m of updates) {
     const existing = map.get(m.id)
@@ -336,59 +306,65 @@ function mergeMatchLists(base: EnrichedMatch[], updates: EnrichedMatch[]): Enric
   )
 }
 
-async function fetchTeamsDetail(): Promise<FootballTeamDetail[]> {
-  const teamsRes = await footballFetch<{
-    teams: Array<{
-      id: number
-      name: string
-      shortName: string
-      tla: string
-      crest: string
-      founded?: number
-      clubColors?: string
-      website?: string
-      area?: { name: string; flag?: string }
-      coach?: { name: string } | null
-      squad?: unknown[]
-    }>
-  }>(`/competitions/${WC_CODE}/teams?season=${WC_SEASON}`)
-
-  return teamsRes.teams
-    .map((t) => ({
-      id: t.id,
-      name: t.name,
-      shortName: t.shortName,
-      tla: t.tla,
-      crest: t.crest,
-      areaName: t.area?.name ?? '',
-      areaFlag: t.area?.flag ?? null,
-      coach: t.coach?.name ?? null,
-      founded: t.founded ?? null,
-      clubColors: t.clubColors ?? null,
-      squadSize: t.squad?.length ?? 0,
-      website: t.website ?? null,
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name))
+function matchNeedsLiveApi(match: Pick<FootballMatch, 'status' | 'utcDate'>): boolean {
+  return isMatchLive(match.status) || isMatchHappeningNow(match.status, match.utcDate)
 }
 
-export async function getWorldCupFullData(options?: { fresh?: boolean }): Promise<WorldCupFullData> {
-  const fresh = options?.fresh ?? false
-  const [competition, scheduledMatches, liveNow, teams] = await Promise.all([
-    footballFetch<{
-      name: string
-      emblem: string
-      currentSeason: {
-        startDate: string
-        endDate: string
-        currentMatchday: number | null
-      }
-    }>(`/competitions/${WC_CODE}`, { live: fresh }),
-    fetchAllScheduledMatches(fresh),
-    fetchLiveWorldCupMatches(),
-    fetchTeamsDetail(),
+async function overlayLiveData(baseMatches: FootballMatch[]): Promise<FootballMatch[]> {
+  const needsLive = baseMatches.some((m) => matchNeedsLiveApi(m))
+  if (!needsLive) return baseMatches
+
+  const liveFromApi = await fetchLiveMatchesFromApi()
+  if (liveFromApi.length === 0) return baseMatches
+
+  const merged = mergeFootballMatches(baseMatches, liveFromApi)
+  void updateStoredMatchesBatch(
+    liveFromApi.map((m) => ({ id: m.id, status: m.status, score: m.score }))
+  )
+  return merged
+}
+
+async function overlayFinishedResults(baseMatches: FootballMatch[]): Promise<FootballMatch[]> {
+  if (!needsFinishedRefresh(baseMatches)) return baseMatches
+
+  const finished = await fetchRecentlyFinishedFromApi()
+  if (finished.length === 0) return baseMatches
+
+  const merged = mergeFootballMatches(baseMatches, finished)
+  void updateStoredMatchesBatch(
+    finished.map((m) => ({ id: m.id, status: m.status, score: m.score }))
+  )
+  return merged
+}
+
+async function buildWorldCupFullDataFromDb(): Promise<WorldCupFullData> {
+  await ensureFootballCatalogSynced()
+
+  const inDb = await hasFootballDataInDb()
+  if (!inDb) {
+    throw new Error(
+      'No se pudo cargar el catálogo del Mundial. Revisa FOOTBALL_DATA_API_TOKEN y ejecuta: npm run sync:sports-football'
+    )
+  }
+
+  const [competition, teams, matchRows] = await Promise.all([
+    getStoredCompetition(),
+    getStoredTeams(),
+    getStoredMatchRows(),
   ])
 
-  const allMatches = mergeMatchLists(scheduledMatches, liveNow)
+  if (!competition) {
+    throw new Error(
+      'Competición no encontrada en BD. Ejecuta: npm run sync:sports-football'
+    )
+  }
+
+  const teamsById = new Map(teams.map((t) => [t.id, t]))
+  let rawMatches = matchRows.map((row) => buildFootballMatchFromStored(row, teamsById))
+  rawMatches = await overlayLiveData(rawMatches)
+  rawMatches = await overlayFinishedResults(rawMatches)
+
+  const allMatches = rawMatches.map(enrichMatch)
 
   const groupMatches = allMatches.filter((m) => m.stage === 'GROUP_STAGE')
   const knockoutMatches = allMatches.filter((m) => m.stage !== 'GROUP_STAGE')
@@ -415,15 +391,11 @@ export async function getWorldCupFullData(options?: { fresh?: boolean }): Promis
     competition: {
       name: competition.name,
       emblem: competition.emblem,
-      startDate: competition.currentSeason.startDate,
-      endDate: competition.currentSeason.endDate,
-      currentMatchday: competition.currentSeason.currentMatchday,
+      startDate: competition.startDate,
+      endDate: competition.endDate,
+      currentMatchday: competition.currentMatchday,
     },
-    stats: {
-      totalMatches: allMatches.length,
-      totalTeams: teams.length,
-      playedMatches: allMatches.filter((m) => m.status === 'FINISHED').length,
-    },
+    stats: buildCatalogStats(allMatches, teams.length),
     upcomingMatches,
     liveMatches,
     recentMatches,
@@ -441,12 +413,83 @@ export async function getWorldCupFullData(options?: { fresh?: boolean }): Promis
   }
 }
 
-export async function getMatchById(matchId: number): Promise<MatchDetail> {
-  const match = await footballFetch<FootballMatch>(`/matches/${matchId}`, {
-    live: true,
-    unfoldGoals: true,
-  })
-  return enrichMatch(match)
+export async function getWorldCupFullData(_options?: { fresh?: boolean }): Promise<WorldCupFullData> {
+  const now = Date.now()
+
+  if (wcFullCache && now - wcFullCache.at < WC_FULL_CACHE_MS) {
+    return wcFullCache.data
+  }
+
+  if (wcFullInflight) return wcFullInflight
+
+  wcFullInflight = (async () => {
+    try {
+      const data = await buildWorldCupFullDataFromDb()
+      wcFullCache = { data, at: Date.now() }
+      return data
+    } catch (error) {
+      if (wcFullCache) return wcFullCache.data
+      throw error
+    } finally {
+      wcFullInflight = null
+    }
+  })()
+
+  return wcFullInflight
+}
+
+async function buildMatchDetailFromDb(matchId: number): Promise<MatchDetail> {
+  const [row, teams] = await Promise.all([getStoredMatchRow(matchId), getStoredTeams()])
+  if (!row) {
+    throw new Error(`Partido ${matchId} no encontrado. Ejecuta: npm run sync:sports-football`)
+  }
+  const teamsById = new Map(teams.map((t) => [t.id, t]))
+  return enrichMatch(buildFootballMatchFromStored(row, teamsById))
+}
+
+export async function getMatchById(matchId: number, forceFresh = false): Promise<MatchDetail> {
+  const now = Date.now()
+  const cached = matchDetailCache.get(matchId)
+  if (!forceFresh && cached && now - cached.at < MATCH_DETAIL_CACHE_MS) {
+    return cached.data
+  }
+
+  const inflight = matchDetailInflight.get(matchId)
+  if (inflight) return inflight
+
+  const request = (async () => {
+    try {
+      const base = await buildMatchDetailFromDb(matchId)
+      const needsLive = matchNeedsLiveApi(base)
+
+      if (!needsLive) {
+        matchDetailCache.set(matchId, { data: base, at: Date.now() })
+        return base
+      }
+
+      const live = await fetchMatchLiveDetailFromApi(matchId)
+      const enriched = enrichMatch({ ...base, ...live })
+      matchDetailCache.set(matchId, { data: enriched, at: Date.now() })
+      void updateStoredMatchesBatch([{ id: live.id, status: live.status, score: live.score }])
+      return enriched
+    } catch (error) {
+      if (cached && now - cached.at < MATCH_DETAIL_STALE_MS) return cached.data
+      const stale = matchDetailCache.get(matchId)
+      if (stale && now - stale.at < MATCH_DETAIL_STALE_MS) return stale.data
+      try {
+        const fallback = await buildMatchDetailFromDb(matchId)
+        matchDetailCache.set(matchId, { data: fallback, at: Date.now() })
+        return fallback
+      } catch {
+        throw error
+      }
+    } finally {
+      matchDetailInflight.delete(matchId)
+    }
+  })()
+
+  matchDetailInflight.set(matchId, request)
+  return request
 }
 
 /** @deprecated Usar getWorldCupFullData */

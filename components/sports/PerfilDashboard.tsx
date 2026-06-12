@@ -21,7 +21,7 @@ import type { ScoringRules } from '@/lib/polla-rules'
 import type { LeaderboardEntry, MatchPrediction, SportsUser } from '@/lib/sports-polla-shared'
 import type { WorldCupFullData } from '@/lib/football-data'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
-import { isPerfilTab, perfilPathForTab, type PerfilTab } from '@/lib/perfil-routes'
+import { isPerfilTab, perfilPathForPlayMatch, perfilPathForTab, type PerfilTab } from '@/lib/perfil-routes'
 import { signOut, useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -144,18 +144,45 @@ export default function PerfilDashboard() {
     loadProfile()
   }, [loadProfile])
 
-  useEffect(() => {
-    if (!data?.hasLiveMatches) return
-    const interval = setInterval(loadProfile, 20_000)
-    return () => clearInterval(interval)
-  }, [loadProfile, data?.hasLiveMatches])
-
-  const openPredict = (match: MatchWithPrediction) => {
+  const openPredict = useCallback((match: MatchWithPrediction) => {
     setActiveMatch(match)
     setHomeScore(match.prediction?.homeScore ?? '')
     setAwayScore(match.prediction?.awayScore ?? '')
     setFormError('')
-  }
+  }, [])
+
+  const goPlayMatch = useCallback(
+    (matchId: number) => {
+      setTab('jugar')
+      router.replace(perfilPathForPlayMatch(matchId), { scroll: false })
+    },
+    [router]
+  )
+
+  useEffect(() => {
+    if (!data?.hasLiveMatches) return
+    const interval = setInterval(loadProfile, 45_000)
+    return () => clearInterval(interval)
+  }, [loadProfile, data?.hasLiveMatches])
+
+  useEffect(() => {
+    const raw = searchParams.get('match')
+    if (!raw || !data) return
+    const matchId = Number(raw)
+    if (!Number.isFinite(matchId)) return
+
+    const match =
+      data.matches.find((m) => m.id === matchId) ??
+      data.watchMatches.find((m) => m.id === matchId)
+
+    if (!match) return
+
+    if (match.canPredict) {
+      openPredict(match)
+    } else if (match.canViewHub || match.isLive) {
+      setLiveMatchId(matchId)
+    }
+  }, [searchParams, data, openPredict])
 
   const updateUsername = async (displayAlias: string) => {
     const res = await fetch('/api/sports/me', {
@@ -421,6 +448,7 @@ export default function PerfilDashboard() {
         {data.hasLiveMatches && liveMatchIds.length > 0 && (
           <LiveMatchBroadcast
             matchIds={liveMatchIds}
+            userPredictions={data.predictions}
             isDark={isDark}
             variant="inicio"
             onOpenDetail={setLiveMatchId}
@@ -447,6 +475,7 @@ export default function PerfilDashboard() {
             onGoMundial={() => changeTab('mundial')}
             onGoJugar={() => changeTab('jugar')}
             onGoPicks={() => changeTab('picks')}
+            onPlayMatch={goPlayMatch}
             onUpdateUsername={updateUsername}
           />
         )}
@@ -581,21 +610,24 @@ export default function PerfilDashboard() {
                     <p className="text-xs font-medium truncate">
                       {match.homeTeam.tla} vs {match.awayTeam.tla}
                     </p>
-                    {match.canViewHub && match.displayScore.home != null ? (
+                    {match.prediction ? (
+                      <div className="mt-1">
+                        <p className={`text-[9px] uppercase tracking-wide ${theme.accent}`}>Tu marcador</p>
+                        <p className={`text-xl font-bold tabular-nums ${isDark ? 'text-berry-300' : 'text-berry-700'}`}>
+                          {match.prediction.homeScore} - {match.prediction.awayScore}
+                        </p>
+                        {match.canViewHub && match.displayScore.home != null && (
+                          <p className={`text-[10px] mt-0.5 ${theme.mutedSm}`}>
+                            En vivo: {match.displayScore.home}-{match.displayScore.away}
+                          </p>
+                        )}
+                      </div>
+                    ) : match.canViewHub && match.displayScore.home != null ? (
                       <p className={`text-lg font-bold tabular-nums ${theme.accent}`}>
                         {match.displayScore.home} - {match.displayScore.away}
                       </p>
-                    ) : match.prediction ? (
-                      <p className={`text-lg font-bold tabular-nums ${theme.accent}`}>
-                        {match.prediction.homeScore} - {match.prediction.awayScore}
-                      </p>
                     ) : (
                       <p className={`text-[10px] ${theme.mutedSm}`}>{match.formattedDate}</p>
-                    )}
-                    {match.prediction && match.canViewHub && (
-                      <p className={`text-[10px] ${theme.mutedSm}`}>
-                        Tu pick: {match.prediction.homeScore}-{match.prediction.awayScore}
-                      </p>
                     )}
                   </div>
                   <TeamCrest src={match.awayTeam.crest} alt="" size={32} />
