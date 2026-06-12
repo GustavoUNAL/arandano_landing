@@ -9,6 +9,7 @@ import {
   IconTarget,
   IconTrophy,
 } from '@/components/sports/SportsIcons'
+import HomeBroadcastPromo from '@/components/sports/HomeBroadcastPromo'
 import PollaLeaderboard from '@/components/sports/PollaLeaderboard'
 import PollaReglamento from '@/components/sports/PollaReglamento'
 import TeamCrest from '@/components/sports/TeamCrest'
@@ -44,6 +45,12 @@ interface PerfilInicioProps {
 function daysUntil(dateStr: string) {
   const diff = new Date(dateStr).getTime() - Date.now()
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
+}
+
+function groupStageCounts(worldCup: WorldCupFullData) {
+  const groupMatches = worldCup.allMatches.filter((m) => m.stage === 'GROUP_STAGE')
+  const remaining = groupMatches.filter((m) => !m.isFinished).length
+  return { total: groupMatches.length, remaining }
 }
 
 function teamLabel(team: { shortName?: string; name?: string; tla?: string }) {
@@ -96,6 +103,8 @@ export default function PerfilInicio({
   }
 
   const daysToStart = daysUntil(worldCup.competition.startDate)
+  const tournamentStarted = daysToStart === 0
+  const { total: groupTotal, remaining: groupRemaining } = groupStageCounts(worldCup)
   const upcoming = worldCup.upcomingMatches.slice(0, 4)
   const colombiaTeam = worldCup.teams.find((t) => t.name === 'Colombia')
 
@@ -214,62 +223,133 @@ export default function PerfilInicio({
             )}
           </div>
 
+          {/* Transmisión + pronósticos del siguiente partido */}
+          <HomeBroadcastPromo
+            isDark={isDark}
+            onPredict={(matchId) => (onPlayMatch ? onPlayMatch(matchId) : onGoJugar())}
+          />
+
           {/* Countdown Mundial */}
           <div
             className={`rounded-2xl border p-4 lg:p-5 overflow-hidden relative ${
               isDark
                 ? 'border-white/10 bg-gradient-to-r from-stone-900 to-stone-950'
-                : 'border-stone-200 bg-white shadow-sm'
+                : 'border-berry-200/90 bg-gradient-to-br from-white via-berry-50/90 to-berry-100/60 shadow-md shadow-berry-100/50'
             }`}
           >
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-berry-600/10 via-transparent to-transparent" />
+            <div
+              className={`absolute inset-0 pointer-events-none ${
+                isDark
+                  ? 'bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-berry-600/10 via-transparent to-transparent'
+                  : 'bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-berry-300/25 via-transparent to-transparent'
+              }`}
+            />
             <div className="relative flex items-center gap-4">
               <TeamCrest src={worldCup.competition.emblem} alt="Mundial" size={52} />
-              <div className="flex-1">
-                <h2 className="font-display font-bold text-base lg:text-lg">Mundial FIFA 2026</h2>
-                <p className={`text-xs mt-0.5 ${theme.muted}`}>
+              <div className="flex-1 min-w-0">
+                <h2
+                  className={`font-display font-bold text-base lg:text-lg ${
+                    isDark ? 'text-white' : 'text-stone-900'
+                  }`}
+                >
+                  Mundial FIFA 2026
+                </h2>
+                <p className={`text-xs mt-0.5 ${isDark ? 'text-stone-400' : 'text-stone-700'}`}>
                   {worldCup.stats.totalTeams} selecciones · {worldCup.stats.totalMatches} partidos
+                </p>
+                <p className={`text-[11px] mt-1 font-medium ${isDark ? 'text-berry-300/90' : 'text-berry-700'}`}>
+                  {tournamentStarted
+                    ? groupRemaining > 0
+                      ? `Quedan ${groupRemaining} de ${groupTotal} partidos en fase de grupos`
+                      : 'Fase de grupos finalizada'
+                    : `Fase de grupos: ${groupTotal} partidos`}
                 </p>
               </div>
               <div
-                className={`text-center shrink-0 rounded-xl px-3 py-2 ${
+                className={`text-center shrink-0 rounded-xl px-3 py-2 min-w-[4.5rem] ${
                   isDark
                     ? 'bg-berry-600/20 border border-berry-500/30'
-                    : 'bg-berry-50 border border-berry-200'
+                    : 'bg-berry-600 border border-berry-700 shadow-sm'
                 }`}
               >
-                <p className={`font-display text-2xl font-bold tabular-nums ${theme.accent}`}>{daysToStart}</p>
-                <p className={`text-[9px] uppercase ${theme.mutedSm}`}>días</p>
+                <p
+                  className={`font-display text-2xl font-bold tabular-nums leading-none ${
+                    isDark ? 'text-berry-300' : 'text-white'
+                  }`}
+                >
+                  {tournamentStarted ? groupRemaining : daysToStart}
+                </p>
+                <p
+                  className={`text-[9px] uppercase mt-1 font-semibold tracking-wide ${
+                    isDark ? 'text-stone-400' : 'text-berry-100'
+                  }`}
+                >
+                  {tournamentStarted ? (groupRemaining === 1 ? 'partido' : 'en grupos') : 'días'}
+                </p>
               </div>
             </div>
-            <div className="relative grid grid-cols-3 gap-2 mt-4">
+            <div
+              className={`relative grid grid-cols-3 gap-2 mt-4 p-2 rounded-xl ${
+                isDark ? '' : 'bg-white/70 border border-berry-200/60'
+              }`}
+            >
               {[
                 {
                   label: 'Inicio',
-                  value: new Date(worldCup.competition.startDate).toLocaleDateString('es-CO', {
-                    day: 'numeric',
-                    month: 'short',
-                  }),
+                  date: new Date(worldCup.competition.startDate),
                 },
                 {
                   label: 'Final',
-                  value: new Date(worldCup.competition.endDate).toLocaleDateString('es-CO', {
-                    day: 'numeric',
-                    month: 'short',
-                  }),
+                  date: new Date(worldCup.competition.endDate),
                 },
-                { label: 'Sedes', value: '🇺🇸🇲🇽🇨🇦' },
               ].map((item) => (
                 <div
                   key={item.label}
-                  className={`rounded-lg border py-2 text-center ${
-                    isDark ? 'bg-white/5 border-white/5' : 'bg-stone-50 border-stone-200'
+                  className={`rounded-xl border py-2.5 px-1 text-center ${
+                    isDark
+                      ? 'bg-white/5 border-white/10'
+                      : 'bg-gradient-to-b from-white to-berry-50/80 border-berry-300 shadow-sm'
                   }`}
                 >
-                  <p className={`text-xs font-semibold ${theme.resultText}`}>{item.value}</p>
-                  <p className={`text-[9px] uppercase mt-0.5 ${theme.mutedSm}`}>{item.label}</p>
+                  <p
+                    className={`font-display text-xl font-bold tabular-nums leading-none ${
+                      isDark ? 'text-white' : 'text-berry-800'
+                    }`}
+                  >
+                    {item.date.toLocaleDateString('es-CO', { day: 'numeric' })}
+                  </p>
+                  <p
+                    className={`text-[10px] font-semibold capitalize mt-0.5 ${
+                      isDark ? 'text-berry-300/90' : 'text-berry-700'
+                    }`}
+                  >
+                    {item.date.toLocaleDateString('es-CO', { month: 'short' })}
+                  </p>
+                  <p
+                    className={`text-[9px] uppercase mt-1 font-bold tracking-wider ${
+                      isDark ? 'text-stone-500' : 'text-stone-600'
+                    }`}
+                  >
+                    {item.label}
+                  </p>
                 </div>
               ))}
+              <div
+                className={`rounded-xl border py-2.5 px-1 text-center flex flex-col justify-center ${
+                  isDark
+                    ? 'bg-white/5 border-white/10'
+                    : 'bg-gradient-to-b from-white to-emerald-50/80 border-emerald-300 shadow-sm'
+                }`}
+              >
+                <p className="text-lg leading-none">🇺🇸🇲🇽🇨🇦</p>
+                <p
+                  className={`text-[9px] uppercase mt-1.5 font-bold tracking-wider ${
+                    isDark ? 'text-stone-500' : 'text-stone-600'
+                  }`}
+                >
+                  Sedes
+                </p>
+              </div>
             </div>
           </div>
 

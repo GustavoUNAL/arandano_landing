@@ -9,6 +9,7 @@ import PollaPremiosPanel from '@/components/sports/PollaPremiosPanel'
 import {
   CONDICIONES_LEGALES,
   GROUP_STAGE_WINNERS_COUNT,
+  GROUP_STAGE_PICKS_INCLUDED,
   INITIAL_CREDITS,
   GROUP_STAGE_NO_PASSPORT_NOTE,
   KNOCKOUT_PASSPORT_ACQUIRE_NOTE,
@@ -109,7 +110,7 @@ export default function ReglamentoPage() {
             {
               icon: '💰',
               title: `${INITIAL_CREDITS.toLocaleString('es-CO')} créditos`,
-              sub: `Al registrarte recibes ${INITIAL_CREDITS.toLocaleString('es-CO')} créditos virtuales gratis para participar durante el Mundial.`,
+              sub: `Saldo inicial para la fase de grupos. Con ${PREDICTION_COST} créditos por partido alcanza para unos ${GROUP_STAGE_PICKS_INCLUDED} pronósticos.`,
             },
             {
               icon: '🎯',
@@ -247,8 +248,8 @@ export default function ReglamentoPage() {
                 Créditos virtuales
               </p>
               <ul className={`space-y-2 list-disc list-inside ${t.muted}`}>
-                <li>Al registrarte recibes {INITIAL_CREDITS.toLocaleString('es-CO')} créditos gratis.</li>
-                <li>Cada pronóstico nuevo consume {PREDICTION_COST} créditos.</li>
+                <li>Al registrarte recibes {INITIAL_CREDITS.toLocaleString('es-CO')} créditos para la fase de grupos.</li>
+                <li>Cada pronóstico nuevo consume {PREDICTION_COST} créditos (saldo inicial ≈ {GROUP_STAGE_PICKS_INCLUDED} partidos).</li>
                 <li>Editar un pronóstico antes del inicio del partido no consume créditos adicionales.</li>
                 <li>Los créditos se utilizan únicamente para participar.</li>
               </ul>

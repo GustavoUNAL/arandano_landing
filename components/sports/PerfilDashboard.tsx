@@ -4,6 +4,7 @@ import LiveMatchBroadcast from '@/components/sports/LiveMatchBroadcast'
 import MatchLivePanel from '@/components/sports/MatchLivePanel'
 import MundialExplorer from '@/components/sports/MundialExplorer'
 import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
+import AriPredictorPanel from '@/components/ari/AriPredictorPanel'
 import PerfilInicio from '@/components/sports/PerfilInicio'
 import PollaAdminPanel from '@/components/sports/PollaAdminPanel'
 import PredictionCard from '@/components/sports/PredictionCard'
@@ -12,6 +13,7 @@ import {
   IconGlobe,
   IconHome,
   IconShield,
+  IconSparkle,
   IconTarget,
 } from '@/components/sports/SportsIcons'
 import TeamCrest from '@/components/sports/TeamCrest'
@@ -78,6 +80,7 @@ const BASE_TABS: { id: MainTab; label: string; Icon: typeof IconHome }[] = [
   { id: 'mundial', label: 'Mundial', Icon: IconGlobe },
   { id: 'jugar', label: 'Jugar', Icon: IconTarget },
   { id: 'picks', label: 'Mis picks', Icon: IconClipboard },
+  { id: 'ari', label: 'Predictor', Icon: IconSparkle },
 ]
 
 const ADMIN_TAB = { id: 'admin' as const, label: 'Admin', Icon: IconShield }
@@ -359,7 +362,7 @@ export default function PerfilDashboard() {
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className={`flex-1 flex flex-col min-w-0 min-h-0 ${tab === 'ari' ? 'overflow-hidden' : ''}`}>
         {/* Header móvil */}
         <header
           className={`lg:hidden sticky top-0 z-40 border-b backdrop-blur-xl safe-area-top transition-colors ${theme.header}`}
@@ -413,7 +416,9 @@ export default function PerfilDashboard() {
                   ? 'Elige un partido y guarda tu marcador antes del pitazo'
                   : tab === 'picks'
                     ? `${data.predictions.length} pronóstico${data.predictions.length === 1 ? '' : 's'} registrados`
-                    : tab === 'admin'
+                    : tab === 'ari'
+                      ? 'Tu compañero para la polla del Mundial'
+                      : tab === 'admin'
                       ? 'Gestión de pasaportes y jugadores registrados'
                       : 'Polla Mundialista FIFA 2026'}
               </p>
@@ -444,8 +449,12 @@ export default function PerfilDashboard() {
           </div>
         </header>
 
-        <main className="flex-1 w-full max-w-lg lg:max-w-7xl mx-auto px-4 py-4 lg:px-8 xl:px-10 lg:py-8">
-        {data.hasLiveMatches && liveMatchIds.length > 0 && (
+        <main
+          className={`flex-1 w-full max-w-lg lg:max-w-7xl mx-auto lg:px-8 xl:px-10 lg:py-8 flex flex-col min-h-0 ${
+            tab === 'ari' ? 'px-3 py-2 overflow-hidden' : 'px-4 py-4'
+          }`}
+        >
+        {data.hasLiveMatches && liveMatchIds.length > 0 && tab !== 'inicio' && (
           <LiveMatchBroadcast
             matchIds={liveMatchIds}
             userPredictions={data.predictions}
@@ -481,6 +490,13 @@ export default function PerfilDashboard() {
         )}
 
         {tab === 'mundial' && <MundialExplorer data={worldCup} isDark={isDark} />}
+
+        {tab === 'ari' && (
+          <AriPredictorPanel
+            isDark={isDark}
+            matchId={searchParams.get('match') ? Number(searchParams.get('match')) : undefined}
+          />
+        )}
 
         {tab === 'jugar' && (
           <div className="space-y-5">

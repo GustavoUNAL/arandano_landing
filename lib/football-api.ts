@@ -1,3 +1,4 @@
+import { FootballApiQuotaError } from '@/lib/ari/errors'
 import type { FootballMatch, FootballTeamDetail } from '@/lib/football-data'
 
 const API_BASE = 'https://api.football-data.org/v4'
@@ -25,9 +26,15 @@ export async function footballFetch<T>(
   })
 
   if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    if (res.status === 429) {
+      throw new FootballApiQuotaError(res.status, detail.slice(0, 300))
+    }
     if (options?.optional) {
+      console.warn(`[football-data.org] optional ${res.status}:`, path)
       throw new Error(`football-data.org optional: ${res.status}`)
     }
+    console.error(`[football-data.org] error ${res.status}:`, path, detail.slice(0, 200))
     throw new Error(`football-data.org error: ${res.status}`)
   }
 

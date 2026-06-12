@@ -1,9 +1,9 @@
-export type PerfilTab = 'inicio' | 'mundial' | 'jugar' | 'picks' | 'admin'
+export type PerfilTab = 'inicio' | 'mundial' | 'jugar' | 'picks' | 'ari' | 'admin'
 
 export const PERFIL_PATH = '/perfil'
 export const PERFIL_JUGAR_PATH = '/perfil?tab=jugar'
 
-const VALID_TABS: PerfilTab[] = ['inicio', 'mundial', 'jugar', 'picks', 'admin']
+const VALID_TABS: PerfilTab[] = ['inicio', 'mundial', 'jugar', 'picks', 'ari', 'admin']
 
 export function isPerfilTab(value: string | null | undefined): value is PerfilTab {
   return !!value && VALID_TABS.includes(value as PerfilTab)

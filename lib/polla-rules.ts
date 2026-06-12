@@ -4,10 +4,14 @@
 
 export const POLL_NAME = 'Polla Mundialista Arándano 2026'
 
-export const INITIAL_CREDITS = 20_000
+/** Créditos de bienvenida para pronosticar la fase de grupos (100 por partido). */
+export const INITIAL_CREDITS = 7_200
+export const GROUP_STAGE_CREDITS = INITIAL_CREDITS
 /** Saldo de bienvenida antes del reglamento vigente (migración automática). */
 export const LEGACY_INITIAL_CREDITS = 120
 export const PREDICTION_COST = 100
+/** Pronósticos completos que cubre el saldo inicial de grupos. */
+export const GROUP_STAGE_PICKS_INCLUDED = Math.floor(INITIAL_CREDITS / PREDICTION_COST)
 export const POINTS_EXACT_SCORE = 3
 export const POINTS_GOAL_DIFFERENCE = 2
 export const POINTS_CORRECT_RESULT = 1
@@ -65,10 +69,16 @@ export interface ScoringRules {
   goalDifference: number
   correctResult: number
   initialCredits: number
+  groupStageCredits: number
+  groupStagePicksIncluded: number
   predictionCost: number
   maxScorePerTeam: number
   topWinners: number
   minSettledPicksToWin: number
+}
+
+export function computeCreditsBalance(totalWagered: number): number {
+  return Math.max(0, INITIAL_CREDITS - totalWagered)
 }
 
 export function getScoringRules(): ScoringRules {
@@ -77,6 +87,8 @@ export function getScoringRules(): ScoringRules {
     goalDifference: POINTS_GOAL_DIFFERENCE,
     correctResult: POINTS_CORRECT_RESULT,
     initialCredits: INITIAL_CREDITS,
+    groupStageCredits: GROUP_STAGE_CREDITS,
+    groupStagePicksIncluded: GROUP_STAGE_PICKS_INCLUDED,
     predictionCost: PREDICTION_COST,
     maxScorePerTeam: MAX_SCORE_PER_TEAM,
     topWinners: TOP_WINNERS_COUNT,
@@ -113,8 +125,8 @@ export const REGLAMENTO_SECTIONS: ReglamentoSection[] = [
     title: '3. Cómo participar',
     items: [
       'Regístrate gratis con tu cuenta de Google.',
-      `Recibes ${INITIAL_CREDITS.toLocaleString('es-CO')} créditos virtuales de bienvenida.`,
-      `Cada pronóstico nuevo cuesta ${PREDICTION_COST} créditos.`,
+      `Recibes ${INITIAL_CREDITS.toLocaleString('es-CO')} créditos virtuales para la fase de grupos.`,
+      `Cada pronóstico nuevo cuesta ${PREDICTION_COST} créditos (saldo inicial ≈ ${GROUP_STAGE_PICKS_INCLUDED} partidos).`,
       'Editar un pronóstico antes del inicio del partido no consume créditos adicionales.',
       'Los créditos no influyen en la puntuación ni en la posición del ranking.',
       'Elige tu nombre de usuario público para aparecer en las tablas.',
@@ -286,6 +298,7 @@ export const SCORING_EXAMPLES: ScoringExample[] = [
 ]
 
 export const REGLAMENTO_SHORT =
-  `${INITIAL_CREDITS.toLocaleString('es-CO')} créditos al registrarte · ` +
+  `${INITIAL_CREDITS.toLocaleString('es-CO')} créditos fase de grupos · ` +
+  `${PREDICTION_COST} por partido · ` +
   `Grupos: ${GROUP_STAGE_WINNERS_COUNT} ganadores · ${GROUP_STAGE_NO_PASSPORT_NOTE} · ` +
   `Eliminatorias: ${KNOCKOUT_PASSPORT_ACQUIRE_NOTE}`

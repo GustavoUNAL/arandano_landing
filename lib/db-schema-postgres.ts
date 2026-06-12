@@ -148,11 +148,12 @@ const SCHEMA_STATEMENTS = [
     email TEXT NOT NULL UNIQUE,
     name TEXT,
     image TEXT,
-    credits INTEGER NOT NULL DEFAULT 20000,
+    credits INTEGER NOT NULL DEFAULT 7200,
     displayalias TEXT,
     totalpoints INTEGER NOT NULL DEFAULT 0,
     haspassport INTEGER NOT NULL DEFAULT 0,
     hasknockoutpassport INTEGER NOT NULL DEFAULT 0,
+    lastcreditsrechargedate TEXT,
     createdat TEXT NOT NULL,
     updatedat TEXT NOT NULL
   )`,
@@ -233,6 +234,64 @@ let schemaReady = false
 const POSTGRES_MIGRATIONS = [
   `ALTER TABLE sports_users ADD COLUMN IF NOT EXISTS haspassport INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE sports_users ADD COLUMN IF NOT EXISTS hasknockoutpassport INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE sports_users ADD COLUMN IF NOT EXISTS lastcreditsrechargedate TEXT`,
+
+  `CREATE TABLE IF NOT EXISTS ari_threads (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    title TEXT,
+    context JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_ari_threads_user_updated ON ari_threads(user_id, updated_at DESC)`,
+
+  `CREATE TABLE IF NOT EXISTS ari_messages (
+    id TEXT PRIMARY KEY,
+    thread_id TEXT NOT NULL REFERENCES ari_threads(id) ON DELETE CASCADE,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    metadata JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_ari_messages_thread ON ari_messages(thread_id, created_at)`,
+
+  `CREATE TABLE IF NOT EXISTS ari_usage_logs (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    thread_id TEXT REFERENCES ari_threads(id),
+    model TEXT NOT NULL,
+    prompt_tokens INTEGER NOT NULL DEFAULT 0,
+    output_tokens INTEGER NOT NULL DEFAULT 0,
+    tool_calls INTEGER NOT NULL DEFAULT 0,
+    latency_ms INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_ari_usage_user ON ari_usage_logs(user_id, created_at)`,
+
+  `CREATE TABLE IF NOT EXISTS ari_welcome_snapshots (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    date_key TEXT NOT NULL,
+    content TEXT NOT NULL,
+    payload JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(user_id, date_key)
+  )`,
+
+  `CREATE TABLE IF NOT EXISTS ari_promotions (
+    id TEXT PRIMARY KEY,
+    slug TEXT NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    cta_label TEXT,
+    cta_url TEXT,
+    tags TEXT[] NOT NULL DEFAULT '{}',
+    priority INTEGER NOT NULL DEFAULT 0,
+    starts_at TIMESTAMPTZ,
+    ends_at TIMESTAMPTZ,
+    active BOOLEAN NOT NULL DEFAULT true
+  )`,
 ]
 
 export async function ensurePostgresSchema(sql: NeonQueryFunction<false, false>): Promise<void> {

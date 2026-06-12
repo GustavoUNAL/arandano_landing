@@ -39,6 +39,7 @@ const PG_COLUMN_MAP: Record<string, string> = {
   totalpoints: 'totalPoints',
   haspassport: 'hasPassport',
   hasknockoutpassport: 'hasKnockoutPassport',
+  lastcreditsrechargedate: 'lastCreditsRechargeDate',
   userid: 'userId',
   matchid: 'matchId',
   hometeamname: 'homeTeamName',

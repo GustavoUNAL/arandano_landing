@@ -109,6 +109,7 @@ export interface SportsUser {
   totalPoints: number
   hasPassport: boolean
   hasKnockoutPassport: boolean
+  lastCreditsRechargeDate: string | null
   createdAt: string
   updatedAt: string
 }
