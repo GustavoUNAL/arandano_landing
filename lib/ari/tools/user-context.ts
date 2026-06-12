@@ -26,7 +26,7 @@ export async function getUserPollContext(authUser: AuthUser) {
 
   const totalParticipants = Number(totalRow?.c ?? leaderboard.length)
   const myEntry = leaderboard.find((e) => e.isCurrentUser)
-  const rank = myEntry?.rank ?? totalParticipants
+  const rank = myEntry?.rank ?? leaderboard.length
   const leader = leaderboard[0]
   const top5 = leaderboard[4]
   const leaderPoints = leader?.totalPoints ?? 0

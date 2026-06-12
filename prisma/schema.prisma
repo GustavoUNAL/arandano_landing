@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AriThread {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  title     String?
+  context   Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  messages  AriMessage[]
+  usageLogs AriUsageLog[]
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@map("ari_threads")
+}
+
+model AriMessage {
+  id        String   @id @default(cuid())
+  threadId  String   @map("thread_id")
+  role      String
+  content   String   @db.Text
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  thread AriThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+  @@map("ari_messages")
+}
+
+model AriUsageLog {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  threadId     String?  @map("thread_id")
+  model        String
+  promptTokens Int      @default(0) @map("prompt_tokens")
+  outputTokens Int      @default(0) @map("output_tokens")
+  toolCalls    Int      @default(0) @map("tool_calls")
+  latencyMs    Int      @default(0) @map("latency_ms")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  thread AriThread? @relation(fields: [threadId], references: [id])
+
+  @@index([userId, createdAt])
+  @@map("ari_usage_logs")
+}
+
+model AriWelcomeSnapshot {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  dateKey   String   @map("date_key")
+  content   String   @db.Text
+  payload   Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, dateKey])
+  @@map("ari_welcome_snapshots")
+}
+
+model AriPromotion {
+  id        String    @id @default(cuid())
+  slug      String    @unique
+  title     String
+  body      String    @db.Text
+  ctaLabel  String?   @map("cta_label")
+  ctaUrl    String?   @map("cta_url")
+  tags      String[]  @default([])
+  priority  Int       @default(0)
+  startsAt  DateTime? @map("starts_at")
+  endsAt    DateTime? @map("ends_at")
+  active    Boolean   @default(true)
+
+  @@map("ari_promotions")
+}

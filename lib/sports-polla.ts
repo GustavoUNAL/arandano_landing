@@ -240,7 +240,9 @@ export async function getLeaderboard(
 ): Promise<LeaderboardEntry[]> {
   const isGroup = phase === 'group'
   const passportFilter = isGroup ? '' : 'AND su.hasKnockoutPassport = 1'
-  const matchFilter = isGroup ? 'AND mp.matchGroup IS NOT NULL' : 'AND mp.matchGroup IS NULL'
+  const matchJoinFilter = isGroup
+    ? 'AND mp.matchGroup IS NOT NULL'
+    : 'AND mp.matchGroup IS NULL'
 
   const rows = await dbAll<{
     id: string
@@ -266,8 +268,8 @@ export async function getLeaderboard(
       SUM(CASE WHEN mp.pointsEarned = ? THEN 1 ELSE 0 END) AS goalDiffHits,
       SUM(CASE WHEN mp.pointsEarned = ? THEN 1 ELSE 0 END) AS resultHits
     FROM sports_users su
-    INNER JOIN match_predictions mp ON mp.userId = su.id
-    WHERE 1=1 ${passportFilter} ${matchFilter}
+    LEFT JOIN match_predictions mp ON mp.userId = su.id ${matchJoinFilter}
+    WHERE 1=1 ${passportFilter}
     GROUP BY su.id, su.displayAlias, su.hasPassport, su.hasKnockoutPassport
     ORDER BY
       totalPoints DESC,
