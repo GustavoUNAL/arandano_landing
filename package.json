@@ -30,6 +30,7 @@
     "sync:ovh-neon": "bash scripts/sync-ovh-local-neon.sh",
     "configure:env": "bash scripts/configure-server-env.sh",
     "check:neon": "npx tsx --env-file=.env.local scripts/check-neon-db.ts",
+    "server:enable-neon": "bash scripts/enable-server-neon.sh",
     "test:api": "node scripts/test-api-functions.js",
     "pre-deploy": "node scripts/pre-deploy-check.js",
     "deploy": "bash deploy/ovh/deploy.sh",

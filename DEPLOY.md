@@ -71,6 +71,25 @@ npm run sync:sports-football
 
 ## Despliegue en el VPS (OVH)
 
+### Activar Neon en el servidor (desde tu Mac)
+
+Si ya migraste usuarios/picks a Neon desde local, **no hace falta** volver a migrar el SQLite del VPS:
+
+```bash
+npm run server:enable-neon
+# o: SSH_HOST=ubuntu@51.222.24.228 npm run server:enable-neon
+```
+
+Eso hace: `git pull`, configura `DB_MODE=postgres` + `DATABASE_URL`, `sync:sports-football`, `check:neon` y `deploy:ovh`.
+
+Si además quieres fusionar el SQLite del VPS a Neon:
+
+```bash
+MIGRATE_SERVER_SQLITE=1 npm run server:enable-neon
+```
+
+### Manual (SSH al servidor)
+
 ```bash
 ssh ubuntu@TU_SERVIDOR
 cd ~/projects/arandano_landing   # o ~/arandano según tu instalación
