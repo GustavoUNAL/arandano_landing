@@ -8,6 +8,7 @@ import { useMundialTheme } from '@/hooks/useMundialTheme'
 import PollaLeaderboard from '@/components/sports/PollaLeaderboard'
 import TeamCrest from '@/components/sports/TeamCrest'
 import PollaPremiosPanel from '@/components/sports/PollaPremiosPanel'
+import PollaNotificationBell from '@/components/sports/PollaNotificationBell'
 import {
   GROUP_STAGE_NO_PASSPORT_NOTE,
   GROUP_STAGE_WINNERS_COUNT,
@@ -215,20 +216,20 @@ export default function SportsLanding() {
     >
       {/* Nav */}
       <header
-        className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-colors ${
+        className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-colors overflow-visible ${
           isDark ? 'border-white/10 bg-stone-950/80' : 'border-stone-200 bg-white/90'
         }`}
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="relative w-9 h-9 shrink-0">
-              <Image src="/images/logo.png" alt="Arándano Café Bar" fill className="object-contain" sizes="36px" />
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 overflow-visible">
+          <Link href="/" className="flex items-center gap-2 min-w-0 shrink">
+            <div className="relative w-8 h-8 sm:w-9 sm:h-9 shrink-0">
+              <Image src="/images/logo.png" alt="Arándano" fill className="object-contain" sizes="36px" />
             </div>
-            <span className="font-display font-bold text-lg leading-tight truncate">
-              Arándano <span className="text-berry-400 text-sm font-semibold block -mt-0.5">Café Bar</span>
+            <span className="font-display font-bold text-sm sm:text-base leading-none truncate">
+              Polla <span className="text-berry-400">Mundial</span>
             </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
+          </Link>
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 overflow-visible">
             <div className="hidden md:flex items-center gap-1">
               <a
                 href="#premios"
@@ -250,16 +251,6 @@ export default function SportsLanding() {
               </a>
             </div>
             <div className="hidden sm:flex items-center gap-2">
-              <Link
-                href="/mundial/reglamento"
-                className={`text-sm font-medium px-3 py-2 rounded-full border transition-colors ${
-                  isDark
-                    ? 'border-white/15 text-stone-300 hover:bg-white/5'
-                    : 'border-stone-300 text-stone-600 hover:bg-stone-100'
-                }`}
-              >
-                Reglamento
-              </Link>
               {session ? (
                 <button
                   type="button"
@@ -273,17 +264,7 @@ export default function SportsLanding() {
                 <GoogleSignInButton compact label="Iniciar sesión" className="!shadow-none" />
               )}
             </div>
-            <div className="sm:hidden flex items-center gap-1.5">
-              <Link
-                href="/mundial/reglamento"
-                className={`text-xs font-medium px-2.5 py-1.5 rounded-full border transition-colors ${
-                  isDark
-                    ? 'border-white/15 text-stone-300 hover:bg-white/5'
-                    : 'border-stone-300 text-stone-600 hover:bg-stone-100'
-                }`}
-              >
-                Reglamento
-              </Link>
+            <div className="sm:hidden flex items-center">
               {session ? (
                 <button
                   type="button"
@@ -298,6 +279,7 @@ export default function SportsLanding() {
               )}
             </div>
             <MundialThemeToggle isDark={isDark} onToggle={toggleTheme} />
+            <PollaNotificationBell isDark={isDark} />
           </div>
         </div>
       </header>
@@ -689,9 +671,16 @@ export default function SportsLanding() {
           <p className="font-display text-xl font-bold mb-4">
             Arándano <span className="text-berry-400">Café Bar</span>
           </p>
-          <p className="text-stone-600 text-xs mb-2">© 2026 Arándano Café Bar · Pasto, Colombia</p>
-          <Link href="/mundial/reglamento" className="text-xs text-berry-500/80 hover:text-berry-400">
-            Reglamento y condiciones
+          <p className="text-stone-600 text-xs mb-4">© 2026 Arándano Café Bar · Pasto, Colombia</p>
+          <Link
+            href="/mundial/reglamento"
+            className={`inline-flex items-center justify-center min-h-[44px] px-5 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${
+              isDark
+                ? 'border-white/15 text-stone-200 hover:bg-white/5'
+                : 'border-stone-300 text-stone-700 hover:bg-white'
+            }`}
+          >
+            Ver reglamento completo →
           </Link>
         </div>
       </footer>

@@ -238,12 +238,6 @@ export default function PerfilDashboard() {
     return [...new Map([...data.matches, ...watch].map((m) => [m.id, m] as const)).values()]
   }, [data])
 
-  const reglamentoBtnClass = `text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-    isDark
-      ? 'border-white/15 text-stone-300 hover:bg-white/5'
-      : 'border-stone-300 text-stone-600 hover:bg-stone-100'
-  }`
-
   if (loading) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${theme.page}`}>
@@ -361,6 +355,18 @@ export default function PerfilDashboard() {
             </button>
           ))}
         </nav>
+        <div className={`px-4 pt-4 pb-4 border-t ${theme.border}`}>
+          <Link
+            href="/mundial/reglamento"
+            className={`mt-3 flex items-center justify-center w-full py-2.5 rounded-xl text-xs font-semibold border transition-colors ${
+              isDark
+                ? 'border-white/15 text-stone-300 hover:bg-white/5'
+                : 'border-stone-300 text-stone-600 hover:bg-stone-50'
+            }`}
+          >
+            Ver reglamento →
+          </Link>
+        </div>
         <div className={`p-4 border-t flex items-center justify-between gap-2 ${theme.border}`}>
           <MundialThemeToggle isDark={isDark} onToggle={toggleTheme} />
           <button
@@ -376,37 +382,39 @@ export default function PerfilDashboard() {
       <div className={`flex-1 flex flex-col min-w-0 min-h-0 ${tab === 'ari' ? 'overflow-hidden' : ''}`}>
         {/* Header móvil */}
         <header
-          className={`lg:hidden sticky top-0 z-40 border-b backdrop-blur-xl safe-area-top transition-colors ${theme.header}`}
+          className={`lg:hidden sticky top-0 z-40 border-b backdrop-blur-xl safe-area-top transition-colors overflow-visible ${theme.header}`}
         >
-          <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between gap-2">
-            <Link href="/mundial/reglamento" className={reglamentoBtnClass}>
-              Reglamento
-            </Link>
-            <span className={`font-display font-bold text-sm truncate text-center flex-1 px-2 ${isDark ? 'text-white' : 'text-stone-900'}`}>
-              {data.hasLiveMatches ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                  En vivo
-                </span>
-              ) : (
-                tabLabel
-              )}
-            </span>
-            <div className="flex items-center gap-1.5 shrink-0">
+          <div className="max-w-lg mx-auto px-3 py-2.5 flex items-center gap-2 overflow-visible">
+            <div className="flex-1 min-w-0">
+              <p className={`font-display font-bold text-sm truncate ${isDark ? 'text-white' : 'text-stone-900'}`}>
+                {data.hasLiveMatches ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                    En vivo
+                  </span>
+                ) : (
+                  tabLabel
+                )}
+              </p>
+            </div>
+            <div className="flex items-center gap-1 shrink-0 overflow-visible">
+              <MundialThemeToggle isDark={isDark} onToggle={toggleTheme} />
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: '/mundial' })}
+                className={`text-[11px] px-2 py-1 ${theme.mutedSm}`}
+              >
+                Salir
+              </button>
               <PollaNotificationCenter
                 matches={notificationMatches}
                 predictions={data.predictions}
                 isDark={isDark}
                 onPlayMatch={goPlayMatch}
+                panelAlign="right"
+                panelPlacement="below"
+                size="comfortable"
               />
-              <MundialThemeToggle isDark={isDark} onToggle={toggleTheme} />
-              <button
-                type="button"
-                onClick={() => signOut({ callbackUrl: '/mundial' })}
-                className={`text-xs ${theme.mutedSm}`}
-              >
-                Salir
-              </button>
             </div>
           </div>
         </header>
@@ -432,13 +440,7 @@ export default function PerfilDashboard() {
                       : 'Polla Mundialista FIFA 2026'}
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <PollaNotificationCenter
-                matches={notificationMatches}
-                predictions={data.predictions}
-                isDark={isDark}
-                onPlayMatch={goPlayMatch}
-              />
+            <div className="flex items-center gap-2 shrink-0 overflow-visible">
               {tab !== 'jugar' && (
                 <button
                   type="button"
@@ -448,15 +450,21 @@ export default function PerfilDashboard() {
                   Pronosticar
                 </button>
               )}
-              <Link href="/mundial/reglamento" className={`${reglamentoBtnClass} text-sm py-2`}>
-                Reglamento
-              </Link>
               <Link
                 href="/mundial"
                 className={`text-sm font-medium px-3 py-2 rounded-lg ${theme.accentLink}`}
               >
                 Ver landing
               </Link>
+              <PollaNotificationCenter
+                matches={notificationMatches}
+                predictions={data.predictions}
+                isDark={isDark}
+                onPlayMatch={goPlayMatch}
+                panelAlign="right"
+                panelPlacement="below"
+                size="comfortable"
+              />
             </div>
           </div>
         </header>
@@ -724,6 +732,18 @@ export default function PerfilDashboard() {
             )}
           </div>
         )}
+        <div className={`mt-6 lg:mt-8 pt-5 pb-2 lg:pb-0 border-t text-center ${theme.border} ${tab === 'ari' ? 'hidden lg:block' : ''}`}>
+          <Link
+            href="/mundial/reglamento"
+            className={`inline-flex items-center justify-center min-h-[44px] px-5 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${
+              isDark
+                ? 'border-white/15 text-stone-200 hover:bg-white/5'
+                : 'border-stone-300 text-stone-700 hover:bg-stone-50'
+            }`}
+          >
+            Ver reglamento completo →
+          </Link>
+        </div>
         </main>
 
         {/* Bottom nav móvil */}

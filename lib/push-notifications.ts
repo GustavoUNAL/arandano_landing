@@ -23,19 +23,18 @@ export function dismissPushPromptForSession(): void {
   sessionStorage.setItem(POLLA_PUSH_DISMISS_SESSION_KEY, '1')
 }
 
-/** Rutas internas de gestión donde no molestamos con el prompt de push */
+/** Rutas de la polla (mundial / perfil) */
+export function isPollaRoute(pathname: string): boolean {
+  return (
+    pathname === '/mundial' ||
+    pathname.startsWith('/mundial/') ||
+    pathname === '/perfil' ||
+    pathname.startsWith('/perfil/') ||
+    pathname === '/sports' ||
+    pathname.startsWith('/sports/')
+  )
+}
+
 export function shouldOfferPushPrompt(pathname: string): boolean {
-  const excluded = [
-    '/admin',
-    '/waiter',
-    '/analytics',
-    '/inventory',
-    '/sales',
-    '/expenses',
-    '/debts',
-    '/tasks',
-    '/informes',
-    '/seo',
-  ]
-  return !excluded.some((prefix) => pathname.startsWith(prefix))
+  return isPollaRoute(pathname)
 }
