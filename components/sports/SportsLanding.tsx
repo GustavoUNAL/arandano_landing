@@ -2,6 +2,7 @@
 
 import GoogleSignInButton from '@/components/GoogleSignInButton'
 import CafePromoBanner from '@/components/sports/CafePromoBanner'
+import HomeBroadcastPromo from '@/components/sports/HomeBroadcastPromo'
 import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
 import { useMundialTheme } from '@/hooks/useMundialTheme'
 import PollaLeaderboard from '@/components/sports/PollaLeaderboard'
@@ -10,6 +11,7 @@ import PollaPremiosPanel from '@/components/sports/PollaPremiosPanel'
 import {
   GROUP_STAGE_NO_PASSPORT_NOTE,
   GROUP_STAGE_WINNERS_COUNT,
+  GROUP_STAGE_PICKS_INCLUDED,
   INITIAL_CREDITS,
   KNOCKOUT_PASSPORT_ACQUIRE_NOTE,
   PREDICTION_COST,
@@ -17,7 +19,7 @@ import {
 } from '@/lib/polla-rules'
 import type { WorldCupData } from '@/lib/football-data'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
-import { PERFIL_JUGAR_PATH, PERFIL_PATH } from '@/lib/perfil-routes'
+import { PERFIL_JUGAR_PATH, PERFIL_PATH, perfilPathForPlayMatch } from '@/lib/perfil-routes'
 import type { LeaderboardEntry } from '@/lib/sports-polla-shared'
 import { signIn, useSession } from 'next-auth/react'
 import Image from 'next/image'
@@ -29,7 +31,7 @@ const STEPS = [
   {
     step: '1',
     title: 'Entra a jugar',
-    desc: 'Ingresa con Google y recibe tus créditos virtuales de bienvenida.',
+    desc: `${INITIAL_CREDITS.toLocaleString('es-CO')} créditos para la fase de grupos (${PREDICTION_COST} por partido, ≈${GROUP_STAGE_PICKS_INCLUDED} picks).`,
   },
   {
     step: '2',
@@ -39,7 +41,7 @@ const STEPS = [
   {
     step: '3',
     title: 'Haz tus pronósticos',
-    desc: `Cada pick nuevo cuesta ${PREDICTION_COST} créditos (${INITIAL_CREDITS.toLocaleString('es-CO')} de bienvenida). Editar antes del pitazo no consume créditos extra.`,
+    desc: `Cada pick nuevo cuesta ${PREDICTION_COST} créditos. Editar antes del pitazo no consume créditos extra.`,
   },
   {
     step: '4',
@@ -130,40 +132,6 @@ function MatchCard({
   )
 }
 
-function MatchRow({
-  match,
-  isDark,
-}: {
-  match: WorldCupData['upcomingMatches'][0]
-  isDark: boolean
-}) {
-  const hasScore = match.displayScore?.home != null && match.displayScore?.away != null
-  return (
-    <div className="flex items-center gap-3 px-5 py-3.5 hover:bg-white/5 transition-colors">
-      <TeamCrest src={match.homeTeam.crest} alt={match.homeTeam.tla} size={28} />
-      <span className="text-xs text-stone-500 w-8 text-center shrink-0">vs</span>
-      <TeamCrest src={match.awayTeam.crest} alt={match.awayTeam.tla} size={28} />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">
-          {match.homeTeam.tla} — {match.awayTeam.tla}
-        </p>
-        <p className={`text-xs ${isDark ? 'text-stone-500' : 'text-stone-600'}`}>
-          {match.isLive ? `En vivo · ${match.statusLabel}` : match.startsIn}
-        </p>
-      </div>
-      {hasScore ? (
-        <span className={`text-sm font-bold tabular-nums shrink-0 ${match.isLive ? 'text-emerald-400' : 'text-berry-400'}`}>
-          {match.displayScore.home} - {match.displayScore.away}
-        </span>
-      ) : (
-        <span className="text-[10px] text-berry-400 font-medium shrink-0 uppercase">
-          {match.statusLabel}
-        </span>
-      )}
-    </div>
-  )
-}
-
 export default function SportsLanding() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -218,19 +186,16 @@ export default function SportsLanding() {
     }
   }
 
-  const goToPredict = () => {
+  const goToPredict = (matchId?: number) => {
     if (authLoading) return
+    const target = matchId ? perfilPathForPlayMatch(matchId) : PERFIL_JUGAR_PATH
     if (session) {
-      router.push(PERFIL_JUGAR_PATH)
+      router.push(target)
     } else {
-      void signIn('google', { callbackUrl: PERFIL_JUGAR_PATH })
+      void signIn('google', { callbackUrl: target })
     }
   }
 
-  const heroMatches =
-    wcData?.liveMatches?.length
-      ? wcData.liveMatches.slice(0, 3)
-      : (wcData?.upcomingMatches.slice(0, 3) ?? [])
   const liveMatches = [
     ...(wcData?.liveMatches ?? []),
     ...(wcData?.upcomingMatches ?? []),
@@ -370,7 +335,7 @@ export default function SportsLanding() {
                 {session ? (
                   <button
                     type="button"
-                    onClick={goToPredict}
+                    onClick={() => goToPredict()}
                     className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-berry-600 hover:bg-berry-500 text-white font-semibold rounded-xl transition-colors"
                   >
                     Ir a pronosticar
@@ -391,40 +356,15 @@ export default function SportsLanding() {
               </div>
             </div>
 
-            {/* Polla en vivo preview */}
+            {/* Transmisión en vivo + pronósticos */}
             <div className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
-              <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm shadow-2xl overflow-hidden">
-                <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-stone-500 uppercase tracking-wide">Polla en vivo</p>
-                    <p className="font-semibold text-sm mt-0.5">
-                      {wcData?.liveMatches?.length ? 'Partidos en juego' : 'Próximos partidos'}
-                    </p>
-                  </div>
-                  <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    {loading ? 'Cargando…' : 'En vivo'}
-                  </span>
-                </div>
-                {loading ? (
-                  <div className="px-5 py-8 text-center text-sm text-stone-500">Cargando partidos…</div>
-                ) : heroMatches.length > 0 ? (
-                  <div className="divide-y divide-white/5">
-                    {heroMatches.map((match) => (
-                      <MatchRow key={match.id} match={match} isDark={isDark} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="px-5 py-8 text-center text-sm text-stone-500">Sin partidos programados</div>
-                )}
-                {wcData?.colombiaNextMatch && (
-                  <div className="px-5 py-3 bg-white/5 border-t border-white/10">
-                    <p className="text-xs text-stone-500 text-center">
-                      🇨🇴 Colombia: {wcData.colombiaNextMatch.homeTeam.name} vs {wcData.colombiaNextMatch.awayTeam.name} · {wcData.colombiaNextMatch.startsIn}
-                    </p>
-                  </div>
-                )}
-              </div>
+              <HomeBroadcastPromo isDark={isDark} onPredict={goToPredict} />
+              {wcData?.colombiaNextMatch && (
+                <p className={`text-xs text-center mt-3 ${theme.mutedSm}`}>
+                  🇨🇴 Colombia: {wcData.colombiaNextMatch.homeTeam.name} vs{' '}
+                  {wcData.colombiaNextMatch.awayTeam.name} · {wcData.colombiaNextMatch.startsIn}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -565,7 +505,7 @@ export default function SportsLanding() {
           ) : liveMatches.length > 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               {liveMatches.map((match) => (
-                <MatchCard key={match.id} match={match} onPredict={goToPredict} isDark={isDark} />
+                <MatchCard key={match.id} match={match} onPredict={() => goToPredict(match.id)} isDark={isDark} />
               ))}
             </div>
           ) : (
@@ -579,7 +519,7 @@ export default function SportsLanding() {
           <div className="text-center mt-8">
             <button
               type="button"
-              onClick={goToPredict}
+              onClick={() => goToPredict()}
               className={`inline-flex items-center justify-center px-8 py-3.5 rounded-xl bg-berry-600 hover:bg-berry-500 text-white font-semibold text-sm transition-colors`}
             >
               Entrar y pronosticar
@@ -677,8 +617,12 @@ export default function SportsLanding() {
             ¿Listo para la polla?
           </h2>
           <p className={`mb-8 leading-relaxed text-sm sm:text-base ${theme.muted}`}>
-            Entra con Google, recibe tus créditos de bienvenida y haz tu primer pronóstico en menos de un minuto.
+            Entra con Google, recibe {INITIAL_CREDITS.toLocaleString('es-CO')} créditos para la fase de grupos y haz tu primer pronóstico en menos de un minuto.
           </p>
+
+          <div className="max-w-lg mx-auto px-4 mb-8">
+            <HomeBroadcastPromo isDark={isDark} onPredict={goToPredict} />
+          </div>
 
           <div className="max-w-sm mx-auto space-y-4">
             {session && (
@@ -690,7 +634,7 @@ export default function SportsLanding() {
               <>
                 <button
                   type="button"
-                  onClick={goToPredict}
+                  onClick={() => goToPredict()}
                   className="flex w-full items-center justify-center px-6 py-4 bg-berry-600 hover:bg-berry-500 text-white font-semibold rounded-2xl transition-colors"
                 >
                   Ir a pronosticar

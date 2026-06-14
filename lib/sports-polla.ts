@@ -6,7 +6,6 @@ import {
   isMatchPredictable,
   type AdminSportsUserRow,
   type LeaderboardEntry,
-  LEGACY_INITIAL_CREDITS,
   MAX_SCORE_PER_TEAM,
   type MatchPickDistribution,
   type MatchPrediction,
@@ -21,7 +20,12 @@ import {
   POINTS_GOAL_DIFFERENCE,
   type SportsUser,
 } from '@/lib/sports-polla-shared'
-import { GROUP_STAGE_WINNERS_COUNT, TOP_WINNERS_COUNT, type PollaPhase } from '@/lib/polla-rules'
+import {
+  computeCreditsBalance,
+  GROUP_STAGE_WINNERS_COUNT,
+  TOP_WINNERS_COUNT,
+  type PollaPhase,
+} from '@/lib/polla-rules'
 import { randomUUID } from 'crypto'
 
 export {
@@ -85,6 +89,7 @@ function mapSportsUser(
 ): SportsUser {
   return {
     ...row,
+    lastCreditsRechargeDate: row.lastCreditsRechargeDate ?? null,
     hasPassport: normalizeHasPassport(row.hasPassport),
     hasKnockoutPassport: normalizeHasKnockoutPassport(row.hasKnockoutPassport),
   }
@@ -115,38 +120,32 @@ export function validateDisplayAlias(displayAlias: string): string {
   return normalized
 }
 
-/** Alinea saldos de bienvenida con el reglamento vigente (20.000 créditos). */
-export async function syncWelcomeCreditsIfNeeded(userId: string): Promise<void> {
+/** Alinea el saldo con el reglamento: 7.200 iniciales − créditos ya apostados. */
+export async function syncCreditsOnLogin(userId: string): Promise<void> {
   const user = await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [userId])
   if (!user) return
 
-  const agg = await dbGet<{ picks: number; wagered: number }>(
-    `SELECT COUNT(*) AS picks, COALESCE(SUM(creditsWagered), 0) AS wagered
+  const agg = await dbGet<{ wagered: number }>(
+    `SELECT COALESCE(SUM(creditsWagered), 0) AS wagered
      FROM match_predictions WHERE userId = ?`,
     [userId]
   )
-  const picks = Number(agg?.picks ?? 0)
   const wagered = Number(agg?.wagered ?? 0)
-  const lifetimePool = user.credits + wagered
+  const expected = computeCreditsBalance(wagered)
   const now = new Date().toISOString()
 
-  if (picks === 0 && user.credits < INITIAL_CREDITS) {
+  if (user.credits !== expected) {
     await dbRun('UPDATE sports_users SET credits = ?, updatedAt = ? WHERE id = ?', [
-      INITIAL_CREDITS,
+      expected,
       now,
       userId,
     ])
-    return
   }
+}
 
-  if (lifetimePool <= LEGACY_INITIAL_CREDITS && user.credits < INITIAL_CREDITS) {
-    const bonus = INITIAL_CREDITS - LEGACY_INITIAL_CREDITS
-    await dbRun('UPDATE sports_users SET credits = credits + ?, updatedAt = ? WHERE id = ?', [
-      bonus,
-      now,
-      userId,
-    ])
-  }
+/** @deprecated Usar syncCreditsOnLogin */
+export async function syncWelcomeCreditsIfNeeded(userId: string): Promise<void> {
+  await syncCreditsOnLogin(userId)
 }
 
 export async function updateDisplayAlias(userId: string, displayAlias: string): Promise<SportsUser> {
@@ -241,7 +240,9 @@ export async function getLeaderboard(
 ): Promise<LeaderboardEntry[]> {
   const isGroup = phase === 'group'
   const passportFilter = isGroup ? '' : 'AND su.hasKnockoutPassport = 1'
-  const matchFilter = isGroup ? 'AND mp.matchGroup IS NOT NULL' : 'AND mp.matchGroup IS NULL'
+  const matchJoinFilter = isGroup
+    ? 'AND mp.matchGroup IS NOT NULL'
+    : 'AND mp.matchGroup IS NULL'
 
   const rows = await dbAll<{
     id: string
@@ -267,8 +268,8 @@ export async function getLeaderboard(
       SUM(CASE WHEN mp.pointsEarned = ? THEN 1 ELSE 0 END) AS goalDiffHits,
       SUM(CASE WHEN mp.pointsEarned = ? THEN 1 ELSE 0 END) AS resultHits
     FROM sports_users su
-    INNER JOIN match_predictions mp ON mp.userId = su.id
-    WHERE 1=1 ${passportFilter} ${matchFilter}
+    LEFT JOIN match_predictions mp ON mp.userId = su.id ${matchJoinFilter}
+    WHERE 1=1 ${passportFilter}
     GROUP BY su.id, su.displayAlias, su.hasPassport, su.hasKnockoutPassport
     ORDER BY
       totalPoints DESC,
@@ -329,7 +330,7 @@ export async function getOrCreateSportsUser(input: {
       `UPDATE sports_users SET name = ?, image = ?, email = ?, displayAlias = COALESCE(displayAlias, ?), updatedAt = ? WHERE id = ?`,
       [input.name ?? existing.name, input.image ?? existing.image, input.email, alias, now, existing.id]
     )
-    await syncWelcomeCreditsIfNeeded(existing.id)
+    await syncCreditsOnLogin(existing.id)
     return mapSportsUser((await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [existing.id]))!)
   }
 
@@ -364,6 +365,7 @@ export async function listAllSportsUsersForAdmin(): Promise<AdminSportsUserRow[]
     totalPoints: number
     hasPassport: number | boolean
     hasKnockoutPassport: number | boolean
+    lastCreditsRechargeDate: string | null
     createdAt: string
     updatedAt: string
     picksCount: number
@@ -379,6 +381,7 @@ export async function listAllSportsUsersForAdmin(): Promise<AdminSportsUserRow[]
       su.totalPoints,
       su.hasPassport,
       su.hasKnockoutPassport,
+      su.lastCreditsRechargeDate,
       su.createdAt,
       su.updatedAt,
       COUNT(mp.id) AS picksCount,

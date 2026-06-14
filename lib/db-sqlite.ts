@@ -384,11 +384,12 @@ function initializeDatabase() {
       email TEXT NOT NULL UNIQUE,
       name TEXT,
       image TEXT,
-      credits INTEGER NOT NULL DEFAULT 20000,
+      credits INTEGER NOT NULL DEFAULT 7200,
       displayAlias TEXT,
       totalPoints INTEGER NOT NULL DEFAULT 0,
       hasPassport INTEGER NOT NULL DEFAULT 0,
       hasKnockoutPassport INTEGER NOT NULL DEFAULT 0,
+      lastCreditsRechargeDate TEXT,
       createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL
     )
@@ -470,6 +471,7 @@ function initializeDatabase() {
     'ALTER TABLE sports_users ADD COLUMN totalPoints INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE sports_users ADD COLUMN hasPassport INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE sports_users ADD COLUMN hasKnockoutPassport INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE sports_users ADD COLUMN lastCreditsRechargeDate TEXT',
     'ALTER TABLE match_predictions ADD COLUMN actualHomeScore INTEGER',
     'ALTER TABLE match_predictions ADD COLUMN actualAwayScore INTEGER',
     'ALTER TABLE match_predictions ADD COLUMN pointsEarned INTEGER',

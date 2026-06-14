@@ -16,7 +16,7 @@ import { useCallback, useMemo, useState } from 'react'
 
 type MundialTab = 'info' | 'grupos' | 'llaves' | 'equipos'
 
-const GROUP_ACCENTS = [
+const GROUP_ACCENTS_DARK = [
   'border-rose-500/40 from-rose-600/15',
   'border-orange-500/40 from-orange-600/15',
   'border-amber-500/40 from-amber-600/15',
@@ -30,6 +30,26 @@ const GROUP_ACCENTS = [
   'border-fuchsia-500/40 from-fuchsia-600/15',
   'border-pink-500/40 from-pink-600/15',
 ]
+
+const GROUP_ACCENTS_LIGHT = [
+  'border-rose-300 from-rose-50 to-white',
+  'border-orange-300 from-orange-50 to-white',
+  'border-amber-300 from-amber-50 to-white',
+  'border-lime-300 from-lime-50 to-white',
+  'border-emerald-300 from-emerald-50 to-white',
+  'border-teal-300 from-teal-50 to-white',
+  'border-cyan-300 from-cyan-50 to-white',
+  'border-blue-300 from-blue-50 to-white',
+  'border-indigo-300 from-indigo-50 to-white',
+  'border-violet-300 from-violet-50 to-white',
+  'border-fuchsia-300 from-fuchsia-50 to-white',
+  'border-pink-300 from-pink-50 to-white',
+]
+
+function groupAccent(index: number, isDark: boolean) {
+  const list = isDark ? GROUP_ACCENTS_DARK : GROUP_ACCENTS_LIGHT
+  return list[index % list.length]
+}
 
 const PHASE_ICONS: Record<string, string> = {
   LAST_32: '⚡',
@@ -57,11 +77,13 @@ function MatchCard({
   compact,
   selected,
   onSelect,
+  isDark = true,
 }: {
   match: EnrichedMatch
   compact?: boolean
   selected?: boolean
   onSelect?: (match: EnrichedMatch) => void
+  isDark?: boolean
 }) {
   const home = teamName(match.homeTeam)
   const away = teamName(match.awayTeam)
@@ -79,10 +101,16 @@ function MatchCard({
       onClick={() => onSelect?.(match)}
       className={`w-full text-left rounded-xl border transition-all ${
         selected
-          ? 'border-emerald-400/50 bg-emerald-950/30 ring-1 ring-emerald-500/30'
+          ? isDark
+            ? 'border-emerald-400/50 bg-emerald-950/30 ring-1 ring-emerald-500/30'
+            : 'border-emerald-200/80 bg-emerald-50/50 ring-1 ring-emerald-100'
           : live
-            ? 'border-emerald-500/40 bg-emerald-950/20 hover:border-emerald-400/50'
-            : 'border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent hover:border-emerald-500/30 hover:bg-white/[0.08]'
+            ? isDark
+              ? 'border-emerald-500/40 bg-emerald-950/20 hover:border-emerald-400/50'
+              : 'border-emerald-200/70 bg-emerald-50/40 hover:border-emerald-300/80'
+            : isDark
+              ? 'border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent hover:border-emerald-500/30 hover:bg-white/[0.08]'
+              : 'border-stone-200/60 bg-white/80 hover:border-emerald-200/70 hover:bg-emerald-50/20'
       } ${compact ? 'p-2.5' : 'p-3'}`}
     >
       <div className="flex items-center gap-2">
@@ -97,19 +125,41 @@ function MatchCard({
               <span className="absolute -top-1 -right-1 text-sm drop-shadow">⭐</span>
             )}
           </div>
-          <p className="text-[10px] font-semibold text-stone-300 truncate w-full text-center">
-            {home ?? <span className="text-stone-600 italic">Por definir</span>}
+          <p
+            className={`text-[10px] font-semibold truncate w-full text-center ${
+              isDark ? 'text-stone-300' : 'text-stone-800'
+            }`}
+          >
+            {home ?? <span className={`italic ${isDark ? 'text-stone-600' : 'text-stone-500'}`}>Por definir</span>}
           </p>
         </div>
         <div className="shrink-0 flex flex-col items-center gap-1 px-1">
           {score ? (
-            <p className="font-display text-lg font-bold text-emerald-300 tabular-nums">{score}</p>
+            <p
+              className={`font-display text-lg font-bold tabular-nums ${
+                isDark ? 'text-emerald-300' : 'text-emerald-700'
+              }`}
+            >
+              {score}
+            </p>
           ) : (
-            <div className="w-8 h-8 rounded-full bg-stone-800 border border-white/10 flex items-center justify-center">
-              <span className="text-[9px] font-bold text-stone-500">VS</span>
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                isDark
+                  ? 'bg-stone-800 border border-white/10'
+                  : 'bg-stone-100 border border-stone-300'
+              }`}
+            >
+              <span className={`text-[9px] font-bold ${isDark ? 'text-stone-500' : 'text-stone-600'}`}>VS</span>
             </div>
           )}
-          <p className="text-[9px] text-stone-500 whitespace-nowrap">{match.formattedDate.split(',')[0]}</p>
+          <p
+            className={`text-[9px] font-semibold whitespace-nowrap ${
+              isDark ? 'text-stone-500' : 'text-stone-700'
+            }`}
+          >
+            {match.formattedDate.split(',')[0]}
+          </p>
         </div>
         <div
           className={`flex-1 flex flex-col items-center gap-1 min-w-0 rounded-lg py-1 ${
@@ -122,14 +172,32 @@ function MatchCard({
               <span className="absolute -top-1 -right-1 text-sm drop-shadow">⭐</span>
             )}
           </div>
-          <p className="text-[10px] font-semibold text-stone-300 truncate w-full text-center">
-            {away ?? <span className="text-stone-600 italic">Por definir</span>}
+          <p
+            className={`text-[10px] font-semibold truncate w-full text-center ${
+              isDark ? 'text-stone-300' : 'text-stone-800'
+            }`}
+          >
+            {away ?? <span className={`italic ${isDark ? 'text-stone-600' : 'text-stone-500'}`}>Por definir</span>}
           </p>
         </div>
       </div>
       <p
-        className={`text-center text-[10px] font-medium mt-2 ${
-          live ? 'text-emerald-400' : winner === 'draw' ? 'text-amber-400' : played ? 'text-stone-400' : 'text-emerald-400/80'
+        className={`text-center text-[10px] font-semibold mt-2 ${
+          live
+            ? isDark
+              ? 'text-emerald-400'
+              : 'text-emerald-700'
+            : winner === 'draw'
+              ? isDark
+                ? 'text-amber-400'
+                : 'text-amber-700'
+              : played
+                ? isDark
+                  ? 'text-stone-400'
+                  : 'text-stone-600'
+                : isDark
+                  ? 'text-emerald-400/80'
+                  : 'text-emerald-700'
         }`}
       >
         {live
@@ -143,7 +211,13 @@ function MatchCard({
                 : match.startsIn}
       </p>
       {match.venue && !compact && (
-        <p className="text-center text-[9px] text-stone-500 mt-1 truncate">{match.venue}</p>
+        <p
+          className={`text-center text-[9px] mt-1 truncate ${
+            isDark ? 'text-stone-500' : 'text-stone-600'
+          }`}
+        >
+          {match.venue}
+        </p>
       )}
     </button>
   )
@@ -187,11 +261,25 @@ function MatchDetailPanel({
         isDark ? 'border-emerald-500/25 bg-stone-900/95' : 'border-emerald-200 bg-white shadow-lg'
       }`}
     >
-      <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-emerald-950/40">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
-          {m.isLive ? '🔴 Partido en vivo' : winner ? 'Detalle del partido' : 'Detalle del partido'}
+      <div
+        className={`flex items-center justify-between px-4 py-2 border-b ${
+          isDark
+            ? 'border-white/10 bg-emerald-950/40'
+            : 'border-emerald-200 bg-emerald-50'
+        }`}
+      >
+        <p
+          className={`text-[10px] font-semibold uppercase tracking-wide ${
+            isDark ? 'text-emerald-300' : 'text-emerald-800'
+          }`}
+        >
+          {m.isLive ? '🔴 Partido en vivo' : 'Detalle del partido'}
         </p>
-        <button type="button" onClick={onClose} className="text-stone-500 hover:text-white text-sm px-2">
+        <button
+          type="button"
+          onClick={onClose}
+          className={`text-sm px-2 ${isDark ? 'text-stone-500 hover:text-white' : 'text-stone-500 hover:text-stone-900'}`}
+        >
           ✕
         </button>
       </div>
@@ -237,9 +325,13 @@ function MatchDetailPanel({
                 {m.statusLabel}
               </span>
             )}
-            <p className="font-display text-3xl font-bold tabular-nums text-white">
+            <p
+              className={`font-display text-3xl font-bold tabular-nums ${
+                isDark ? 'text-white' : 'text-stone-900'
+              }`}
+            >
               {score?.home ?? '–'}
-              <span className="text-stone-500 mx-1">:</span>
+              <span className={`mx-1 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>:</span>
               {score?.away ?? '–'}
             </p>
             {m.score.halfTime.home != null && (
@@ -264,26 +356,30 @@ function MatchDetailPanel({
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-[11px]">
-          <div className={`rounded-lg px-3 py-2 ${isDark ? 'bg-black/30' : 'bg-stone-50'}`}>
-            <p className="text-stone-500 text-[9px] uppercase">Fase</p>
-            <p className="font-medium">{m.stageLabel}</p>
-          </div>
-          {m.groupLabel && (
-            <div className={`rounded-lg px-3 py-2 ${isDark ? 'bg-black/30' : 'bg-stone-50'}`}>
-              <p className="text-stone-500 text-[9px] uppercase">Grupo</p>
-              <p className="font-medium">{m.groupLabel}</p>
+          {[
+            { label: 'Fase', value: m.stageLabel, span: false },
+            ...(m.groupLabel ? [{ label: 'Grupo', value: m.groupLabel, span: false }] : []),
+            { label: 'Fecha', value: m.formattedDate, span: true },
+            ...(m.venue ? [{ label: 'Sede', value: m.venue, span: true }] : []),
+          ].map((cell) => (
+            <div
+              key={cell.label}
+              className={`rounded-lg px-3 py-2 border ${
+                cell.span ? 'col-span-2' : ''
+              } ${
+                isDark
+                  ? 'bg-black/30 border-white/5'
+                  : 'bg-white border-stone-200 shadow-sm'
+              }`}
+            >
+              <p className={`text-[9px] uppercase font-semibold ${isDark ? 'text-stone-500' : 'text-stone-600'}`}>
+                {cell.label}
+              </p>
+              <p className={`font-semibold mt-0.5 ${isDark ? 'text-stone-200' : 'text-stone-900'}`}>
+                {cell.value}
+              </p>
             </div>
-          )}
-          <div className={`rounded-lg px-3 py-2 col-span-2 ${isDark ? 'bg-black/30' : 'bg-stone-50'}`}>
-            <p className="text-stone-500 text-[9px] uppercase">Fecha</p>
-            <p className="font-medium">{m.formattedDate}</p>
-          </div>
-          {m.venue && (
-            <div className={`rounded-lg px-3 py-2 col-span-2 ${isDark ? 'bg-black/30' : 'bg-stone-50'}`}>
-              <p className="text-stone-500 text-[9px] uppercase">Sede</p>
-              <p className="font-medium">{m.venue}</p>
-            </div>
-          )}
+          ))}
         </div>
 
         {liveData?.userPrediction && (
@@ -342,28 +438,46 @@ function GroupStandings({
   accent,
   onSelect,
   selectedId,
+  isDark = true,
 }: {
   group: WorldCupGroup
   accent: string
   onSelect?: (match: EnrichedMatch) => void
   selectedId?: number | null
+  isDark?: boolean
 }) {
   const letter = group.id.replace('GROUP_', '')
   return (
-    <div className={`rounded-2xl border bg-gradient-to-b to-transparent overflow-hidden ${accent}`}>
-      <div className="px-4 py-3 flex items-center justify-between border-b border-white/10">
+    <div className={`rounded-2xl border bg-gradient-to-b to-transparent overflow-hidden shadow-sm ${accent}`}>
+      <div
+        className={`px-4 py-3 flex items-center justify-between border-b ${
+          isDark ? 'border-white/10' : 'border-stone-200/80 bg-white/60'
+        }`}
+      >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-black/30 border border-white/10 flex items-center justify-center font-display text-xl font-bold text-white">
+          <div
+            className={`w-10 h-10 rounded-xl flex items-center justify-center font-display text-xl font-bold ${
+              isDark
+                ? 'bg-black/30 border border-white/10 text-white'
+                : 'bg-white border border-stone-300 text-stone-900 shadow-sm'
+            }`}
+          >
             {letter}
           </div>
           <div>
-            <p className="font-semibold text-sm">{group.label}</p>
-            <p className="text-[10px] text-stone-500">{group.matches.length} partidos</p>
+            <p className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-stone-900'}`}>{group.label}</p>
+            <p className={`text-[10px] ${isDark ? 'text-stone-500' : 'text-stone-600'}`}>
+              {group.matches.length} partidos
+            </p>
           </div>
         </div>
       </div>
       <div className="px-3 py-2">
-        <div className="grid grid-cols-[1.5rem_1fr] gap-x-2 gap-y-0 text-[10px] text-stone-500 uppercase tracking-wide px-1 mb-1">
+        <div
+          className={`grid grid-cols-[1.5rem_1fr] gap-x-2 gap-y-0 text-[10px] uppercase tracking-wide px-1 mb-1 font-semibold ${
+            isDark ? 'text-stone-500' : 'text-stone-600'
+          }`}
+        >
           <span>#</span>
           <span>Selección</span>
         </div>
@@ -371,20 +485,45 @@ function GroupStandings({
           <div
             key={t.id}
             className={`flex items-center gap-2 rounded-lg px-2 py-2 mb-1 ${
-              t.name === 'Colombia' ? 'bg-yellow-500/10 border border-yellow-500/20' : 'bg-black/20'
+              t.name === 'Colombia'
+                ? isDark
+                  ? 'bg-yellow-500/10 border border-yellow-500/20'
+                  : 'bg-amber-50 border border-amber-200'
+                : isDark
+                  ? 'bg-black/20'
+                  : 'bg-white/80 border border-stone-200/80'
             }`}
           >
-            <span className="w-5 text-center text-xs font-bold text-stone-500">{i + 1}</span>
+            <span className={`w-5 text-center text-xs font-bold ${isDark ? 'text-stone-500' : 'text-stone-600'}`}>
+              {i + 1}
+            </span>
             <TeamCrest src={t.crest} alt={t.name} size={26} />
-            <span className="text-xs font-medium truncate flex-1">{t.shortName || t.name}</span>
-            <span className="text-[10px] text-stone-600 font-mono">{t.tla}</span>
+            <span className={`text-xs font-medium truncate flex-1 ${isDark ? 'text-stone-200' : 'text-stone-900'}`}>
+              {t.shortName || t.name}
+            </span>
+            <span className={`text-[10px] font-mono font-semibold ${isDark ? 'text-stone-600' : 'text-stone-500'}`}>
+              {t.tla}
+            </span>
           </div>
         ))}
       </div>
-      <div className="px-3 pb-3 space-y-2">
-        <p className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider px-1 pt-1">Calendario</p>
+      <div className={`px-3 pb-3 space-y-2 ${isDark ? '' : 'bg-white/40'}`}>
+        <p
+          className={`text-[10px] font-bold uppercase tracking-wider px-1 pt-2 ${
+            isDark ? 'text-stone-500' : 'text-emerald-800'
+          }`}
+        >
+          Calendario
+        </p>
         {group.matches.map((m) => (
-          <MatchCard key={m.id} match={m} compact onSelect={onSelect} selected={selectedId === m.id} />
+          <MatchCard
+            key={m.id}
+            match={m}
+            compact
+            onSelect={onSelect}
+            selected={selectedId === m.id}
+            isDark={isDark}
+          />
         ))}
       </div>
     </div>
@@ -396,36 +535,72 @@ function BracketRound({
   isFinal,
   onSelect,
   selectedId,
+  isDark = true,
 }: {
   round: KnockoutRound
   isFinal?: boolean
   onSelect?: (match: EnrichedMatch) => void
   selectedId?: number | null
+  isDark?: boolean
 }) {
   const icon = PHASE_ICONS[round.stage] ?? '⚽'
   return (
     <div className="relative pl-6">
-      <div className="absolute left-2 top-0 bottom-0 w-px bg-gradient-to-b from-emerald-500/50 via-emerald-500/20 to-transparent" />
-      <div className="absolute left-0.5 top-4 w-3 h-3 rounded-full bg-emerald-600 border-2 border-stone-950 shadow shadow-emerald-500/50" />
-      <div className={`ml-2 rounded-2xl border overflow-hidden ${
-        isFinal
-          ? 'border-yellow-500/40 bg-gradient-to-br from-yellow-950/30 via-emerald-950/40 to-stone-950'
-          : 'border-white/10 bg-white/[0.03]'
-      }`}>
-        <div className={`px-4 py-3 flex items-center justify-between border-b border-white/10 ${
-          isFinal ? 'bg-yellow-500/10' : 'bg-black/20'
-        }`}>
+      <div
+        className={`absolute left-2 top-0 bottom-0 w-px bg-gradient-to-b ${
+          isDark ? 'from-emerald-500/50 via-emerald-500/20' : 'from-emerald-300/70 via-emerald-100/50'
+        } to-transparent`}
+      />
+      <div
+        className={`absolute left-0.5 top-4 w-3 h-3 rounded-full border-2 ${
+          isDark
+            ? 'bg-emerald-600 border-stone-950 shadow shadow-emerald-500/50'
+            : 'bg-emerald-500/80 border-white shadow-sm'
+        }`}
+      />
+      <div
+        className={`ml-2 rounded-2xl border overflow-hidden ${
+          isFinal
+            ? isDark
+              ? 'border-yellow-500/40 bg-gradient-to-br from-yellow-950/30 via-emerald-950/40 to-stone-950'
+              : 'border-amber-200/80 bg-gradient-to-br from-amber-50/60 via-stone-50 to-emerald-50/40'
+            : isDark
+              ? 'border-white/10 bg-white/[0.03]'
+              : 'border-stone-200/60 bg-stone-50/90 shadow-sm'
+        }`}
+      >
+        <div
+          className={`px-4 py-3 flex items-center justify-between border-b ${
+            isFinal
+              ? isDark
+                ? 'bg-yellow-500/10 border-white/10'
+                : 'bg-amber-50/50 border-amber-100'
+              : isDark
+                ? 'bg-black/20 border-white/10'
+                : 'bg-stone-100/50 border-stone-200/50'
+          }`}
+        >
           <div className="flex items-center gap-2">
             <span className="text-lg">{icon}</span>
-            <h3 className="font-semibold text-sm">{round.label}</h3>
+            <h3 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-stone-800'}`}>{round.label}</h3>
           </div>
-          <span className="text-[10px] text-stone-500 bg-stone-900 px-2 py-0.5 rounded-full">
+          <span
+            className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+              isDark ? 'text-stone-500 bg-stone-900' : 'text-stone-600 bg-stone-100'
+            }`}
+          >
             {round.matches.length} {round.matches.length === 1 ? 'partido' : 'partidos'}
           </span>
         </div>
         <div className="p-3 grid gap-2 sm:grid-cols-2">
           {round.matches.map((m) => (
-            <MatchCard key={m.id} match={m} onSelect={onSelect} selected={selectedId === m.id} />
+            <MatchCard
+              key={m.id}
+              match={m}
+              onSelect={onSelect}
+              selected={selectedId === m.id}
+              isDark={isDark}
+            />
           ))}
         </div>
       </div>
@@ -433,16 +608,32 @@ function BracketRound({
   )
 }
 
-function TeamCard({ team, rank }: { team: FootballTeamDetail; rank: number }) {
+function TeamCard({
+  team,
+  rank,
+  isDark = true,
+}: {
+  team: FootballTeamDetail
+  rank: number
+  isDark?: boolean
+}) {
   const [open, setOpen] = useState(false)
   const isColombia = team.name === 'Colombia'
+
+  const detailCell = isDark
+    ? 'rounded-lg bg-black/30 px-3 py-2'
+    : 'rounded-lg bg-stone-100/80 border border-stone-200/50 px-3 py-2'
 
   return (
     <div
       className={`rounded-xl border overflow-hidden transition-all ${
         isColombia
-          ? 'border-yellow-500/30 bg-gradient-to-r from-yellow-950/20 to-stone-950'
-          : 'border-white/10 bg-white/[0.03] hover:border-emerald-500/20'
+          ? isDark
+            ? 'border-yellow-500/30 bg-gradient-to-r from-yellow-950/20 to-stone-950'
+            : 'border-amber-200/70 bg-amber-50/40'
+          : isDark
+            ? 'border-white/10 bg-white/[0.03] hover:border-emerald-500/20'
+            : 'border-stone-200/60 bg-white/70 hover:border-emerald-200/70 hover:bg-emerald-50/20'
       }`}
     >
       <button
@@ -450,36 +641,56 @@ function TeamCard({ team, rank }: { team: FootballTeamDetail; rank: number }) {
         onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-3 px-3 py-3 text-left"
       >
-        <span className="text-[10px] text-stone-600 font-mono w-5">{String(rank).padStart(2, '0')}</span>
+        <span
+          className={`text-[10px] font-mono w-5 ${isDark ? 'text-stone-600' : 'text-stone-400'}`}
+        >
+          {String(rank).padStart(2, '0')}
+        </span>
         <TeamCrest src={team.crest} alt={team.name} size={36} />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold truncate">{team.name}</p>
-          <p className="text-[10px] text-stone-500">{team.areaName}</p>
+          <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-stone-800'}`}>
+            {team.name}
+          </p>
+          <p className={`text-[10px] ${isDark ? 'text-stone-500' : 'text-stone-500'}`}>{team.areaName}</p>
         </div>
-        <span className="text-[10px] font-bold text-stone-600 bg-stone-900 px-2 py-1 rounded-md">{team.tla}</span>
+        <span
+          className={`text-[10px] font-semibold px-2 py-1 rounded-md ${
+            isDark
+              ? 'text-stone-400 bg-stone-900'
+              : 'text-stone-600 bg-stone-100 border border-stone-200/60'
+          }`}
+        >
+          {team.tla}
+        </span>
       </button>
       {open && (
-        <div className="px-4 pb-4 pt-0 border-t border-white/5 mx-3 grid grid-cols-2 gap-2 text-[11px]">
+        <div
+          className={`px-4 pb-4 pt-0 mx-3 grid grid-cols-2 gap-2 text-[11px] border-t ${
+            isDark ? 'border-white/5' : 'border-stone-200/50'
+          }`}
+        >
           {team.coach && (
-            <div className="col-span-2 rounded-lg bg-black/30 px-3 py-2">
-              <p className="text-stone-500 text-[9px] uppercase">Director técnico</p>
-              <p className="text-stone-200 font-medium">{team.coach}</p>
+            <div className={`col-span-2 ${detailCell}`}>
+              <p className={`text-[9px] uppercase ${isDark ? 'text-stone-500' : 'text-stone-500'}`}>
+                Director técnico
+              </p>
+              <p className={`font-medium ${isDark ? 'text-stone-200' : 'text-stone-700'}`}>{team.coach}</p>
             </div>
           )}
           {team.founded && (
-            <div className="rounded-lg bg-black/30 px-3 py-2">
-              <p className="text-stone-500 text-[9px] uppercase">Fundación</p>
-              <p className="text-stone-200">{team.founded}</p>
+            <div className={detailCell}>
+              <p className={`text-[9px] uppercase ${isDark ? 'text-stone-500' : 'text-stone-500'}`}>Fundación</p>
+              <p className={isDark ? 'text-stone-200' : 'text-stone-700'}>{team.founded}</p>
             </div>
           )}
-          <div className="rounded-lg bg-black/30 px-3 py-2">
-            <p className="text-stone-500 text-[9px] uppercase">Plantel</p>
-            <p className="text-stone-200">{team.squadSize} jugadores</p>
+          <div className={detailCell}>
+            <p className={`text-[9px] uppercase ${isDark ? 'text-stone-500' : 'text-stone-500'}`}>Plantel</p>
+            <p className={isDark ? 'text-stone-200' : 'text-stone-700'}>{team.squadSize} jugadores</p>
           </div>
           {team.clubColors && (
-            <div className="col-span-2 rounded-lg bg-black/30 px-3 py-2">
-              <p className="text-stone-500 text-[9px] uppercase">Colores</p>
-              <p className="text-stone-200">{team.clubColors}</p>
+            <div className={`col-span-2 ${detailCell}`}>
+              <p className={`text-[9px] uppercase ${isDark ? 'text-stone-500' : 'text-stone-500'}`}>Colores</p>
+              <p className={isDark ? 'text-stone-200' : 'text-stone-700'}>{team.clubColors}</p>
             </div>
           )}
         </div>
@@ -496,10 +707,13 @@ export default function MundialExplorer({
   isDark?: boolean
 }) {
   const theme = mundialTheme(isDark)
-  const inactiveBtn = isDark ? 'bg-white/5 text-stone-400' : 'bg-stone-100 text-stone-600'
+  const inactiveBtn = isDark ? 'bg-white/5 text-stone-400' : 'bg-stone-100/80 text-stone-600'
   const inactiveChip = isDark
     ? 'bg-white/5 text-stone-400 border border-white/10'
-    : 'bg-stone-100 text-stone-600 border border-stone-200'
+    : 'bg-white/70 text-stone-600 border border-stone-200/60'
+  const activeTab = isDark
+    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
+    : 'bg-emerald-600/90 text-white shadow-sm'
   const [tab, setTab] = useState<MundialTab>('grupos')
   const [teamSearch, setTeamSearch] = useState('')
   const [activeGroup, setActiveGroup] = useState(data.groups[0]?.id ?? '')
@@ -564,23 +778,37 @@ export default function MundialExplorer({
       {/* Header Mundial */}
       <div
         className={`relative rounded-2xl overflow-hidden border ${
-          isDark ? 'border-white/10' : 'border-stone-200'
+          isDark ? 'border-white/10' : 'border-stone-200/60'
         }`}
       >
         <div
           className={`absolute inset-0 ${
             isDark
               ? 'bg-gradient-to-br from-emerald-800/90 via-stone-900 to-stone-950'
-              : 'bg-gradient-to-br from-emerald-500 via-teal-600 to-emerald-900'
+              : 'bg-gradient-to-br from-emerald-50/90 via-stone-50 to-teal-50/80'
           }`}
         />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTAgNDBIMDQwTTQwIDBWNDBaIiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utb3BhY2l0eT0iMC4wMyIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg==')] opacity-50" />
+        <div
+          className={`absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTAgNDBIMDQwTTQwIDBWNDBaIiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utb3BhY2l0eT0iMC4wMyIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg==')] ${
+            isDark ? 'opacity-50' : 'opacity-30'
+          }`}
+        />
         <div className="relative px-4 py-5 flex items-center gap-4">
           <TeamCrest src={data.competition.emblem} alt="Mundial" size={56} />
           <div>
-            <p className="text-emerald-200/90 text-[10px] uppercase tracking-widest font-semibold">FIFA 2026</p>
-            <h2 className="font-display text-lg font-bold text-white">Copa Mundial</h2>
-            <p className="text-xs text-stone-300 mt-0.5">
+            <p
+              className={`text-[10px] uppercase tracking-widest font-semibold ${
+                isDark ? 'text-emerald-200/90' : 'text-emerald-700/80'
+              }`}
+            >
+              FIFA 2026
+            </p>
+            <h2
+              className={`font-display text-lg font-bold ${isDark ? 'text-white' : 'text-stone-800'}`}
+            >
+              Copa Mundial
+            </h2>
+            <p className={`text-xs mt-0.5 ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>
               {data.stats.totalTeams} equipos · {data.groups.length} grupos · {data.stats.totalMatches} partidos
             </p>
           </div>
@@ -600,10 +828,10 @@ export default function MundialExplorer({
             onClick={() => setTab(t.id)}
             className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl text-[10px] font-semibold transition-all ${
               tab === t.id
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
+                ? activeTab
                 : isDark
                   ? 'text-stone-500 hover:text-stone-300'
-                  : 'text-stone-600 hover:text-stone-900'
+                  : 'text-stone-500 hover:text-stone-700 hover:bg-white/50'
             }`}
           >
             <t.Icon className="w-5 h-5" />
@@ -673,9 +901,10 @@ export default function MundialExplorer({
           {groupsView === 'single' && selectedGroup && (
             <GroupStandings
               group={selectedGroup}
-              accent={GROUP_ACCENTS[groupIndex(selectedGroup.id) % GROUP_ACCENTS.length]}
+              accent={groupAccent(groupIndex(selectedGroup.id), isDark)}
               onSelect={loadMatchDetail}
               selectedId={selectedMatch?.id ?? null}
+              isDark={isDark}
             />
           )}
 
@@ -685,9 +914,10 @@ export default function MundialExplorer({
                 <GroupStandings
                   key={g.id}
                   group={g}
-                  accent={GROUP_ACCENTS[groupIndex(g.id) % GROUP_ACCENTS.length]}
+                  accent={groupAccent(groupIndex(g.id), isDark)}
                   onSelect={loadMatchDetail}
                   selectedId={selectedMatch?.id ?? null}
+                  isDark={isDark}
                 />
               ))}
             </div>
@@ -710,11 +940,12 @@ export default function MundialExplorer({
                 isFinal={round.stage === 'FINAL'}
                 onSelect={loadMatchDetail}
                 selectedId={selectedMatch?.id ?? null}
+                isDark={isDark}
               />
             ))}
           </div>
           {data.knockoutRounds.length === 0 && (
-            <p className="text-center text-stone-500 text-sm py-8">Sin datos de llaves aún</p>
+            <p className={`text-center text-sm py-8 ${theme.muted}`}>Sin datos de llaves aún</p>
           )}
         </div>
       )}
@@ -722,19 +953,29 @@ export default function MundialExplorer({
       {tab === 'equipos' && (
         <div className="space-y-3">
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 text-sm">🔍</span>
+            <span
+              className={`absolute left-3 top-1/2 -translate-y-1/2 text-sm ${
+                isDark ? 'text-stone-500' : 'text-stone-400'
+              }`}
+            >
+              🔍
+            </span>
             <input
               type="search"
               placeholder="Buscar por país o código..."
               value={teamSearch}
               onChange={(e) => setTeamSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-3 rounded-xl bg-stone-900/80 border border-white/10 text-sm text-white placeholder:text-stone-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+              className={`w-full pl-9 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
+                isDark
+                  ? 'bg-stone-900/80 border-white/10 text-white placeholder:text-stone-600 focus:ring-emerald-500/50'
+                  : 'bg-white/80 border-stone-200/70 text-stone-800 placeholder:text-stone-400 focus:ring-emerald-200/80 focus:border-emerald-200'
+              }`}
             />
           </div>
-          <p className="text-xs text-stone-500 text-center">{filteredTeams.length} selecciones clasificadas</p>
+          <p className={`text-xs text-center ${theme.muted}`}>{filteredTeams.length} selecciones clasificadas</p>
           <div className="space-y-2">
             {filteredTeams.map((team, i) => (
-              <TeamCard key={team.id} team={team} rank={i + 1} />
+              <TeamCard key={team.id} team={team} rank={i + 1} isDark={isDark} />
             ))}
           </div>
         </div>
@@ -749,31 +990,70 @@ export default function MundialExplorer({
               { icon: '👥', label: 'Equipos', value: `${data.stats.totalTeams} selecciones` },
               { icon: '⚽', label: 'Partidos', value: `${data.stats.totalMatches} encuentros` },
             ].map((item) => (
-              <div key={item.label} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <div
+                key={item.label}
+                className={`rounded-xl border p-3 ${
+                  isDark
+                    ? 'border-white/10 bg-white/[0.03]'
+                    : 'border-stone-200/60 bg-stone-50/80'
+                }`}
+              >
                 <span className="text-xl">{item.icon}</span>
-                <p className="text-[10px] text-stone-500 uppercase mt-2">{item.label}</p>
-                <p className="text-xs font-semibold text-stone-200 mt-0.5">{item.value}</p>
+                <p className={`text-[10px] uppercase mt-2 ${isDark ? 'text-stone-500' : 'text-stone-500'}`}>
+                  {item.label}
+                </p>
+                <p
+                  className={`text-xs font-medium mt-0.5 leading-snug ${
+                    isDark ? 'text-stone-200' : 'text-stone-700'
+                  }`}
+                >
+                  {item.value}
+                </p>
               </div>
             ))}
           </div>
 
-          <div className="rounded-2xl border border-white/10 overflow-hidden">
-            <div className="px-4 py-3 bg-black/30 border-b border-white/10">
-              <h4 className="font-semibold text-sm">Fases del torneo</h4>
+          <div
+            className={`rounded-2xl border overflow-hidden ${
+              isDark ? 'border-white/10' : 'border-stone-200/60 bg-white/60'
+            }`}
+          >
+            <div
+              className={`px-4 py-3 border-b ${
+                isDark ? 'bg-black/30 border-white/10' : 'bg-stone-100/60 border-stone-200/50'
+              }`}
+            >
+              <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-stone-800'}`}>
+                Fases del torneo
+              </h4>
             </div>
-            <div className="divide-y divide-white/5">
+            <div className={isDark ? 'divide-y divide-white/5' : 'divide-y divide-stone-200/50'}>
               {MUNDIAL_2026.phases.map((p, i) => (
                 <div key={p.key} className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-600/20 border border-emerald-500/20 flex items-center justify-center text-xs font-bold text-emerald-300">
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+                      isDark
+                        ? 'bg-emerald-600/20 border border-emerald-500/20 text-emerald-300'
+                        : 'bg-emerald-50 border border-emerald-200/60 text-emerald-700'
+                    }`}
+                  >
                     {i + 1}
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{p.label}</p>
-                    <p className="text-[10px] text-stone-500">{p.matches} partidos</p>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
+                      {p.label}
+                    </p>
+                    <p className={`text-[10px] ${isDark ? 'text-stone-500' : 'text-stone-500'}`}>
+                      {p.matches} partidos
+                    </p>
                   </div>
-                  <div className="h-1.5 w-16 rounded-full bg-stone-800 overflow-hidden">
+                  <div
+                    className={`h-1.5 w-16 rounded-full overflow-hidden shrink-0 ${
+                      isDark ? 'bg-stone-800' : 'bg-stone-200'
+                    }`}
+                  >
                     <div
-                      className="h-full bg-emerald-500 rounded-full"
+                      className={`h-full rounded-full ${isDark ? 'bg-emerald-500' : 'bg-emerald-400/80'}`}
                       style={{ width: `${(p.matches / 72) * 100}%` }}
                     />
                   </div>
@@ -782,22 +1062,44 @@ export default function MundialExplorer({
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
-            <h4 className="font-semibold text-sm">¿Cómo funciona?</h4>
+          <div
+            className={`rounded-xl border p-4 space-y-3 ${
+              isDark ? 'border-white/10 bg-white/[0.03]' : 'border-stone-200/60 bg-stone-50/80'
+            }`}
+          >
+            <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-stone-800'}`}>
+              ¿Cómo funciona?
+            </h4>
             {MUNDIAL_2026.format.map((line, i) => (
               <div key={line} className="flex gap-3">
-                <div className="w-6 h-6 rounded-full bg-emerald-600/30 flex items-center justify-center shrink-0 text-[10px] font-bold text-emerald-300">
+                <div
+                  className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${
+                    isDark
+                      ? 'bg-emerald-600/30 text-emerald-300'
+                      : 'bg-emerald-100/80 text-emerald-700'
+                  }`}
+                >
                   {i + 1}
                 </div>
-                <p className="text-xs text-stone-400 leading-relaxed pt-0.5">{line}</p>
+                <p className={`text-xs leading-relaxed pt-0.5 ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
+                  {line}
+                </p>
               </div>
             ))}
           </div>
 
-          <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-4 text-center text-xs text-stone-400">
-            <p className="font-semibold text-emerald-300 mb-1">Partido inaugural</p>
+          <div
+            className={`rounded-xl border p-4 text-center text-xs ${
+              isDark
+                ? 'border-emerald-500/20 bg-emerald-950/20 text-stone-400'
+                : 'border-emerald-200/60 bg-emerald-50/40 text-stone-600'
+            }`}
+          >
+            <p className={`font-semibold mb-1 ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
+              Partido inaugural
+            </p>
             <p>{MUNDIAL_2026.openingMatch}</p>
-            <p className="mt-2 font-semibold text-emerald-300">Gran final</p>
+            <p className={`mt-2 font-semibold ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>Gran final</p>
             <p>{MUNDIAL_2026.finalVenue}</p>
           </div>
         </div>
