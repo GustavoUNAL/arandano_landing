@@ -122,18 +122,31 @@ export default function PollaNotificationCenter({
     }
   }, [active, permission])
 
-  const requestBrowserNotifications = () => {
-    if (!('Notification' in window)) return
-    void Notification.requestPermission().then((p) => setPermission(p))
-  }
+  const requestBrowserNotifications = useCallback(async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported' as const
+    const next = await Notification.requestPermission()
+    setPermission(next)
+    return next
+  }, [])
+
+  const toggleOpen = useCallback(() => {
+    setOpen((wasOpen) => {
+      const willOpen = !wasOpen
+      if (willOpen && permission === 'default' && typeof window !== 'undefined' && 'Notification' in window) {
+        void requestBrowserNotifications()
+      }
+      return willOpen
+    })
+  }, [permission, requestBrowserNotifications])
 
   const count = active.length
+  const pushSupported = permission !== 'unsupported'
 
   return (
     <div ref={panelRef} className={`relative ${className}`}>
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggleOpen}
         className={`relative flex items-center justify-center w-8 h-8 rounded-full border transition-colors ${
           isDark
             ? 'border-white/10 text-stone-400 hover:text-stone-200 hover:bg-white/5'
@@ -163,16 +176,45 @@ export default function PollaNotificationCenter({
         >
           <div className={`px-3 py-2 border-b flex items-center justify-between ${theme.border}`}>
             <p className={`text-[11px] font-medium ${theme.mutedSm}`}>Alertas</p>
-            {permission === 'default' && (
-              <button
-                type="button"
-                onClick={requestBrowserNotifications}
-                className={`text-[10px] ${theme.mutedSm} hover:text-berry-400`}
-              >
-                Push
-              </button>
+            {permission === 'granted' && (
+              <span className="text-[10px] text-emerald-400/90 font-medium">Push activo</span>
             )}
           </div>
+
+          {pushSupported && permission !== 'granted' && (
+            <div
+              className={`px-3 py-2.5 border-b ${
+                isDark ? 'border-white/5 bg-berry-950/30' : 'border-berry-100 bg-berry-50/80'
+              }`}
+            >
+              {permission === 'default' ? (
+                <>
+                  <p className={`text-[11px] font-medium leading-snug ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
+                    Activa alertas del navegador
+                  </p>
+                  <p className={`text-[10px] mt-1 leading-relaxed ${theme.mutedSm}`}>
+                    Te avisamos de partidos próximos, puntos y picks pendientes aunque no estés en la app.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void requestBrowserNotifications()}
+                    className="mt-2 w-full py-1.5 rounded-lg bg-berry-600 hover:bg-berry-500 text-white text-[11px] font-semibold transition-colors"
+                  >
+                    Activar notificaciones
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className={`text-[11px] font-medium leading-snug ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
+                    Notificaciones bloqueadas
+                  </p>
+                  <p className={`text-[10px] mt-1 leading-relaxed ${theme.mutedSm}`}>
+                    Actívalas en los ajustes del navegador para recibir alertas de la polla.
+                  </p>
+                </>
+              )}
+            </div>
+          )}
 
           {count === 0 ? (
             <p className={`px-3 py-4 text-center text-[11px] ${theme.mutedSm}`}>Sin alertas pendientes</p>

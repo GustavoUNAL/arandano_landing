@@ -76,51 +76,51 @@ function MatchCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border p-5 transition-colors ${
+      className={`rounded-xl sm:rounded-2xl border p-3 sm:p-5 transition-colors ${
         isDark
           ? 'border-white/10 bg-white/5 hover:border-berry-500/30'
           : 'border-stone-200 bg-white shadow-sm hover:border-berry-400/40 hover:shadow-md'
       }`}
     >
-      <div className="flex items-center justify-center gap-3 mb-4">
-        <div className="text-center flex-1">
+      <div className="flex items-center justify-center gap-1.5 sm:gap-3 mb-2.5 sm:mb-4">
+        <div className="text-center flex-1 min-w-0">
           <div className="flex justify-center mb-1">
-            <TeamCrest src={match.homeTeam.crest} alt={match.homeTeam.name} size={40} />
+            <TeamCrest src={match.homeTeam.crest} alt={match.homeTeam.name} size={32} />
           </div>
-          <p className={`text-xs font-medium truncate ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
+          <p className={`text-[10px] sm:text-xs font-medium truncate ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
             {match.homeTeam.shortName}
           </p>
         </div>
-        <span className={`font-bold text-xs shrink-0 ${isDark ? 'text-stone-600' : 'text-stone-400'}`}>VS</span>
-        <div className="text-center flex-1">
+        <span className={`font-bold text-[10px] sm:text-xs shrink-0 ${isDark ? 'text-stone-600' : 'text-stone-400'}`}>VS</span>
+        <div className="text-center flex-1 min-w-0">
           <div className="flex justify-center mb-1">
-            <TeamCrest src={match.awayTeam.crest} alt={match.awayTeam.name} size={40} />
+            <TeamCrest src={match.awayTeam.crest} alt={match.awayTeam.name} size={32} />
           </div>
-          <p className={`text-xs font-medium truncate ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
+          <p className={`text-[10px] sm:text-xs font-medium truncate ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
             {match.awayTeam.shortName}
           </p>
         </div>
       </div>
       {match.group && (
-        <p className={`text-center text-[10px] uppercase tracking-wide mb-1 ${isDark ? 'text-stone-600' : 'text-stone-500'}`}>
+        <p className={`text-center text-[9px] sm:text-[10px] uppercase tracking-wide mb-1 ${isDark ? 'text-stone-600' : 'text-stone-500'}`}>
           {match.group.replace('_', ' ')}
         </p>
       )}
-      <p className={`text-center text-xs mb-1 ${isDark ? 'text-stone-500' : 'text-stone-600'}`}>
+      <p className={`text-center text-[10px] sm:text-xs mb-1 ${isDark ? 'text-stone-500' : 'text-stone-600'}`}>
         {match.formattedDate}
       </p>
       {match.isLive && match.displayScore.home != null ? (
-        <p className={`text-center text-xl font-bold tabular-nums mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+        <p className={`text-center text-lg sm:text-xl font-bold tabular-nums mb-1.5 sm:mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
           {match.displayScore.home} - {match.displayScore.away}
         </p>
       ) : null}
-      <p className={`text-center text-xs font-medium mb-4 ${match.isLive ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : isDark ? 'text-berry-400' : 'text-berry-600'}`}>
+      <p className={`text-center text-[10px] sm:text-xs font-medium mb-3 sm:mb-4 ${match.isLive ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : isDark ? 'text-berry-400' : 'text-berry-600'}`}>
         {match.isLive ? `En vivo · ${match.statusLabel}` : match.startsIn}
       </p>
       <button
         type="button"
         onClick={onPredict}
-        className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-colors ${
+        className={`w-full py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-colors ${
           isDark
             ? 'bg-berry-600/20 hover:bg-berry-600/40 border border-berry-500/30 text-berry-300'
             : 'bg-berry-600 hover:bg-berry-500 text-white'
@@ -316,7 +316,7 @@ export default function SportsLanding() {
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 {wcData?.competition.name ?? 'Copa Mundial FIFA 2026'}
               </p>
-              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-5">
+              <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-5">
                 Vive el Mundial con{' '}
                 <span className="bg-gradient-to-r from-berry-300 to-berry-500 bg-clip-text text-transparent">
                   Arándano Café Bar
@@ -462,21 +462,24 @@ export default function SportsLanding() {
             <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${theme.accent}`}>
               03 · Arándano Café Bar
             </p>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold">Tu tercer espacio en Pasto</h2>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold">Por qué elegirnos</h2>
+            <p className={`text-sm mt-2 max-w-xl mx-auto ${theme.muted}`}>
+              Tu tercer espacio en Pasto para vivir el Mundial
+            </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 [&>*:last-child:nth-child(odd)]:col-span-2 lg:[&>*:last-child:nth-child(odd)]:col-span-1">
             {FEATURES.map((f) => (
               <div
                 key={f.title}
-                className={`rounded-2xl border p-5 sm:p-6 transition-all hover:-translate-y-0.5 ${
+                className={`rounded-xl sm:rounded-2xl border p-3.5 sm:p-5 lg:p-6 transition-all hover:-translate-y-0.5 h-full ${
                   isDark
                     ? 'border-white/10 bg-white/5 hover:border-berry-500/30'
                     : 'border-stone-200 bg-white shadow-sm hover:border-berry-300/50 hover:shadow-md'
                 }`}
               >
-                <span className="text-2xl sm:text-3xl mb-3 block">{f.icon}</span>
-                <h3 className="font-semibold text-base sm:text-lg mb-1.5">{f.title}</h3>
-                <p className={`text-sm leading-relaxed ${theme.muted}`}>{f.desc}</p>
+                <span className="text-xl sm:text-3xl mb-2 sm:mb-3 block">{f.icon}</span>
+                <h3 className="font-semibold text-sm sm:text-lg mb-1 sm:mb-1.5 leading-snug">{f.title}</h3>
+                <p className={`text-[11px] sm:text-sm leading-relaxed ${theme.muted}`}>{f.desc}</p>
               </div>
             ))}
           </div>
@@ -503,7 +506,7 @@ export default function SportsLanding() {
           {loading ? (
             <div className={`text-center py-12 text-sm ${theme.muted}`}>Cargando partidos del Mundial…</div>
           ) : liveMatches.length > 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
               {liveMatches.map((match) => (
                 <MatchCard key={match.id} match={match} onPredict={() => goToPredict(match.id)} isDark={isDark} />
               ))}

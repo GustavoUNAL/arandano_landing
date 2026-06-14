@@ -402,23 +402,28 @@ export default function PerfilInicio({
                 Pronosticar →
               </button>
             </div>
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-2">
               {upcoming.map((m) => (
                 <button
                   key={m.id}
                   type="button"
                   onClick={() => (onPlayMatch ? onPlayMatch(m.id) : onGoJugar())}
-                  className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all hover:scale-[1.01] hover:border-berry-500/40 hover:shadow-md ${theme.cardSoft}`}
+                  className={`flex flex-col items-center gap-1.5 rounded-xl border px-2 py-2.5 text-center transition-all hover:scale-[1.01] hover:border-berry-500/40 hover:shadow-md sm:flex-row sm:gap-3 sm:px-3 sm:text-left ${theme.cardSoft}`}
                 >
-                  <TeamCrest src={m.homeTeam.crest} alt="" size={28} />
-                  <div className="flex-1 min-w-0 text-center">
-                    <p className="text-xs font-medium truncate">
+                  <div className="flex items-center justify-center gap-1.5 sm:hidden">
+                    <TeamCrest src={m.homeTeam.crest} alt="" size={24} />
+                    <span className={`text-[10px] font-bold ${theme.mutedSm}`}>vs</span>
+                    <TeamCrest src={m.awayTeam.crest} alt="" size={24} />
+                  </div>
+                  <TeamCrest src={m.homeTeam.crest} alt="" size={28} className="hidden sm:block shrink-0" />
+                  <div className="flex-1 min-w-0 w-full sm:w-auto">
+                    <p className="text-[10px] sm:text-xs font-medium leading-snug line-clamp-2 sm:truncate">
                       {teamLabel(m.homeTeam)} <span className={theme.mutedSm}>vs</span> {teamLabel(m.awayTeam)}
                     </p>
-                    <p className={`text-[10px] ${theme.mutedSm}`}>{m.formattedDate}</p>
+                    <p className={`text-[9px] sm:text-[10px] mt-0.5 ${theme.mutedSm}`}>{m.formattedDate}</p>
                   </div>
-                  <TeamCrest src={m.awayTeam.crest} alt="" size={28} />
-                  <span className={`text-[10px] font-bold w-14 text-right shrink-0 ${theme.accent}`}>
+                  <TeamCrest src={m.awayTeam.crest} alt="" size={28} className="hidden sm:block shrink-0" />
+                  <span className={`hidden sm:inline text-[10px] font-bold w-14 text-right shrink-0 ${theme.accent}`}>
                     Jugar →
                   </span>
                 </button>
@@ -456,7 +461,7 @@ export default function PerfilInicio({
       {/* Formato */}
       <div className={`rounded-2xl border p-4 lg:p-5 ${theme.cardSoft}`}>
         <h3 className="font-semibold text-sm lg:text-base mb-3">Formato del torneo</h3>
-        <div className="grid gap-2 lg:grid-cols-2">
+        <div className="grid grid-cols-2 gap-2 lg:gap-3">
           {MUNDIAL_2026.format.map((line, i) => (
             <div key={line} className="flex gap-3 items-start">
               <span
@@ -481,7 +486,7 @@ export default function PerfilInicio({
               Ver todos →
             </button>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
             {predictions.slice(-3).reverse().map((p) => (
               <div
                 key={p.id}

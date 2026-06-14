@@ -289,7 +289,7 @@ export default function LiveMatchBroadcast({
                 <p className={`text-xs font-semibold uppercase tracking-wide mb-3 ${theme.accent}`}>
                   Estadísticas en vivo
                 </p>
-                <div className={`space-y-3 ${variant === 'inicio' ? 'sm:grid sm:grid-cols-2 sm:gap-x-6 sm:space-y-0 sm:gap-y-3' : ''}`}>
+                <div className={`space-y-3 ${variant === 'inicio' ? 'grid grid-cols-2 gap-x-3 gap-y-3 sm:gap-x-6 space-y-0' : ''}`}>
                   <StatRow
                     label="Posesión %"
                     home={homeStats?.ball_possession}

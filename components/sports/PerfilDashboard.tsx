@@ -612,11 +612,11 @@ export default function PerfilDashboard() {
                 </button>
               ))}
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 2xl:grid-cols-3">
             {filteredMatches.map((match) => (
               <div
                 key={match.id}
-                className={`rounded-2xl border p-4 lg:p-5 transition-shadow hover:shadow-md ${theme.cardSoft}`}
+                className={`rounded-xl sm:rounded-2xl border p-3 sm:p-4 lg:p-5 transition-shadow hover:shadow-md ${theme.cardSoft}`}
               >
                 <div className="flex items-center gap-2 mb-2">
                   {match.groupLabel && (
@@ -669,7 +669,7 @@ export default function PerfilDashboard() {
                     <button
                       type="button"
                       onClick={() => setLiveMatchId(match.id)}
-                      className={`flex-1 py-2 rounded-lg text-sm font-semibold border ${
+                      className={`flex-1 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold border ${
                         match.isLive
                           ? 'border-emerald-500/50 bg-emerald-600/20 text-emerald-300'
                           : isDark
@@ -684,7 +684,7 @@ export default function PerfilDashboard() {
                     <button
                       type="button"
                       onClick={() => openPredict(match)}
-                      className="flex-1 py-2 rounded-lg bg-berry-600 hover:bg-berry-500 text-white text-sm font-semibold"
+                      className="flex-1 py-1.5 sm:py-2 rounded-lg bg-berry-600 hover:bg-berry-500 text-white text-xs sm:text-sm font-semibold"
                     >
                       {match.prediction ? 'Editar' : 'Pronosticar'}
                     </button>
