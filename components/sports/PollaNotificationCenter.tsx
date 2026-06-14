@@ -7,6 +7,11 @@ import {
   loadDismissedNotificationIds,
   type PollaNotification,
 } from '@/lib/polla-notifications'
+import {
+  getPushPermission,
+  requestPushPermission,
+  type PushPermission,
+} from '@/lib/push-notifications'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
 import { perfilPathForPlayMatch } from '@/lib/perfil-routes'
 import type { MatchPrediction } from '@/lib/sports-polla-shared'
@@ -32,6 +37,9 @@ interface PollaNotificationCenterProps {
   isDark?: boolean
   onPlayMatch?: (matchId: number) => void
   className?: string
+  panelAlign?: 'left' | 'right'
+  panelPlacement?: 'above' | 'below'
+  size?: 'default' | 'comfortable'
 }
 
 function kindDot(kind: PollaNotification['kind']) {
@@ -53,22 +61,21 @@ export default function PollaNotificationCenter({
   isDark = true,
   onPlayMatch,
   className = '',
+  panelAlign = 'right',
+  panelPlacement = 'below',
+  size = 'default',
 }: PollaNotificationCenterProps) {
   const theme = mundialTheme(isDark)
   const router = useRouter()
   const panelRef = useRef<HTMLDivElement>(null)
   const [dismissed, setDismissed] = useState<Set<string>>(() => new Set())
   const [open, setOpen] = useState(false)
-  const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default')
+  const [permission, setPermission] = useState<PushPermission>('default')
   const notifiedRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     setDismissed(loadDismissedNotificationIds())
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setPermission(Notification.permission)
-    } else {
-      setPermission('unsupported')
-    }
+    setPermission(getPushPermission())
   }, [])
 
   useEffect(() => {
@@ -123,8 +130,7 @@ export default function PollaNotificationCenter({
   }, [active, permission])
 
   const requestBrowserNotifications = useCallback(async () => {
-    if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported' as const
-    const next = await Notification.requestPermission()
+    const next = await requestPushPermission()
     setPermission(next)
     return next
   }, [])
@@ -132,7 +138,7 @@ export default function PollaNotificationCenter({
   const toggleOpen = useCallback(() => {
     setOpen((wasOpen) => {
       const willOpen = !wasOpen
-      if (willOpen && permission === 'default' && typeof window !== 'undefined' && 'Notification' in window) {
+      if (willOpen && permission === 'default') {
         void requestBrowserNotifications()
       }
       return willOpen
@@ -141,16 +147,23 @@ export default function PollaNotificationCenter({
 
   const count = active.length
   const pushSupported = permission !== 'unsupported'
+  const buttonSizeClass =
+    size === 'comfortable'
+      ? 'w-11 h-11 sm:w-10 sm:h-10 shadow-lg bg-white/95'
+      : 'w-8 h-8'
+  const panelPositionClass =
+    panelPlacement === 'above' ? 'bottom-full mb-2' : 'top-full mt-2'
+  const panelAlignClass = panelAlign === 'left' ? 'left-0' : 'right-0'
 
   return (
     <div ref={panelRef} className={`relative ${className}`}>
       <button
         type="button"
         onClick={toggleOpen}
-        className={`relative flex items-center justify-center w-8 h-8 rounded-full border transition-colors ${
+        className={`relative flex items-center justify-center rounded-full border transition-colors ${buttonSizeClass} ${
           isDark
             ? 'border-white/10 text-stone-400 hover:text-stone-200 hover:bg-white/5'
-            : 'border-stone-200 text-stone-500 hover:text-stone-800 hover:bg-stone-100'
+            : 'border-stone-200 text-stone-600 hover:text-stone-900 hover:bg-stone-50'
         } ${open ? (isDark ? 'bg-white/10 text-stone-200' : 'bg-stone-100 text-stone-800') : ''}`}
         aria-label={count ? `${count} notificaciones` : 'Notificaciones'}
         aria-expanded={open}
@@ -168,7 +181,7 @@ export default function PollaNotificationCenter({
 
       {open && (
         <div
-          className={`absolute right-0 top-full mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-xl border shadow-xl z-50 overflow-hidden ${
+          className={`absolute ${panelAlignClass} ${panelPositionClass} w-[min(18rem,calc(100vw-1.5rem))] rounded-xl border shadow-xl z-[60] overflow-hidden ${
             isDark
               ? 'border-white/10 bg-stone-950/95 backdrop-blur-xl'
               : 'border-stone-200 bg-white/95 backdrop-blur-xl shadow-stone-200/50'

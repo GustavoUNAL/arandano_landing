@@ -12,7 +12,7 @@ import Image from 'next/image'
 export default function Home() {
   return (
     <>
-      <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-stone-50 via-stone-50/95 to-stone-100">
+      <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-stone-50 via-stone-50/95 to-stone-100 pb-28 sm:pb-32">
         <BotanicalBackground />
         <div className="relative z-10">
         {/* Hero */}
