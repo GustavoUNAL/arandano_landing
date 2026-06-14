@@ -1,6 +1,7 @@
 'use client'
 
 import GoogleSignInButton from '@/components/GoogleSignInButton'
+import CafePromoBanner from '@/components/sports/CafePromoBanner'
 import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
 import { useMundialTheme } from '@/hooks/useMundialTheme'
 import PollaLeaderboard from '@/components/sports/PollaLeaderboard'
@@ -307,7 +308,17 @@ export default function SportsLanding() {
                 <GoogleSignInButton compact label="Iniciar sesión" className="!shadow-none" />
               )}
             </div>
-            <div className="sm:hidden">
+            <div className="sm:hidden flex items-center gap-1.5">
+              <Link
+                href="/mundial/reglamento"
+                className={`text-xs font-medium px-2.5 py-1.5 rounded-full border transition-colors ${
+                  isDark
+                    ? 'border-white/15 text-stone-300 hover:bg-white/5'
+                    : 'border-stone-300 text-stone-600 hover:bg-stone-100'
+                }`}
+              >
+                Reglamento
+              </Link>
               {session ? (
                 <button
                   type="button"
@@ -715,6 +726,10 @@ export default function SportsLanding() {
             </p>
           </div>
         </div>
+      </section>
+
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-8">
+        <CafePromoBanner isDark={isDark} />
       </section>
 
       {/* Footer */}

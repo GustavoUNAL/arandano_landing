@@ -1,11 +1,13 @@
 'use client'
 
+import CafePromoBanner from '@/components/sports/CafePromoBanner'
 import LiveMatchBroadcast from '@/components/sports/LiveMatchBroadcast'
 import MatchLivePanel from '@/components/sports/MatchLivePanel'
 import MundialExplorer from '@/components/sports/MundialExplorer'
 import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
 import PerfilInicio from '@/components/sports/PerfilInicio'
 import PollaAdminPanel from '@/components/sports/PollaAdminPanel'
+import PollaNotificationCenter from '@/components/sports/PollaNotificationCenter'
 import PredictionCard from '@/components/sports/PredictionCard'
 import {
   IconClipboard,
@@ -25,7 +27,7 @@ import { isPerfilTab, perfilPathForPlayMatch, perfilPathForTab, type PerfilTab }
 import { signOut, useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 interface MatchWithPrediction {
   id: number
@@ -227,6 +229,18 @@ export default function PerfilDashboard() {
 
   const user = session?.user
 
+  const notificationMatches = useMemo(() => {
+    if (!data) return []
+    const watch = data.watchMatches ?? []
+    return [...new Map([...data.matches, ...watch].map((m) => [m.id, m] as const)).values()]
+  }, [data])
+
+  const reglamentoBtnClass = `text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+    isDark
+      ? 'border-white/15 text-stone-300 hover:bg-white/5'
+      : 'border-stone-300 text-stone-600 hover:bg-stone-100'
+  }`
+
   if (loading) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${theme.page}`}>
@@ -284,11 +298,8 @@ export default function PerfilDashboard() {
         } ${theme.border}`}
       >
         <div className={`p-6 border-b ${theme.border}`}>
-          <Link href="/mundial" className={`text-sm font-semibold ${theme.accentLink}`}>
-            ← Polla Mundialista
-          </Link>
           <div
-            className={`mt-5 rounded-2xl border p-4 ${
+            className={`rounded-2xl border p-4 ${
               isDark ? 'bg-white/[0.04] border-white/10' : 'bg-berry-50/80 border-berry-100'
             }`}
           >
@@ -365,18 +376,10 @@ export default function PerfilDashboard() {
           className={`lg:hidden sticky top-0 z-40 border-b backdrop-blur-xl safe-area-top transition-colors ${theme.header}`}
         >
           <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 shrink-0">
-              <Link href="/mundial" className={`text-xs font-medium ${theme.accentLink}`}>
-                ← Polla
-              </Link>
-              <Link
-                href="/mundial/reglamento"
-                className={`text-[10px] hover:text-berry-500 ${theme.mutedSm}`}
-              >
-                Reglamento
-              </Link>
-            </div>
-            <span className={`font-display font-bold text-sm truncate ${isDark ? 'text-white' : 'text-stone-900'}`}>
+            <Link href="/mundial/reglamento" className={reglamentoBtnClass}>
+              Reglamento
+            </Link>
+            <span className={`font-display font-bold text-sm truncate text-center flex-1 px-2 ${isDark ? 'text-white' : 'text-stone-900'}`}>
               {data.hasLiveMatches ? (
                 <span className="inline-flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
@@ -386,7 +389,13 @@ export default function PerfilDashboard() {
                 tabLabel
               )}
             </span>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <PollaNotificationCenter
+                matches={notificationMatches}
+                predictions={data.predictions}
+                isDark={isDark}
+                onPlayMatch={goPlayMatch}
+              />
               <MundialThemeToggle isDark={isDark} onToggle={toggleTheme} />
               <button
                 type="button"
@@ -418,7 +427,13 @@ export default function PerfilDashboard() {
                       : 'Polla Mundialista FIFA 2026'}
               </p>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
+              <PollaNotificationCenter
+                matches={notificationMatches}
+                predictions={data.predictions}
+                isDark={isDark}
+                onPlayMatch={goPlayMatch}
+              />
               {tab !== 'jugar' && (
                 <button
                   type="button"
@@ -428,10 +443,7 @@ export default function PerfilDashboard() {
                   Pronosticar
                 </button>
               )}
-              <Link
-                href="/mundial/reglamento"
-                className={`text-sm font-medium hover:text-berry-500 px-3 py-2 rounded-lg ${theme.muted}`}
-              >
+              <Link href="/mundial/reglamento" className={`${reglamentoBtnClass} text-sm py-2`}>
                 Reglamento
               </Link>
               <Link
@@ -445,6 +457,8 @@ export default function PerfilDashboard() {
         </header>
 
         <main className="flex-1 w-full max-w-lg lg:max-w-7xl mx-auto px-4 py-4 lg:px-8 xl:px-10 lg:py-8">
+        <CafePromoBanner isDark={isDark} compact className="mb-4 lg:mb-6" />
+
         {data.hasLiveMatches && liveMatchIds.length > 0 && (
           <LiveMatchBroadcast
             matchIds={liveMatchIds}

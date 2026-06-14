@@ -25,6 +25,8 @@
     "sync:sports-football": "npx tsx --env-file=.env.local scripts/sync-sports-football.ts",
     "pull:remote-db": "npx tsx --env-file=.env.local --env-file=.env.remote scripts/pull-remote-to-local.ts",
     "pull:remote-users": "npx tsx --env-file=.env.local --env-file=.env.remote scripts/pull-remote-to-local.ts -- --users-only",
+    "pull:neon": "npm run pull:remote-db",
+    "sync:neon-to-local": "npm run pull:remote-db",
     "pull:server-db": "bash scripts/pull-server-db.sh",
     "export:sqlite-live": "node scripts/export-sqlite-live.js",
     "sync:ovh-neon": "bash scripts/sync-ovh-local-neon.sh",
