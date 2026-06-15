@@ -39,6 +39,7 @@ module.exports = {
         PROJECT_ROOT: projectRoot,
         DATA_DIR: path.join(projectRoot, 'data'),
         DATABASE_PATH: path.join(projectRoot, 'data', 'arandano.db'),
+        NEXT_PUBLIC_LIVE_WS: 'false',
         ...localEnv,
       },
     },

@@ -10,10 +10,16 @@ const vapidPublic =
   rootEnv.VAPID_PUBLIC_KEY ||
   ''
 
+const liveWs =
+  process.env.NEXT_PUBLIC_LIVE_WS ||
+  rootEnv.NEXT_PUBLIC_LIVE_WS ||
+  (process.env.NODE_ENV === 'development' ? 'true' : 'false')
+
 const nextConfig = {
   reactStrictMode: true,
   env: {
     NEXT_PUBLIC_VAPID_PUBLIC_KEY: vapidPublic,
+    NEXT_PUBLIC_LIVE_WS: liveWs,
   },
   images: {
     formats: ['image/avif', 'image/webp'],
