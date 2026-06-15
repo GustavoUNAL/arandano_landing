@@ -35,6 +35,7 @@
     "server:enable-neon": "bash scripts/enable-server-neon.sh",
     "test:api": "node scripts/test-api-functions.js",
     "pre-deploy": "node scripts/pre-deploy-check.js",
+    "check:push-env": "node scripts/check-push-env.js",
     "deploy": "bash deploy/ovh/deploy.sh",
     "deploy:ovh": "bash deploy/ovh/deploy.sh",
     "setup:ovh": "bash deploy/ovh/setup-ovh.sh"
