@@ -48,6 +48,20 @@ export async function requestPushPermission(): Promise<PushPermission> {
   return next
 }
 
+async function resolveVapidPublicKey(): Promise<string | null> {
+  const fromBuild = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  if (fromBuild) return fromBuild
+
+  try {
+    const vapidRes = await fetch('/api/sports/push/vapid')
+    if (!vapidRes.ok) return null
+    const { publicKey } = (await vapidRes.json()) as { publicKey?: string }
+    return publicKey ?? null
+  } catch {
+    return null
+  }
+}
+
 /** Permiso del navegador + suscripción Web Push en el servidor (funciona con la app cerrada) */
 export async function subscribeToPollaPush(): Promise<PollaPushSubscribeResult> {
   if (!isWebPushSupported()) return 'unsupported'
@@ -58,9 +72,7 @@ export async function subscribeToPollaPush(): Promise<PollaPushSubscribeResult> 
   }
 
   try {
-    const vapidRes = await fetch('/api/sports/push/vapid')
-    if (!vapidRes.ok) return 'misconfigured'
-    const { publicKey } = (await vapidRes.json()) as { publicKey?: string }
+    const publicKey = await resolveVapidPublicKey()
     if (!publicKey) return 'misconfigured'
 
     const registration = await registerPollaServiceWorker()
@@ -94,9 +106,7 @@ export async function syncPollaPushSubscription(): Promise<void> {
   if (getPushPermission() !== 'granted') return
 
   try {
-    const vapidRes = await fetch('/api/sports/push/vapid')
-    if (!vapidRes.ok) return
-    const { publicKey } = (await vapidRes.json()) as { publicKey?: string }
+    const publicKey = await resolveVapidPublicKey()
     if (!publicKey) return
 
     const registration = await registerPollaServiceWorker()

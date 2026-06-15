@@ -20,14 +20,12 @@ let vapidConfigured = false
 
 export function isPollaPushConfigured(): boolean {
   return Boolean(
-    process.env.VAPID_PUBLIC_KEY &&
-      process.env.VAPID_PRIVATE_KEY &&
-      process.env.VAPID_SUBJECT
+    getPollaVapidPublicKey() && process.env.VAPID_PRIVATE_KEY && process.env.VAPID_SUBJECT
   )
 }
 
 export function getPollaVapidPublicKey(): string | null {
-  return process.env.VAPID_PUBLIC_KEY ?? null
+  return process.env.VAPID_PUBLIC_KEY ?? process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null
 }
 
 function ensureVapidConfigured(): boolean {
@@ -36,7 +34,7 @@ function ensureVapidConfigured(): boolean {
 
   webpush.setVapidDetails(
     process.env.VAPID_SUBJECT!,
-    process.env.VAPID_PUBLIC_KEY!,
+    getPollaVapidPublicKey()!,
     process.env.VAPID_PRIVATE_KEY!
   )
   vapidConfigured = true
