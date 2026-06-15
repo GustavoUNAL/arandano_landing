@@ -7,20 +7,16 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useEffect, useMemo, useState } from 'react'
 
-interface SportsMePayload {
-  matches: Array<{
-    id: number
-    utcDate: string
-    homeTeam: { shortName: string; name: string; tla: string }
-    awayTeam: { shortName: string; name: string; tla: string }
-    isFinished: boolean
-    canPredict: boolean
-    prediction: MatchPrediction | null
-    startsIn: string
-    formattedDate: string
-  }>
-  watchMatches?: SportsMePayload['matches']
-  predictions: MatchPrediction[]
+interface NotificationMatch {
+  id: number
+  utcDate: string
+  homeTeam: { shortName: string; name: string; tla: string }
+  awayTeam: { shortName: string; name: string; tla: string }
+  isFinished: boolean
+  canPredict: boolean
+  prediction: MatchPrediction | null
+  startsIn: string
+  formattedDate: string
 }
 
 interface PollaNotificationBellProps {
@@ -38,37 +34,44 @@ export default function PollaNotificationBell({
 }: PollaNotificationBellProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
-  const [sportsData, setSportsData] = useState<SportsMePayload | null>(null)
+  const [matches, setMatches] = useState<NotificationMatch[]>([])
+  const [predictions, setPredictions] = useState<MatchPrediction[]>([])
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!session) {
-      setSportsData(null)
+      setMatches([])
+      setPredictions([])
       return
     }
+
     let cancelled = false
-    fetch('/api/sports/me')
+    setLoading(true)
+
+    fetch('/api/sports/notifications')
       .then((res) => res.json())
       .then((json) => {
-        if (!cancelled && !json.error) setSportsData(json)
+        if (cancelled || json.error) return
+        setMatches(json.matches ?? [])
+        setPredictions(json.predictions ?? [])
       })
       .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
     return () => {
       cancelled = true
     }
   }, [session])
 
-  const notificationMatches = useMemo(() => {
-    if (!sportsData) return []
-    const watch = sportsData.watchMatches ?? []
-    return [...new Map([...sportsData.matches, ...watch].map((m) => [m.id, m] as const)).values()]
-  }, [sportsData])
-
-  if (status === 'loading' || !session || !sportsData) return null
+  if (status === 'loading' || !session) return null
 
   return (
     <PollaNotificationCenter
-      matches={notificationMatches}
-      predictions={sportsData.predictions}
+      matches={matches}
+      predictions={predictions}
+      loading={loading}
       isDark={isDark}
       panelAlign="right"
       panelPlacement="below"

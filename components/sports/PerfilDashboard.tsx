@@ -248,8 +248,29 @@ export default function PerfilDashboard() {
 
   if (loading && !data) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${theme.page}`}>
-        <div className="w-10 h-10 border-4 border-berry-400/30 border-t-berry-400 rounded-full animate-spin" />
+      <div className={`min-h-screen lg:flex ${theme.page}`}>
+        <aside
+          className={`hidden lg:flex lg:flex-col lg:w-72 xl:w-80 lg:shrink-0 lg:border-r lg:sticky lg:top-0 lg:h-screen ${
+            isDark ? 'bg-stone-950/95' : 'bg-white'
+          } ${theme.border}`}
+        >
+          <div className="p-6 space-y-4 animate-pulse">
+            <div className={`h-20 rounded-2xl ${isDark ? 'bg-white/5' : 'bg-stone-100'}`} />
+            <div className={`h-10 rounded-xl ${isDark ? 'bg-white/5' : 'bg-stone-100'}`} />
+            <div className={`h-10 rounded-xl ${isDark ? 'bg-white/5' : 'bg-stone-100'}`} />
+          </div>
+        </aside>
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className={`hidden lg:flex border-b px-8 py-5 ${theme.header} ${theme.border}`}>
+            <div className={`h-8 w-48 rounded-lg animate-pulse ${isDark ? 'bg-white/5' : 'bg-stone-100'}`} />
+          </header>
+          <main className="flex-1 flex items-center justify-center px-4">
+            <div className="text-center">
+              <div className="w-10 h-10 border-4 border-berry-400/30 border-t-berry-400 rounded-full animate-spin mx-auto" />
+              <p className={`mt-4 text-sm ${theme.mutedSm}`}>Cargando tu perfil…</p>
+            </div>
+          </main>
+        </div>
       </div>
     )
   }
@@ -429,9 +450,9 @@ export default function PerfilDashboard() {
 
         {/* Header desktop */}
         <header
-          className={`hidden lg:flex sticky top-0 z-30 border-b backdrop-blur-xl transition-colors ${theme.header}`}
+          className={`hidden lg:flex sticky top-0 z-30 border-b backdrop-blur-xl transition-colors overflow-visible ${theme.header}`}
         >
-          <div className="w-full max-w-7xl mx-auto px-8 xl:px-10 py-5 flex items-center justify-between gap-6">
+          <div className="w-full max-w-7xl mx-auto px-8 xl:px-10 py-5 flex items-center justify-between gap-6 overflow-visible">
             <div>
               <h1 className={`font-display text-2xl font-bold ${isDark ? 'text-white' : 'text-stone-900'}`}>
                 {tabLabel}

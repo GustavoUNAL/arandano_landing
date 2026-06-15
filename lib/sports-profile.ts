@@ -7,18 +7,22 @@ import {
   getLeaderboard,
   getOrCreateSportsUser,
   getUserPredictions,
-  settleFinishedMatches,
 } from '@/lib/sports-polla'
+import { maybeSettleFinishedMatches } from '@/lib/sports-settle-throttle'
 
 export async function buildSportsProfilePayload(authUser: AuthUser) {
-  const user = await getOrCreateSportsUser(authUser)
-  const worldCup = await getWorldCupFullData()
+  const [user, worldCup] = await Promise.all([
+    getOrCreateSportsUser(authUser),
+    getWorldCupFullData(),
+  ])
 
-  await settleFinishedMatches(worldCup.allMatches)
+  await maybeSettleFinishedMatches(worldCup.allMatches)
 
-  const predictions = await getUserPredictions(user.id)
-  const leaderboard = await getLeaderboard(user.id, 'group')
-  const leaderboardKnockout = await getLeaderboard(user.id, 'knockout')
+  const [predictions, leaderboard, leaderboardKnockout] = await Promise.all([
+    getUserPredictions(user.id),
+    getLeaderboard(user.id, 'group'),
+    getLeaderboard(user.id, 'knockout'),
+  ])
   const scoringRules = getScoringRules()
   const winners = leaderboard.filter((e) => e.isWinner)
   const predictionMap = Object.fromEntries(predictions.map((p) => [p.matchId, p]))
