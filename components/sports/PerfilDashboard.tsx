@@ -9,6 +9,7 @@ import AriPredictorPanel from '@/components/ari/AriPredictorPanel'
 import PerfilInicio from '@/components/sports/PerfilInicio'
 import PollaAdminPanel from '@/components/sports/PollaAdminPanel'
 import PollaNotificationCenter from '@/components/sports/PollaNotificationCenter'
+import PollaToast from '@/components/sports/PollaToast'
 import PredictionCard from '@/components/sports/PredictionCard'
 import {
   IconClipboard,
@@ -110,6 +111,7 @@ export default function PerfilDashboard() {
   const [matchFilter, setMatchFilter] = useState('all')
   const [matchPhase, setMatchPhase] = useState<'all' | 'live' | 'upcoming' | 'played'>('all')
   const [liveMatchId, setLiveMatchId] = useState<number | null>(null)
+  const [saveToast, setSaveToast] = useState<string | null>(null)
 
   const loadProfile = useCallback(async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) {
@@ -228,8 +230,12 @@ export default function PerfilDashboard() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Error al guardar')
+      const savedHome = homeScore
+      const savedAway = awayScore
+      const matchLabel = `${activeMatch.homeTeam.shortName || activeMatch.homeTeam.tla} ${savedHome}-${savedAway} ${activeMatch.awayTeam.shortName || activeMatch.awayTeam.tla}`
       setActiveMatch(null)
-      await loadProfile({ silent: true })
+      setSaveToast(`Pronóstico guardado: ${matchLabel}`)
+      void loadProfile({ silent: true })
       changeTab('picks')
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'Error al guardar')
@@ -887,6 +893,14 @@ export default function PerfilDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {saveToast && (
+        <PollaToast
+          message={saveToast}
+          isDark={isDark}
+          onClose={() => setSaveToast(null)}
+        />
       )}
     </div>
   )
