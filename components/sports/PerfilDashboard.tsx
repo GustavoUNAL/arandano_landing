@@ -21,6 +21,8 @@ import {
 import TeamCrest from '@/components/sports/TeamCrest'
 import UserAvatar from '@/components/sports/UserAvatar'
 import { useMundialTheme } from '@/hooks/useMundialTheme'
+import { useLiveSportsStream } from '@/hooks/useLiveSportsStream'
+import type { ProfileStreamPayload } from '@/lib/live-broadcast-types'
 import type { ScoringRules } from '@/lib/polla-rules'
 import type { LeaderboardEntry, MatchPrediction, SportsUser } from '@/lib/sports-polla-shared'
 import type { WorldCupFullData } from '@/lib/football-data'
@@ -109,8 +111,10 @@ export default function PerfilDashboard() {
   const [matchPhase, setMatchPhase] = useState<'all' | 'live' | 'upcoming' | 'played'>('all')
   const [liveMatchId, setLiveMatchId] = useState<number | null>(null)
 
-  const loadProfile = useCallback(async () => {
-    setLoading(true)
+  const loadProfile = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) {
+      setLoading(true)
+    }
     setError('')
     try {
       const res = await fetch('/api/sports/me')
@@ -149,6 +153,16 @@ export default function PerfilDashboard() {
     loadProfile()
   }, [loadProfile])
 
+  const { data: profileStream } = useLiveSportsStream<ProfileStreamPayload>({
+    channel: 'profile',
+    enabled: Boolean(data),
+  })
+
+  useEffect(() => {
+    if (!profileStream?.profile) return
+    setData(profileStream.profile as ProfileData)
+  }, [profileStream])
+
   const openPredict = useCallback((match: MatchWithPrediction) => {
     setActiveMatch(match)
     setHomeScore(match.prediction?.homeScore ?? '')
@@ -163,12 +177,6 @@ export default function PerfilDashboard() {
     },
     [router]
   )
-
-  useEffect(() => {
-    if (!data?.hasLiveMatches) return
-    const interval = setInterval(loadProfile, 45_000)
-    return () => clearInterval(interval)
-  }, [loadProfile, data?.hasLiveMatches])
 
   useEffect(() => {
     const raw = searchParams.get('match')
@@ -221,7 +229,7 @@ export default function PerfilDashboard() {
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Error al guardar')
       setActiveMatch(null)
-      await loadProfile()
+      await loadProfile({ silent: true })
       changeTab('picks')
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'Error al guardar')
@@ -238,7 +246,7 @@ export default function PerfilDashboard() {
     return [...new Map([...data.matches, ...watch].map((m) => [m.id, m] as const)).values()]
   }, [data])
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${theme.page}`}>
         <div className="w-10 h-10 border-4 border-berry-400/30 border-t-berry-400 rounded-full animate-spin" />
@@ -251,7 +259,7 @@ export default function PerfilDashboard() {
       <div className={`min-h-screen flex items-center justify-center px-4 ${theme.page}`}>
         <div className="text-center">
           <p className="text-red-400 mb-4">{error || 'No se pudo cargar el perfil'}</p>
-          <button type="button" onClick={loadProfile} className="text-berry-400 font-semibold">
+          <button type="button" onClick={() => loadProfile()} className="text-berry-400 font-semibold">
             Reintentar
           </button>
         </div>

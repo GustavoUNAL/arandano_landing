@@ -1,18 +1,12 @@
 'use client'
 
 import TeamCrest from '@/components/sports/TeamCrest'
+import { useLiveSportsStream } from '@/hooks/useLiveSportsStream'
 import type { MatchDetail } from '@/lib/football-data'
+import type { MatchStreamPayload } from '@/lib/live-broadcast-types'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
 import type { MatchPrediction, MatchPredictionStats, PublicMatchPick } from '@/lib/sports-polla-shared'
-import { useCallback, useEffect, useState } from 'react'
-
-interface LiveMatchData {
-  match: MatchDetail
-  stats: MatchPredictionStats
-  picks: PublicMatchPick[]
-  userPrediction: MatchPrediction | null
-  refreshedAt: string
-}
+import { useEffect, useState } from 'react'
 
 function StatRow({
   label,
@@ -68,32 +62,26 @@ export default function LiveMatchBroadcast({
   const theme = mundialTheme(isDark)
   const [activeIdx, setActiveIdx] = useState(0)
   const matchId = matchIds[activeIdx] ?? matchIds[0]
-  const [data, setData] = useState<LiveMatchData | null>(null)
-  const [loading, setLoading] = useState(true)
 
-  const load = useCallback(async () => {
-    if (!matchId) return
-    try {
-      const res = await fetch(`/api/sports/matches/${matchId}`)
-      const json = await res.json()
-      if (res.ok) setData(json)
-    } catch {
-      /* ignore */
-    } finally {
-      setLoading(false)
-    }
-  }, [matchId])
+  const { data: stream, loading } = useLiveSportsStream<MatchStreamPayload>({
+    channel: 'match',
+    matchId,
+    enabled: Boolean(matchId),
+  })
 
-  useEffect(() => {
-    setLoading(true)
-    void load()
-  }, [load])
+  const data = stream
+    ? {
+        match: stream.match,
+        stats: stream.stats,
+        picks: stream.picks,
+        userPrediction: stream.userPrediction,
+        refreshedAt: stream.refreshedAt,
+      }
+    : null
 
   useEffect(() => {
-    const ms = variant === 'inicio' ? 30_000 : 45_000
-    const interval = setInterval(load, ms)
-    return () => clearInterval(interval)
-  }, [load, variant])
+    setActiveIdx(0)
+  }, [matchIds.join(',')])
 
   if (!matchId) return null
 

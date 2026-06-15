@@ -231,6 +231,12 @@ export async function settleFinishedMatches(
     )
   })
 
+  if (settled > 0) {
+    void import('@/lib/polla-push-server')
+      .then(({ sweepPollaPushNotifications }) => sweepPollaPushNotifications())
+      .catch(() => {})
+  }
+
   return settled
 }
 

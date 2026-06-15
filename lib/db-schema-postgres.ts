@@ -227,6 +227,27 @@ const SCHEMA_STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS idx_sports_matches_utcdate ON sports_matches(utcdate)`,
   `CREATE INDEX IF NOT EXISTS idx_sports_matches_status ON sports_matches(status)`,
   `CREATE INDEX IF NOT EXISTS idx_sports_matches_stage ON sports_matches(stage)`,
+
+  `CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id TEXT PRIMARY KEY,
+    userid TEXT NOT NULL REFERENCES sports_users(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    useragent TEXT,
+    createdat TEXT NOT NULL,
+    updatedat TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_push_subscriptions_userid ON push_subscriptions(userid)`,
+
+  `CREATE TABLE IF NOT EXISTS push_notification_sent (
+    id TEXT PRIMARY KEY,
+    userid TEXT NOT NULL REFERENCES sports_users(id) ON DELETE CASCADE,
+    notificationid TEXT NOT NULL,
+    sentat TEXT NOT NULL,
+    UNIQUE(userid, notificationid)
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_push_notification_sent_userid ON push_notification_sent(userid)`,
 ]
 
 let schemaReady = false
@@ -292,6 +313,27 @@ const POSTGRES_MIGRATIONS = [
     ends_at TIMESTAMPTZ,
     active BOOLEAN NOT NULL DEFAULT true
   )`,
+
+  `CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id TEXT PRIMARY KEY,
+    userid TEXT NOT NULL REFERENCES sports_users(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    useragent TEXT,
+    createdat TEXT NOT NULL,
+    updatedat TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_push_subscriptions_userid ON push_subscriptions(userid)`,
+
+  `CREATE TABLE IF NOT EXISTS push_notification_sent (
+    id TEXT PRIMARY KEY,
+    userid TEXT NOT NULL REFERENCES sports_users(id) ON DELETE CASCADE,
+    notificationid TEXT NOT NULL,
+    sentat TEXT NOT NULL,
+    UNIQUE(userid, notificationid)
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_push_notification_sent_userid ON push_notification_sent(userid)`,
 ]
 
 export async function ensurePostgresSchema(sql: NeonQueryFunction<false, false>): Promise<void> {

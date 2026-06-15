@@ -1,23 +1,15 @@
 'use client'
 
 import TeamCrest from '@/components/sports/TeamCrest'
+import { useLiveSportsStream } from '@/hooks/useLiveSportsStream'
 import type { MatchDetail } from '@/lib/football-data'
+import type { MatchStreamPayload } from '@/lib/live-broadcast-types'
 import { getFinishedMatchWinner, winnerBadge } from '@/lib/match-display'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
 import type {
   MatchPrediction,
-  MatchPredictionStats,
-  PublicMatchPick,
 } from '@/lib/sports-polla-shared'
-import { useCallback, useEffect, useState } from 'react'
-
-interface MatchLiveData {
-  match: MatchDetail
-  stats: MatchPredictionStats
-  picks: PublicMatchPick[]
-  userPrediction: MatchPrediction | null
-  refreshedAt: string
-}
+import { useState } from 'react'
 
 interface MatchLivePanelProps {
   matchId: number
@@ -59,34 +51,24 @@ function StatBar({
 
 export default function MatchLivePanel({ matchId, isDark = true, onClose }: MatchLivePanelProps) {
   const theme = mundialTheme(isDark)
-  const [data, setData] = useState<MatchLiveData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
 
-  const load = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/sports/matches/${matchId}`)
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'No se pudo cargar el partido')
-      setData(json)
-      setError('')
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al cargar')
-    } finally {
-      setLoading(false)
-    }
-  }, [matchId])
+  const { data: stream, loading, error: streamError } = useLiveSportsStream<MatchStreamPayload>({
+    channel: 'match',
+    matchId,
+    enabled: Boolean(matchId),
+  })
 
-  useEffect(() => {
-    setLoading(true)
-    void load()
-  }, [load])
+  const data = stream
+    ? {
+        match: stream.match,
+        stats: stream.stats,
+        picks: stream.picks,
+        userPrediction: stream.userPrediction,
+        refreshedAt: stream.refreshedAt,
+      }
+    : null
 
-  useEffect(() => {
-    if (!data?.match.isLive) return
-    const interval = setInterval(load, 30_000)
-    return () => clearInterval(interval)
-  }, [data?.match.isLive, load])
+  const displayError = streamError || ''
 
   const match = data?.match
   const score = match?.displayScore
@@ -121,12 +103,9 @@ export default function MatchLivePanel({ matchId, isDark = true, onClose }: Matc
           </div>
         )}
 
-        {error && !data && (
+        {displayError && !data && !loading && (
           <div className="p-6 text-center">
-            <p className="text-red-400 text-sm mb-4">{error}</p>
-            <button type="button" onClick={load} className={`font-semibold ${theme.accentLink}`}>
-              Reintentar
-            </button>
+            <p className="text-red-400 text-sm">{displayError}</p>
           </div>
         )}
 

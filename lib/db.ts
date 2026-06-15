@@ -70,6 +70,9 @@ const PG_COLUMN_MAP: Record<string, string> = {
   startdate: 'startDate',
   enddate: 'endDate',
   currentmatchday: 'currentMatchday',
+  useragent: 'userAgent',
+  notificationid: 'notificationId',
+  sentat: 'sentAt',
 }
 
 let sql: NeonQueryFunction<false, false> | null = null

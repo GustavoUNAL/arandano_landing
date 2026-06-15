@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "tsx server-live.ts",
     "build": "next build",
     "postbuild": "bash scripts/post-build-standalone.sh",
     "start": "next start",
@@ -51,6 +51,7 @@
     "react-markdown": "^10.1.0",
     "recharts": "^3.6.0",
     "remark-gfm": "^4.0.1",
+    "web-push": "^3.6.7",
     "ws": "^8.21.0",
     "xlsx": "^0.18.5"
   },
@@ -58,6 +59,7 @@
     "@types/node": "^20.10.6",
     "@types/react": "^18.2.46",
     "@types/react-dom": "^18.2.18",
+    "@types/web-push": "^3.6.4",
     "@types/ws": "^8.18.1",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.56.0",

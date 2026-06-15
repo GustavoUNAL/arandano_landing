@@ -3,7 +3,7 @@
 import {
   dismissPushPromptForSession,
   getPushPermission,
-  requestPushPermission,
+  subscribeToPollaPush,
   shouldOfferPushPrompt,
   type PushPermission,
   wasPushPromptDismissedThisSession,
@@ -32,8 +32,8 @@ export default function PollaPushPrompt() {
   const activate = useCallback(async () => {
     setRequesting(true)
     try {
-      const next = await requestPushPermission()
-      setPermission(next)
+      const next = await subscribeToPollaPush()
+      setPermission(getPushPermission())
       if (next === 'granted') {
         setVisible(false)
         dismissPushPromptForSession()

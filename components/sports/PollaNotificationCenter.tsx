@@ -9,7 +9,8 @@ import {
 } from '@/lib/polla-notifications'
 import {
   getPushPermission,
-  requestPushPermission,
+  subscribeToPollaPush,
+  shouldShowForegroundNotification,
   type PushPermission,
 } from '@/lib/push-notifications'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
@@ -127,7 +128,7 @@ export default function PollaNotificationCenter({
   )
 
   useEffect(() => {
-    if (permission !== 'granted' || active.length === 0) return
+    if (!shouldShowForegroundNotification() || active.length === 0) return
     const latest = active[0]
     if (notifiedRef.current.has(latest.id)) return
     notifiedRef.current.add(latest.id)
@@ -140,11 +141,11 @@ export default function PollaNotificationCenter({
     } catch {
       /* ignore */
     }
-  }, [active, permission])
+  }, [active])
 
   const requestBrowserNotifications = useCallback(async () => {
-    const next = await requestPushPermission()
-    setPermission(next)
+    const next = await subscribeToPollaPush()
+    setPermission(getPushPermission())
     return next
   }, [])
 
@@ -177,7 +178,7 @@ export default function PollaNotificationCenter({
       <div className={`px-3 py-2.5 border-b flex items-center justify-between ${theme.border}`}>
         <p className={`text-xs font-semibold ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>Alertas</p>
         {permission === 'granted' && (
-          <span className="text-[10px] text-emerald-400/90 font-medium">Push activo</span>
+          <span className="text-[10px] text-emerald-400/90 font-medium">Push en el celular</span>
         )}
       </div>
 
@@ -193,7 +194,7 @@ export default function PollaNotificationCenter({
                 Activa alertas del navegador
               </p>
               <p className={`text-[10px] mt-1 leading-relaxed ${theme.mutedSm}`}>
-                Te avisamos de partidos próximos, puntos y picks pendientes aunque no estés en la app.
+                Te avisamos en el celular aunque cierres la app: partidos, puntos y picks pendientes.
               </p>
               <button
                 type="button"

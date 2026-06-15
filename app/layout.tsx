@@ -47,6 +47,7 @@ export const metadata: Metadata = {
     ],
     shortcut: ['/favicon-32.png'],
   },
+  manifest: '/manifest.webmanifest',
 }
 
 export default function RootLayout({
