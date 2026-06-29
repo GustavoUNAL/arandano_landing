@@ -134,6 +134,7 @@ export interface AdminSportsUserRow {
   settledCount: number
   createdAt: string
   updatedAt: string
+  whatsapp: string | null
 }
 
 export interface MatchPrediction {
@@ -193,7 +194,7 @@ export interface LeaderboardEntry {
   resultHits: number
   hasPassport: boolean
   hasKnockoutPassport: boolean
-  phase: 'group' | 'knockout'
+  phase: 'group' | 'knockout' | 'training'
   qualifiesForPodium: boolean
   isWinner: boolean
   winnerRank: number | null

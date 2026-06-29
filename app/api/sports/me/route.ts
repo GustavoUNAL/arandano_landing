@@ -38,9 +38,10 @@ export async function GET() {
 
     await settleFinishedMatchesIfNeeded(worldCup.allMatches)
 
-    const [predictions, leaderboard, leaderboardKnockout, passportHolders] = await Promise.all([
+    const [predictions, leaderboard, leaderboardTraining, leaderboardKnockout, passportHolders] = await Promise.all([
       getUserPredictions(user.id),
       getLeaderboard(user.id, 'group'),
+      getLeaderboard(user.id, 'training'),
       getLeaderboard(user.id, 'knockout'),
       countKnockoutPassportHolders(),
     ])
@@ -90,6 +91,7 @@ export async function GET() {
       hasLiveMatches,
       predictions,
       leaderboard,
+      leaderboardTraining,
       leaderboardKnockout,
       winners,
       winnersKnockout: leaderboardKnockout.filter((e) => e.isWinner),

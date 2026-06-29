@@ -16,7 +16,7 @@ export const POINTS_EXACT_SCORE = 3
 export const POINTS_GOAL_DIFFERENCE = 2
 export const POINTS_CORRECT_RESULT = 1
 export const TOP_WINNERS_COUNT = 3
-export const GROUP_STAGE_WINNERS_COUNT = 3
+export const GROUP_STAGE_WINNERS_COUNT = 4
 export const MIN_SETTLED_PICKS_TO_WIN = 5
 export const MAX_SCORE_PER_TEAM = 20
 
@@ -29,6 +29,7 @@ export const GROUP_STAGE_PRIZES: PollaPrize[] = [
   { place: '1er Lugar', prize: '1 Botella de Aguardiente' },
   { place: '2do Lugar', prize: '1 Cubetazo de Cerveza' },
   { place: '3er Lugar', prize: '1 Shot + Cerveza' },
+  { place: '4to Lugar', prize: '1 Cerveza' },
 ]
 
 /** Dieciseisavos y octavos: práctica — no suman en la polla final. */
@@ -141,7 +142,7 @@ export const PASSPORT_PURCHASE_STEPS = [
 
 export type PassportRequestStatus = 'pending' | 'approved' | 'rejected'
 
-export type PollaPhase = 'group' | 'knockout'
+export type PollaPhase = 'group' | 'knockout' | 'training'
 
 export type PointsTier = 'exact' | 'goal_diff' | 'result' | 'miss'
 

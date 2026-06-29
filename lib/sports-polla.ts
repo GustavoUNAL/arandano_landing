@@ -25,6 +25,7 @@ import {
   computeCreditsBalance,
   GROUP_STAGE_WINNERS_COUNT,
   KNOCKOUT_SCORING_STAGES,
+  KNOCKOUT_TRAINING_STAGES,
   TOP_WINNERS_COUNT,
   type PollaPhase,
 } from '@/lib/polla-rules'
@@ -282,14 +283,17 @@ export async function getLeaderboard(
   phase: PollaPhase = 'group'
 ): Promise<LeaderboardEntry[]> {
   const isGroup = phase === 'group'
-  const passportFilter = isGroup ? '' : 'AND su.hasKnockoutPassport = 1'
+  const isTraining = phase === 'training'
+  const passportFilter = phase === 'knockout' ? 'AND su.hasKnockoutPassport = 1' : ''
   const scoringStages = KNOCKOUT_SCORING_STAGES.map((s) => `'${s}'`).join(', ')
+  const trainingStages = KNOCKOUT_TRAINING_STAGES.map((s) => `'${s}'`).join(', ')
+  const stagesFilter = isTraining ? trainingStages : scoringStages
   const countsWhen = isGroup
     ? 'mp.id IS NOT NULL AND mp.matchGroup IS NOT NULL'
-    : `mp.id IS NOT NULL AND mp.matchGroup IS NULL AND sm.stage IN (${scoringStages})`
+    : `mp.id IS NOT NULL AND mp.matchGroup IS NULL AND sm.stage IN (${stagesFilter})`
   const settledWhen = isGroup
     ? 'mp.settledAt IS NOT NULL AND mp.matchGroup IS NOT NULL'
-    : `mp.settledAt IS NOT NULL AND mp.matchGroup IS NULL AND sm.stage IN (${scoringStages})`
+    : `mp.settledAt IS NOT NULL AND mp.matchGroup IS NULL AND sm.stage IN (${stagesFilter})`
   const pointsCase = `CASE WHEN ${settledWhen} THEN mp.pointsEarned ELSE 0 END`
   const matchJoin = isGroup
     ? 'LEFT JOIN match_predictions mp ON mp.userId = su.id'
@@ -342,9 +346,10 @@ export async function getLeaderboard(
     const settledCount = Number(row.settledCount)
     const hasPassport = normalizeHasPassport(row.hasPassport)
     const hasKnockoutPassport = normalizeHasKnockoutPassport(row.hasKnockoutPassport)
-    const qualifiesForPodium = isGroup
-      ? settledCount >= MIN_SETTLED_PICKS_TO_WIN
-      : hasKnockoutPassport && settledCount >= MIN_SETTLED_PICKS_TO_WIN
+    const qualifiesForPodium =
+      isGroup || isTraining
+        ? settledCount >= MIN_SETTLED_PICKS_TO_WIN
+        : hasKnockoutPassport && settledCount >= MIN_SETTLED_PICKS_TO_WIN
     return {
       rank: index + 1,
       name: row.name ?? null,
@@ -420,6 +425,7 @@ export async function listAllSportsUsersForAdmin(): Promise<AdminSportsUserRow[]
     totalPoints: number
     hasPassport: number | boolean
     hasKnockoutPassport: number | boolean
+    whatsapp: string | null
     lastCreditsRechargeDate: string | null
     createdAt: string
     updatedAt: string
@@ -436,6 +442,7 @@ export async function listAllSportsUsersForAdmin(): Promise<AdminSportsUserRow[]
       su.totalPoints,
       su.hasPassport,
       su.hasKnockoutPassport,
+      su.whatsapp,
       su.lastCreditsRechargeDate,
       su.createdAt,
       su.updatedAt,
@@ -451,6 +458,7 @@ export async function listAllSportsUsersForAdmin(): Promise<AdminSportsUserRow[]
     ...mapSportsUser(row as unknown as SportsUser & { hasPassport?: unknown; hasKnockoutPassport?: unknown }),
     picksCount: Number(row.picksCount),
     settledCount: Number(row.settledCount ?? 0),
+    whatsapp: row.whatsapp ?? null,
   }))
 }
 

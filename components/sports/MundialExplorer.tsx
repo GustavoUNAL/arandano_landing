@@ -714,7 +714,7 @@ export default function MundialExplorer({
   const activeTab = isDark
     ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
     : 'bg-emerald-600/90 text-white shadow-sm'
-  const [tab, setTab] = useState<MundialTab>('grupos')
+  const [tab, setTab] = useState<MundialTab>('llaves')
   const [teamSearch, setTeamSearch] = useState('')
   const [activeGroup, setActiveGroup] = useState(data.groups[0]?.id ?? '')
   const [groupsView, setGroupsView] = useState<'single' | 'all'>('single')
@@ -927,10 +927,16 @@ export default function MundialExplorer({
 
       {tab === 'llaves' && (
         <div className="space-y-6">
-          <div className="text-center px-4">
-            <p className={`text-xs leading-relaxed ${theme.muted}`}>
-              Ruta hacia la final · Los cruces de dieciseisavos se confirman al terminar la fase de grupos
-            </p>
+          <div className={`rounded-2xl border px-4 py-3.5 flex gap-3 items-start mx-1 ${isDark ? 'border-emerald-500/25 bg-emerald-950/20' : 'border-emerald-200 bg-emerald-50'}`}>
+            <span className="text-xl shrink-0">🏋️</span>
+            <div>
+              <p className={`font-semibold text-sm ${isDark ? 'text-emerald-200' : 'text-emerald-800'}`}>
+                Polla de entrenamiento · 16vos y Octavos
+              </p>
+              <p className={`text-xs mt-0.5 leading-relaxed ${theme.muted}`}>
+                Los partidos de esta fase son de entrenamiento. Juega y practica — los puntos no cuentan en la polla final (que arranca desde Cuartos).
+              </p>
+            </div>
           </div>
           <div className="space-y-6">
             {data.knockoutRounds.map((round) => (

@@ -65,6 +65,7 @@ interface ProfileData {
   hasLiveMatches: boolean
   predictions: MatchPrediction[]
   leaderboard: LeaderboardEntry[]
+  leaderboardTraining: LeaderboardEntry[]
   leaderboardKnockout: LeaderboardEntry[]
   predictionCost: number
   scoringRules: ScoringRules
@@ -307,7 +308,13 @@ export default function PerfilDashboard() {
 
   const groupFilters = ['all', ...new Set(allPlayMatches.map((m) => m.group).filter(Boolean))] as string[]
 
-  const phaseFiltered = allPlayMatches.filter((m) => {
+  // Knockout matches listed first when group stage is done
+  const knockoutPlayMatches = allPlayMatches.filter((m) => m.stage !== 'GROUP_STAGE')
+  const groupPlayMatches = allPlayMatches.filter((m) => m.stage === 'GROUP_STAGE')
+  const isGroupStageDone = groupPlayMatches.length > 0 && groupPlayMatches.every((m) => m.isFinished)
+  const sortedPlayMatches = isGroupStageDone ? [...knockoutPlayMatches, ...groupPlayMatches] : allPlayMatches
+
+  const phaseFiltered = sortedPlayMatches.filter((m) => {
     if (matchPhase === 'live') return m.isLive
     if (matchPhase === 'upcoming') return m.canPredict
     if (matchPhase === 'played') return m.isFinished || m.canViewHub
@@ -434,17 +441,6 @@ export default function PerfilDashboard() {
           className={`lg:hidden sticky top-0 z-40 border-b backdrop-blur-xl safe-area-top transition-colors ${theme.header}`}
         >
           <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 shrink-0">
-              <Link href="/mundial" className={`text-xs font-medium ${theme.accentLink}`}>
-                ← Polla
-              </Link>
-              <Link
-                href="/mundial/reglamento"
-                className={`text-[10px] hover:text-berry-500 ${theme.mutedSm}`}
-              >
-                Reglamento
-              </Link>
-            </div>
             <span className={`font-display font-bold text-sm truncate ${isDark ? 'text-white' : 'text-stone-900'}`}>
               {data.hasLiveMatches ? (
                 <span className="inline-flex items-center gap-1.5">
@@ -559,6 +555,7 @@ export default function PerfilDashboard() {
             scoringRules={data.scoringRules}
             predictions={data.predictions}
             leaderboard={data.leaderboard}
+            leaderboardTraining={data.leaderboardTraining}
             leaderboardKnockout={data.leaderboardKnockout}
             worldCup={worldCup}
             onGoMundial={() => changeTab('mundial')}
@@ -582,6 +579,19 @@ export default function PerfilDashboard() {
 
         {tab === 'jugar' && (
           <div className="space-y-5">
+            {isGroupStageDone && (
+              <div className={`rounded-2xl border px-4 py-3.5 flex gap-3 items-start ${isDark ? 'border-emerald-500/25 bg-emerald-950/20' : 'border-emerald-200 bg-emerald-50'}`}>
+                <span className="text-xl shrink-0">🏋️</span>
+                <div>
+                  <p className={`font-semibold text-sm ${isDark ? 'text-emerald-200' : 'text-emerald-800'}`}>
+                    Polla de entrenamiento · 16vos en marcha
+                  </p>
+                  <p className={`text-xs mt-0.5 leading-relaxed ${theme.muted}`}>
+                    La fase de grupos terminó. Ahora juega los 16vos de entrenamiento — los puntos no cuentan en la polla final. Desde Cuartos arranca la polla oficial con pasaporte.
+                  </p>
+                </div>
+              </div>
+            )}
             <div
               className={`rounded-2xl border p-5 lg:p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 ${
                 isDark
@@ -591,7 +601,7 @@ export default function PerfilDashboard() {
             >
               <div>
                 <h2 className={`font-display text-lg lg:text-xl font-bold ${isDark ? 'text-white' : 'text-stone-900'}`}>
-                  Haz tus pronósticos
+                  {isGroupStageDone ? 'Pronósticos 16vos (Entrenamiento)' : 'Haz tus pronósticos'}
                 </h2>
                 <p className={`text-sm mt-1 ${theme.muted}`}>
                   {predictionCost} créditos por pick nuevo · editar antes del pitazo es gratis
@@ -647,36 +657,40 @@ export default function PerfilDashboard() {
                   )}
                 </button>
               ))}
-              <span className={`w-px h-6 self-center mx-1 ${isDark ? 'bg-white/10' : 'bg-stone-200'}`} />
-              <button
-                type="button"
-                onClick={() => setMatchFilter('all')}
-                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold ${
-                  matchFilter === 'all'
-                    ? 'bg-stone-600 text-white'
-                    : isDark
-                      ? 'bg-white/5 text-stone-400'
-                      : 'bg-stone-100 text-stone-600'
-                }`}
-              >
-                Todos los grupos
-              </button>
-              {groupFilters.filter((g) => g !== 'all').map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => setMatchFilter(g)}
-                  className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold ${
-                    matchFilter === g
-                      ? 'bg-berry-600 text-white'
-                      : isDark
-                        ? 'bg-white/5 text-stone-400'
-                        : 'bg-stone-100 text-stone-600'
-                  }`}
-                >
-                  {g.replace('GROUP_', '')}
-                </button>
-              ))}
+              {!isGroupStageDone && (
+                <>
+                  <span className={`w-px h-6 self-center mx-1 ${isDark ? 'bg-white/10' : 'bg-stone-200'}`} />
+                  <button
+                    type="button"
+                    onClick={() => setMatchFilter('all')}
+                    className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                      matchFilter === 'all'
+                        ? 'bg-stone-600 text-white'
+                        : isDark
+                          ? 'bg-white/5 text-stone-400'
+                          : 'bg-stone-100 text-stone-600'
+                    }`}
+                  >
+                    Todos los grupos
+                  </button>
+                  {groupFilters.filter((g) => g !== 'all').map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setMatchFilter(g)}
+                      className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                        matchFilter === g
+                          ? 'bg-berry-600 text-white'
+                          : isDark
+                            ? 'bg-white/5 text-stone-400'
+                            : 'bg-stone-100 text-stone-600'
+                      }`}
+                    >
+                      {g.replace('GROUP_', '')}
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
             <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
             {filteredMatches.map((match) => (

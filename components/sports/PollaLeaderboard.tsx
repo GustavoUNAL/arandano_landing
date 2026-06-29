@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback, useRef, useState } from 'react'
 import { IconPremium, IconTrophy } from '@/components/sports/SportsIcons'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
 import {
@@ -45,6 +46,12 @@ function animalEmoji(alias: string) {
   return ANIMAL_EMOJI[animal] ?? '🐾'
 }
 
+function shortName(name: string | null | undefined): string | null {
+  if (!name?.trim()) return null
+  const parts = name.trim().split(/\s+/)
+  return parts.slice(0, 2).join(' ')
+}
+
 interface PollaLeaderboardProps {
   entries: LeaderboardEntry[]
   compact?: boolean
@@ -52,11 +59,15 @@ interface PollaLeaderboardProps {
   phase?: PollaPhase
   title?: string
   subtitle?: string
+  onUpdateUsername?: (alias: string) => Promise<void>
 }
 
 function defaultSubtitle(phase: PollaPhase) {
   if (phase === 'knockout') {
     return `Solo ${KNOCKOUT_PASSPORT_LABEL} · desde cuartos (${KNOCKOUT_PASSPORT_PRICE_LABEL})`
+  }
+  if (phase === 'training') {
+    return 'Puntos de entrenamiento · no cuentan en la polla final'
   }
   return `${GROUP_STAGE_WINNERS_COUNT} ganadores · sin pasaporte requerido`
 }
@@ -68,12 +79,34 @@ export default function PollaLeaderboard({
   phase = 'group',
   title,
   subtitle,
+  onUpdateUsername,
 }: PollaLeaderboardProps) {
+  const [editingAlias, setEditingAlias] = useState(false)
+  const [aliasDraft, setAliasDraft] = useState('')
+  const [saving, setSaving] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const startEdit = useCallback((currentAlias: string) => {
+    setAliasDraft(currentAlias)
+    setEditingAlias(true)
+    setTimeout(() => inputRef.current?.focus(), 50)
+  }, [])
+
+  const saveAlias = useCallback(async () => {
+    if (!onUpdateUsername || !aliasDraft.trim()) return
+    setSaving(true)
+    try {
+      await onUpdateUsername(aliasDraft.trim())
+      setEditingAlias(false)
+    } finally {
+      setSaving(false)
+    }
+  }, [aliasDraft, onUpdateUsername])
   const theme = mundialTheme(isDark)
   const resolvedTitle =
-    title ?? (phase === 'knockout' ? 'Polla final' : 'Tabla fase de grupos')
+    title ?? (phase === 'knockout' ? 'Polla final' : phase === 'training' ? 'Tabla entrenamiento' : 'Tabla fase de grupos')
   const resolvedSubtitle = subtitle ?? defaultSubtitle(phase)
-  const maxWinners = phase === 'group' ? GROUP_STAGE_WINNERS_COUNT : TOP_WINNERS_COUNT
+  const maxWinners = phase === 'group' || phase === 'training' ? GROUP_STAGE_WINNERS_COUNT : TOP_WINNERS_COUNT
   const winners = entries.filter((e) => e.isWinner)
 
   const requiresPassport = phase === 'knockout'
@@ -170,15 +203,36 @@ export default function PollaLeaderboard({
                 <td className="px-3 py-2.5">
                   <span className="flex items-center gap-1.5 min-w-0">
                     <span className="shrink-0">{animalEmoji(entry.displayAlias)}</span>
-                    <span
-                      className={`truncate font-medium ${
-                        entry.isCurrentUser ? theme.tableNameYou : theme.tableName
-                      }`}
-                    >
-                      {entry.displayAlias}
-                      {entry.isCurrentUser && (
-                        <span className={`text-[10px] ml-1 ${theme.accentLink}`}>(tú)</span>
+                    <span className="flex flex-col min-w-0">
+                      {entry.isCurrentUser && editingAlias ? (
+                        <span className="flex items-center gap-1">
+                          <input
+                            ref={inputRef}
+                            value={aliasDraft}
+                            onChange={(e) => setAliasDraft(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') saveAlias(); if (e.key === 'Escape') setEditingAlias(false) }}
+                            className={`w-24 text-xs rounded px-1.5 py-0.5 border focus:outline-none ${isDark ? 'bg-black/40 border-white/20 text-white' : 'bg-white border-stone-300 text-stone-900'}`}
+                          />
+                          <button type="button" onClick={saveAlias} disabled={saving} className={`text-[10px] font-semibold ${theme.accentLink}`}>{saving ? '…' : 'OK'}</button>
+                          <button type="button" onClick={() => setEditingAlias(false)} className={`text-[10px] ${theme.mutedSm}`}>✕</button>
+                        </span>
+                      ) : (
+                        <span className={`truncate font-medium ${entry.isCurrentUser ? theme.tableNameYou : theme.tableName}`}>
+                          {shortName(entry.name) ?? entry.displayAlias}
+                          {entry.isCurrentUser && onUpdateUsername && !editingAlias && (
+                            <button
+                              type="button"
+                              onClick={() => startEdit(entry.displayAlias)}
+                              className={`ml-1 text-[9px] underline ${theme.mutedSm}`}
+                            >
+                              editar
+                            </button>
+                          )}
+                        </span>
                       )}
+                      <span className={`text-[9px] truncate ${theme.mutedSm}`}>
+                        @{entry.displayAlias}{entry.isCurrentUser && !editingAlias && <span className="ml-0.5">(tú)</span>}
+                      </span>
                     </span>
                     {requiresPassport &&
                       (hasPhasePassport(entry) ? (

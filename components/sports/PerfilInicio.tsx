@@ -40,6 +40,7 @@ interface PerfilInicioProps {
   scoringRules: ScoringRules
   predictions: MatchPrediction[]
   leaderboard: LeaderboardEntry[]
+  leaderboardTraining?: LeaderboardEntry[]
   leaderboardKnockout?: LeaderboardEntry[]
   worldCup: WorldCupFullData
   onGoMundial: () => void
@@ -235,6 +236,7 @@ export default function PerfilInicio({
   scoringRules: _scoringRules,
   predictions,
   leaderboard,
+  leaderboardTraining = [],
   leaderboardKnockout = [],
   worldCup,
   onGoMundial,
@@ -343,7 +345,10 @@ export default function PerfilInicio({
               {[
                 { label: 'Créditos', value: credits.toLocaleString('es-CO') },
                 { label: 'Pronósticos', value: predictions.length.toLocaleString('es-CO') },
-                { label: 'Puntos', value: totalPoints.toLocaleString('es-CO') },
+                {
+                  label: 'Pts (16vos)',
+                  value: (leaderboardTraining.find((e) => e.isCurrentUser)?.totalPoints ?? 0).toLocaleString('es-CO'),
+                },
               ].map((stat) => (
                 <div
                   key={stat.label}
@@ -419,6 +424,24 @@ export default function PerfilInicio({
             isDark={isDark}
             onPredict={(matchId) => (onPlayMatch ? onPlayMatch(matchId) : onGoJugar())}
           />
+
+          {/* Bienvenida polla de entrenamiento */}
+          <div className={`rounded-2xl border px-4 py-4 ${isDark ? 'border-emerald-500/25 bg-emerald-950/20' : 'border-emerald-200 bg-emerald-50'}`}>
+            <div className="flex items-start gap-3">
+              <span className="text-2xl shrink-0">🏋️</span>
+              <div>
+                <p className={`font-display font-bold text-sm ${isDark ? 'text-emerald-200' : 'text-emerald-800'}`}>
+                  ¡Bienvenido a la polla de entrenamiento!
+                </p>
+                <p className={`text-xs mt-1 leading-relaxed ${theme.muted}`}>
+                  Octavos y dieciseisavos son de entrenamiento — juega sin apostar. Los puntos no cuentan para la polla final.
+                </p>
+                <p className={`text-[11px] mt-1 ${theme.mutedSm}`}>
+                  Desde cuartos de final arranca la polla oficial con pasaporte.
+                </p>
+              </div>
+            </div>
+          </div>
 
           <PassportRequestPanel
             isDark={isDark}
@@ -592,15 +615,32 @@ export default function PerfilInicio({
 
         {/* Columna lateral: tablas */}
         <div className="lg:col-span-5 xl:col-span-4 space-y-4 lg:space-y-6">
-          <PollaLeaderboard entries={leaderboard} isDark={isDark} phase="group" />
+          <PollaLeaderboard
+            entries={leaderboardTraining}
+            isDark={isDark}
+            phase="training"
+            title="Tabla entrenamiento 16vos"
+            subtitle="Puntos de entrenamiento · no cuentan en polla final"
+            onUpdateUsername={onUpdateUsername}
+          />
           <PollaLeaderboard
             entries={leaderboardKnockout}
             isDark={isDark}
             phase="knockout"
             compact
             title="Polla final"
-            subtitle="Desde cuartos · octavos solo entrenamiento"
+            subtitle="Desde cuartos · requiere pasaporte"
           />
+          {/* Tabla fase de grupos: histórica colapsable */}
+          <details className="group">
+            <summary className={`cursor-pointer text-xs font-semibold px-1 py-2 list-none flex items-center gap-2 ${theme.muted}`}>
+              <span className="inline-block transition-transform group-open:rotate-90">▶</span>
+              Tabla fase de grupos (terminada)
+            </summary>
+            <div className="mt-2">
+              <PollaLeaderboard entries={leaderboard} isDark={isDark} phase="group" compact />
+            </div>
+          </details>
           <TopScorersPanel isDark={isDark} />
           <PollaReglamento compact isDark={isDark} />
         </div>

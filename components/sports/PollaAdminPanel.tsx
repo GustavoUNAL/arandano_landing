@@ -27,7 +27,7 @@ interface PollaAdminPanelProps {
   isDark?: boolean
 }
 
-type AdminView = 'requests' | 'users'
+type AdminView = 'requests' | 'users' | 'whatsapp'
 
 export default function PollaAdminPanel({ isDark = true }: PollaAdminPanelProps) {
   const theme = mundialTheme(isDark)
@@ -229,7 +229,8 @@ export default function PollaAdminPanel({ isDark = true }: PollaAdminPanelProps)
         {(
           [
             { id: 'requests' as const, label: `Solicitudes${pendingCount > 0 ? ` (${pendingCount})` : ''}` },
-            { id: 'users' as const, label: 'Todos los jugadores' },
+            { id: 'users' as const, label: 'Jugadores' },
+            { id: 'whatsapp' as const, label: '📱 WhatsApp' },
           ] as const
         ).map((v) => (
           <button
@@ -457,6 +458,53 @@ export default function PollaAdminPanel({ isDark = true }: PollaAdminPanelProps)
             )}
           </div>
         </>
+      )}
+
+      {view === 'whatsapp' && (
+        <div className="space-y-3">
+          <div className={`rounded-xl border p-4 ${theme.cardSoft}`}>
+            <p className="font-semibold text-sm mb-1">Números de WhatsApp registrados</p>
+            <p className={`text-[11px] ${theme.mutedSm}`}>
+              Copia estos números para agregar manualmente a la comunidad de WhatsApp.
+            </p>
+          </div>
+          {(() => {
+            const withWa = data?.users.filter((u) => u.whatsapp) ?? []
+            const withoutWa = data?.users.filter((u) => !u.whatsapp) ?? []
+            return (
+              <>
+                <div className={`flex gap-2 items-center text-xs ${theme.muted}`}>
+                  <span className="font-semibold text-emerald-400">{withWa.length} con número</span>
+                  <span>·</span>
+                  <span className={theme.mutedSm}>{withoutWa.length} sin número</span>
+                </div>
+                {withWa.length === 0 && (
+                  <p className={`text-center py-8 text-sm ${theme.mutedSm}`}>Ningún jugador ha registrado su WhatsApp aún</p>
+                )}
+                {withWa.length > 0 && (
+                  <>
+                    <div className={`rounded-xl border p-3 font-mono text-xs select-all leading-loose ${isDark ? 'border-white/10 bg-black/30' : 'border-stone-200 bg-stone-50'}`}>
+                      {withWa.map((u) => u.whatsapp).join('\n')}
+                    </div>
+                    <p className={`text-[10px] ${theme.mutedSm}`}>Selecciona el bloque de arriba y cópialo para pegarlos en WhatsApp</p>
+                    <div className="space-y-2">
+                      {withWa.map((u) => (
+                        <div key={u.id} className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${theme.cardSoft}`}>
+                          <UserAvatar src={u.image} name={u.name} size={36} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold truncate">{u.name ?? u.displayAlias ?? u.email}</p>
+                            <p className={`text-[10px] truncate ${theme.mutedSm}`}>{u.email}</p>
+                          </div>
+                          <span className={`text-xs font-mono shrink-0 ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>{u.whatsapp}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            )
+          })()}
+        </div>
       )}
 
       <div className={`rounded-xl border p-4 text-[11px] leading-relaxed ${theme.cardSoft}`}>

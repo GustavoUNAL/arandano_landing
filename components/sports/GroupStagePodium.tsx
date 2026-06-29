@@ -3,12 +3,17 @@
 import { IconTrophy } from '@/components/sports/SportsIcons'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
 import { GROUP_STAGE_PRIZES, GROUP_STAGE_WINNERS_COUNT } from '@/lib/polla-rules'
-import { firstNameOnly } from '@/lib/polla-winners'
 import type { LeaderboardEntry } from '@/lib/sports-polla-shared'
+
+function shortName(name: string | null | undefined): string | null {
+  if (!name?.trim()) return null
+  const parts = name.trim().split(/\s+/)
+  return parts.slice(0, 2).join(' ')
+}
 
 const MEDALS = ['🥇', '🥈', '🥉']
 const PODIUM_ORDER = [1, 0, 2] // 2°, 1°, 3° en el escenario visual
-const PODIUM_HEIGHT = ['h-16', 'h-24', 'h-12']
+const PODIUM_HEIGHT = ['h-24', 'h-16', 'h-12'] // indexado por rank-1: 1°, 2°, 3°
 
 const ANIMAL_EMOJI: Record<string, string> = {
   Jaguar: '🐆',
@@ -44,7 +49,7 @@ function animalEmoji(alias: string) {
 
 function podiumPlayerLabel(entry: LeaderboardEntry) {
   return {
-    realName: firstNameOnly(entry.name),
+    realName: shortName(entry.name),
     username: entry.displayAlias,
   }
 }
