@@ -1,7 +1,6 @@
 'use client'
 
 import GoogleSignInButton from '@/components/GoogleSignInButton'
-import CafePromoBanner from '@/components/sports/CafePromoBanner'
 import HomeBroadcastPromo from '@/components/sports/HomeBroadcastPromo'
 import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
 import { useMundialTheme } from '@/hooks/useMundialTheme'
@@ -13,7 +12,6 @@ import LiveSyncBadge from '@/components/sports/LiveSyncBadge'
 import PollaLeaderboard from '@/components/sports/PollaLeaderboard'
 import TeamCrest from '@/components/sports/TeamCrest'
 import PollaPremiosPanel from '@/components/sports/PollaPremiosPanel'
-import PollaNotificationBell from '@/components/sports/PollaNotificationBell'
 import {
   GROUP_STAGE_NO_PASSPORT_NOTE,
   GROUP_STAGE_WINNERS_COUNT,
@@ -99,55 +97,51 @@ function MatchCard({
 }) {
   return (
     <div
-<<<<<<< HEAD
-      className={`rounded-xl sm:rounded-2xl border p-3 sm:p-5 transition-colors ${
-=======
       className={`rounded-2xl border p-4 sm:p-5 h-full transition-colors ${
->>>>>>> 91e8f9d (update fin polla 1)
         isDark
           ? 'border-white/10 bg-white/5 hover:border-berry-500/30'
           : 'border-stone-200 bg-white shadow-sm hover:border-berry-400/40 hover:shadow-md'
       }`}
     >
-      <div className="flex items-center justify-center gap-1.5 sm:gap-3 mb-2.5 sm:mb-4">
-        <div className="text-center flex-1 min-w-0">
+      <div className="flex items-center justify-center gap-3 mb-4">
+        <div className="text-center flex-1">
           <div className="flex justify-center mb-1">
-            <TeamCrest src={match.homeTeam.crest} alt={match.homeTeam.name} size={32} />
+            <TeamCrest src={match.homeTeam.crest} alt={match.homeTeam.name} size={40} />
           </div>
-          <p className={`text-[10px] sm:text-xs font-medium truncate ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
+          <p className={`text-xs font-medium truncate ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
             {match.homeTeam.shortName}
           </p>
         </div>
-        <span className={`font-bold text-[10px] sm:text-xs shrink-0 ${isDark ? 'text-stone-600' : 'text-stone-400'}`}>VS</span>
-        <div className="text-center flex-1 min-w-0">
+        <span className={`font-bold text-xs shrink-0 ${isDark ? 'text-stone-600' : 'text-stone-400'}`}>VS</span>
+        <div className="text-center flex-1">
           <div className="flex justify-center mb-1">
-            <TeamCrest src={match.awayTeam.crest} alt={match.awayTeam.name} size={32} />
+            <TeamCrest src={match.awayTeam.crest} alt={match.awayTeam.name} size={40} />
           </div>
-          <p className={`text-[10px] sm:text-xs font-medium truncate ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
+          <p className={`text-xs font-medium truncate ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
             {match.awayTeam.shortName}
           </p>
         </div>
       </div>
       {match.group && (
-        <p className={`text-center text-[9px] sm:text-[10px] uppercase tracking-wide mb-1 ${isDark ? 'text-stone-600' : 'text-stone-500'}`}>
+        <p className={`text-center text-[10px] uppercase tracking-wide mb-1 ${isDark ? 'text-stone-600' : 'text-stone-500'}`}>
           {match.group.replace('_', ' ')}
         </p>
       )}
-      <p className={`text-center text-[10px] sm:text-xs mb-1 ${isDark ? 'text-stone-500' : 'text-stone-600'}`}>
+      <p className={`text-center text-xs mb-1 ${isDark ? 'text-stone-500' : 'text-stone-600'}`}>
         {match.formattedDate}
       </p>
       {match.isLive && match.displayScore.home != null ? (
-        <p className={`text-center text-lg sm:text-xl font-bold tabular-nums mb-1.5 sm:mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+        <p className={`text-center text-xl font-bold tabular-nums mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
           {match.displayScore.home} - {match.displayScore.away}
         </p>
       ) : null}
-      <p className={`text-center text-[10px] sm:text-xs font-medium mb-3 sm:mb-4 ${match.isLive ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : isDark ? 'text-berry-400' : 'text-berry-600'}`}>
+      <p className={`text-center text-xs font-medium mb-4 ${match.isLive ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : isDark ? 'text-berry-400' : 'text-berry-600'}`}>
         {match.isLive ? `En vivo · ${match.statusLabel}` : match.startsIn}
       </p>
       <button
         type="button"
         onClick={onPredict}
-        className={`w-full py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-colors ${
+        className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-colors ${
           isDark
             ? 'bg-berry-600/20 hover:bg-berry-600/40 border border-berry-500/30 text-berry-300'
             : 'bg-berry-600 hover:bg-berry-500 text-white'
@@ -270,41 +264,18 @@ export default function SportsLanding() {
     >
       {/* Nav */}
       <header
-        className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-colors overflow-visible ${
+        className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-colors ${
           isDark ? 'border-white/10 bg-stone-950/80' : 'border-stone-200 bg-white/90'
         }`}
       >
-        <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 overflow-visible">
-          <Link href="/" className="flex items-center gap-2 min-w-0 shrink">
-            <div className="relative w-8 h-8 sm:w-9 sm:h-9 shrink-0">
-              <Image src="/images/logo.png" alt="Arándano" fill className="object-contain" sizes="36px" />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="relative w-9 h-9 shrink-0">
+              <Image src="/images/logo.png" alt="Arándano Café Bar" fill className="object-contain" sizes="36px" />
             </div>
-            <span className="font-display font-bold text-sm sm:text-base leading-none truncate">
-              Polla <span className="text-berry-400">Mundial</span>
+            <span className="font-display font-bold text-lg leading-tight truncate">
+              Arándano <span className="text-berry-400 text-sm font-semibold block -mt-0.5">Café Bar</span>
             </span>
-<<<<<<< HEAD
-          </Link>
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 overflow-visible">
-            <div className="hidden md:flex items-center gap-1">
-              <a
-                href="#premios"
-                className={`text-xs font-medium px-2.5 py-2 rounded-full transition-colors ${theme.muted} hover:text-berry-500`}
-              >
-                Premios
-              </a>
-              <a
-                href="#como-jugar"
-                className={`text-xs font-medium px-2.5 py-2 rounded-full transition-colors ${theme.muted} hover:text-berry-500`}
-              >
-                Cómo jugar
-              </a>
-              <a
-                href="#partidos"
-                className={`text-xs font-medium px-2.5 py-2 rounded-full transition-colors ${theme.muted} hover:text-berry-500`}
-              >
-                Partidos
-              </a>
-=======
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <div className="flex items-center gap-1 overflow-x-auto max-w-[42vw] sm:max-w-none scrollbar-thin">
@@ -317,9 +288,18 @@ export default function SportsLanding() {
                   {link.label}
                 </a>
               ))}
->>>>>>> 91e8f9d (update fin polla 1)
             </div>
             <div className="hidden sm:flex items-center gap-2">
+              <Link
+                href="/mundial/reglamento"
+                className={`text-sm font-medium px-3 py-2 rounded-full border transition-colors ${
+                  isDark
+                    ? 'border-white/15 text-stone-300 hover:bg-white/5'
+                    : 'border-stone-300 text-stone-600 hover:bg-stone-100'
+                }`}
+              >
+                Reglamento
+              </Link>
               {session ? (
                 <button
                   type="button"
@@ -333,7 +313,7 @@ export default function SportsLanding() {
                 <GoogleSignInButton compact label="Iniciar sesión" className="!shadow-none" />
               )}
             </div>
-            <div className="sm:hidden flex items-center">
+            <div className="sm:hidden">
               {session ? (
                 <button
                   type="button"
@@ -348,9 +328,6 @@ export default function SportsLanding() {
               )}
             </div>
             <MundialThemeToggle isDark={isDark} onToggle={toggleTheme} />
-<<<<<<< HEAD
-            <PollaNotificationBell isDark={isDark} />
-=======
             <LiveSyncBadge
               isDark={isDark}
               syncing={syncing}
@@ -358,7 +335,6 @@ export default function SportsLanding() {
               isLive={(wcData?.liveMatches?.length ?? 0) > 0}
               className="hidden sm:inline-flex"
             />
->>>>>>> 91e8f9d (update fin polla 1)
           </div>
         </div>
       </header>
@@ -377,7 +353,7 @@ export default function SportsLanding() {
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 {wcData?.competition.name ?? 'Copa Mundial FIFA 2026'}
               </p>
-              <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-5">
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-5">
                 Vive el Mundial con{' '}
                 <span className="bg-gradient-to-r from-berry-300 to-berry-500 bg-clip-text text-transparent">
                   Arándano Café Bar
@@ -571,24 +547,21 @@ export default function SportsLanding() {
             <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${theme.accent}`}>
               03 · Arándano Café Bar
             </p>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold">Por qué elegirnos</h2>
-            <p className={`text-sm mt-2 max-w-xl mx-auto ${theme.muted}`}>
-              Tu tercer espacio en Pasto para vivir el Mundial
-            </p>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold">Tu tercer espacio en Pasto</h2>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 [&>*:last-child:nth-child(odd)]:col-span-2 lg:[&>*:last-child:nth-child(odd)]:col-span-1">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {FEATURES.map((f) => (
               <div
                 key={f.title}
-                className={`rounded-xl sm:rounded-2xl border p-3.5 sm:p-5 lg:p-6 transition-all hover:-translate-y-0.5 h-full ${
+                className={`rounded-2xl border p-5 sm:p-6 transition-all hover:-translate-y-0.5 ${
                   isDark
                     ? 'border-white/10 bg-white/5 hover:border-berry-500/30'
                     : 'border-stone-200 bg-white shadow-sm hover:border-berry-300/50 hover:shadow-md'
                 }`}
               >
-                <span className="text-xl sm:text-3xl mb-2 sm:mb-3 block">{f.icon}</span>
-                <h3 className="font-semibold text-sm sm:text-lg mb-1 sm:mb-1.5 leading-snug">{f.title}</h3>
-                <p className={`text-[11px] sm:text-sm leading-relaxed ${theme.muted}`}>{f.desc}</p>
+                <span className="text-2xl sm:text-3xl mb-3 block">{f.icon}</span>
+                <h3 className="font-semibold text-base sm:text-lg mb-1.5">{f.title}</h3>
+                <p className={`text-sm leading-relaxed ${theme.muted}`}>{f.desc}</p>
               </div>
             ))}
           </div>
@@ -615,12 +588,6 @@ export default function SportsLanding() {
           {loading ? (
             <div className={`text-center py-12 text-sm ${theme.muted}`}>Cargando partidos del Mundial…</div>
           ) : liveMatches.length > 0 ? (
-<<<<<<< HEAD
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
-              {liveMatches.map((match) => (
-                <MatchCard key={match.id} match={match} onPredict={() => goToPredict(match.id)} isDark={isDark} />
-              ))}
-=======
             <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
               <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible sm:gap-5">
                 {liveMatches.map((match) => (
@@ -629,7 +596,6 @@ export default function SportsLanding() {
                   </div>
                 ))}
               </div>
->>>>>>> 91e8f9d (update fin polla 1)
             </div>
           ) : (
             <div className={`text-center py-12 text-sm ${theme.muted}`}>
@@ -848,10 +814,6 @@ export default function SportsLanding() {
         </div>
       </section>
 
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-8">
-        <CafePromoBanner isDark={isDark} />
-      </section>
-
       {/* Footer */}
       <footer
         className={`border-t py-12 transition-colors ${
@@ -862,16 +824,9 @@ export default function SportsLanding() {
           <p className="font-display text-xl font-bold mb-4">
             Arándano <span className="text-berry-400">Café Bar</span>
           </p>
-          <p className="text-stone-600 text-xs mb-4">© 2026 Arándano Café Bar · Pasto, Colombia</p>
-          <Link
-            href="/mundial/reglamento"
-            className={`inline-flex items-center justify-center min-h-[44px] px-5 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${
-              isDark
-                ? 'border-white/15 text-stone-200 hover:bg-white/5'
-                : 'border-stone-300 text-stone-700 hover:bg-white'
-            }`}
-          >
-            Ver reglamento completo →
+          <p className="text-stone-600 text-xs mb-2">© 2026 Arándano Café Bar · Pasto, Colombia</p>
+          <Link href="/mundial/reglamento" className="text-xs text-berry-500/80 hover:text-berry-400">
+            Reglamento y condiciones
           </Link>
         </div>
       </footer>

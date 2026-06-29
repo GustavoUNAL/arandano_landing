@@ -32,12 +32,6 @@ fi
 if [ -f "$ROOT/.env.local" ]; then
   cp "$ROOT/.env.local" "$STANDALONE/.env.local"
   echo "  ✓ .env.local"
-  if ! grep -q '^VAPID_PRIVATE_KEY=.' "$ROOT/.env.local" 2>/dev/null; then
-    echo "  ⚠ VAPID_PRIVATE_KEY no está en .env.local — push del celular no funcionará"
-    echo "    Añade VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY y VAPID_SUBJECT antes del deploy"
-  fi
-else
-  echo "  ⚠ .env.local no encontrado en la raíz del proyecto"
 fi
 
 if [ -f "$ROOT/.env.production" ]; then

@@ -1,6 +1,4 @@
 import type { Metadata } from 'next'
-import PollaPushPrompt from '@/components/PollaPushPrompt'
-import PollaPushSync from '@/components/PollaPushSync'
 
 export const metadata: Metadata = {
   title: 'Polla Mundialista | Arándano Café Bar',
@@ -9,11 +7,5 @@ export const metadata: Metadata = {
 }
 
 export default function MundialLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      {children}
-      <PollaPushPrompt />
-      <PollaPushSync />
-    </>
-  )
+  return children
 }

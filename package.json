@@ -3,11 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-<<<<<<< HEAD
-    "dev": "tsx server-live.ts",
-=======
     "dev": "next dev -p 3000",
->>>>>>> 91e8f9d (update fin polla 1)
     "build": "next build",
     "postbuild": "bash scripts/post-build-standalone.sh",
     "start": "next start",
@@ -29,8 +25,6 @@
     "sync:sports-football": "npx tsx --env-file=.env.local scripts/sync-sports-football.ts",
     "pull:remote-db": "npx tsx --env-file=.env.local --env-file=.env.remote scripts/pull-remote-to-local.ts",
     "pull:remote-users": "npx tsx --env-file=.env.local --env-file=.env.remote scripts/pull-remote-to-local.ts -- --users-only",
-    "pull:neon": "npm run pull:remote-db",
-    "sync:neon-to-local": "npm run pull:remote-db",
     "pull:server-db": "bash scripts/pull-server-db.sh",
     "export:sqlite-live": "node scripts/export-sqlite-live.js",
     "sync:ovh-neon": "bash scripts/sync-ovh-local-neon.sh",
@@ -39,7 +33,6 @@
     "server:enable-neon": "bash scripts/enable-server-neon.sh",
     "test:api": "node scripts/test-api-functions.js",
     "pre-deploy": "node scripts/pre-deploy-check.js",
-    "check:push-env": "node scripts/check-push-env.js",
     "deploy": "bash deploy/ovh/deploy.sh",
     "deploy:ovh": "bash deploy/ovh/deploy.sh",
     "setup:ovh": "bash deploy/ovh/setup-ovh.sh"

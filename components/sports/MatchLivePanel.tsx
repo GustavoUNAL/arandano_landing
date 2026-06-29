@@ -1,15 +1,23 @@
 'use client'
 
 import TeamCrest from '@/components/sports/TeamCrest'
+import MatchAfStats from '@/components/sports/MatchAfStats'
 import { useLiveSportsStream } from '@/hooks/useLiveSportsStream'
 import type { MatchDetail } from '@/lib/football-data'
 import type { MatchStreamPayload } from '@/lib/live-broadcast-types'
 import { getFinishedMatchWinner, winnerBadge } from '@/lib/match-display'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
-import type {
-  MatchPrediction,
-} from '@/lib/sports-polla-shared'
-import { useState } from 'react'
+import type { MatchPrediction } from '@/lib/sports-polla-shared'
+import type { AfEvent, AfTeamLineup, AfTeamPlayers, AfTeamStats } from '@/lib/api-football-client'
+import { useEffect, useState } from 'react'
+
+interface AfMatchData {
+  afFixtureId: number
+  stats: AfTeamStats[]
+  events: AfEvent[]
+  lineups: AfTeamLineup[]
+  players: AfTeamPlayers[]
+}
 
 interface MatchLivePanelProps {
   matchId: number
@@ -51,6 +59,18 @@ function StatBar({
 
 export default function MatchLivePanel({ matchId, isDark = true, onClose }: MatchLivePanelProps) {
   const theme = mundialTheme(isDark)
+  const [afData, setAfData] = useState<AfMatchData | null>(null)
+  const [afLoading, setAfLoading] = useState(false)
+
+  useEffect(() => {
+    if (!matchId) return
+    setAfLoading(true)
+    fetch(`/api/sports/af-match/${matchId}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((j) => setAfData(j))
+      .catch(() => setAfData(null))
+      .finally(() => setAfLoading(false))
+  }, [matchId])
 
   const { data: stream, loading, error: streamError } = useLiveSportsStream<MatchStreamPayload>({
     channel: 'match',
@@ -284,6 +304,28 @@ export default function MatchLivePanel({ matchId, isDark = true, onClose }: Matc
                     isDark={isDark}
                   />
                 </div>
+              </div>
+            )}
+
+            {/* Estadísticas enriquecidas api-football.com */}
+            {(afData || afLoading) && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className={`text-xs font-semibold ${theme.accent}`}>Estadísticas Pro</p>
+                  {afLoading && (
+                    <div className="w-3.5 h-3.5 border-2 border-berry-400/40 border-t-berry-400 rounded-full animate-spin" />
+                  )}
+                </div>
+                {afData && (
+                  <MatchAfStats
+                    stats={afData.stats}
+                    events={afData.events}
+                    lineups={afData.lineups}
+                    players={afData.players}
+                    homeTeamId={match.homeTeam.id}
+                    isDark={isDark}
+                  />
+                )}
               </div>
             )}
 

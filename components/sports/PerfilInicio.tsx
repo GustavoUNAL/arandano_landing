@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   IconBall,
   IconGlobe,
@@ -15,9 +15,12 @@ import PollaLeaderboard from '@/components/sports/PollaLeaderboard'
 import GroupStagePodium from '@/components/sports/GroupStagePodium'
 import PollaReglamento from '@/components/sports/PollaReglamento'
 import PassportRequestPanel from '@/components/sports/PassportRequestPanel'
+import TopScorersPanel from '@/components/sports/TopScorersPanel'
 import TeamCrest from '@/components/sports/TeamCrest'
 import UserAvatar from '@/components/sports/UserAvatar'
 import type { ScoringRules } from '@/lib/polla-rules'
+import { KNOCKOUT_TRAINING_NOTE, POINTS_CORRECT_RESULT, POINTS_EXACT_SCORE, POINTS_GOAL_DIFFERENCE } from '@/lib/polla-rules'
+import { pointsToTier } from '@/lib/sports-polla-shared'
 import type { LeaderboardEntry, MatchPrediction } from '@/lib/sports-polla-shared'
 import type { WorldCupFullData } from '@/lib/football-data'
 import { getGroupStagePodiumEntries, isGroupStageComplete } from '@/lib/polla-phase'
@@ -61,6 +64,162 @@ function groupStageCounts(worldCup: WorldCupFullData) {
 
 function teamLabel(team: { shortName?: string; name?: string; tla?: string }) {
   return team.shortName || team.name || team.tla || '—'
+}
+
+function CampanaFaseGrupos({
+  predictions,
+  isDark,
+}: {
+  predictions: MatchPrediction[]
+  isDark: boolean
+}) {
+  const theme = mundialTheme(isDark)
+  const [open, setOpen] = useState(false)
+  const [filter, setFilter] = useState<'all' | 'exact' | 'goal_diff' | 'result' | 'miss'>('all')
+
+  const groupPredictions = useMemo(
+    () =>
+      predictions
+        .filter((p) => p.matchGroup != null)
+        .sort((a, b) => new Date(b.matchDate).getTime() - new Date(a.matchDate).getTime()),
+    [predictions]
+  )
+
+  const settled = groupPredictions.filter((p) => p.settledAt != null)
+  const stats = useMemo(() => {
+    let exact = 0, goalDiff = 0, result = 0, miss = 0, points = 0
+    for (const p of settled) {
+      const tier = pointsToTier(p.pointsEarned)
+      if (tier === 'exact') exact++
+      else if (tier === 'goal_diff') goalDiff++
+      else if (tier === 'result') result++
+      else miss++
+      points += p.pointsEarned ?? 0
+    }
+    return { exact, goalDiff, result, miss, points, total: settled.length }
+  }, [settled])
+
+  const filtered = useMemo(() => {
+    if (filter === 'all') return groupPredictions
+    return groupPredictions.filter((p) => {
+      if (!p.settledAt) return filter === 'miss'
+      return pointsToTier(p.pointsEarned) === filter
+    })
+  }, [groupPredictions, filter])
+
+  if (groupPredictions.length === 0) return null
+
+  return (
+    <section className={`rounded-2xl border overflow-hidden ${theme.cardSoft}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={`w-full px-4 py-3 flex items-center justify-between gap-2 border-b ${theme.border} text-left`}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-base">📊</span>
+          <div>
+            <p className="font-semibold text-sm">Mi campaña · Fase de Grupos</p>
+            <p className={`text-[10px] ${theme.mutedSm}`}>
+              {stats.total} picks liquidados · {stats.points} pts
+            </p>
+          </div>
+        </div>
+        <span className={`text-sm ${theme.mutedSm}`}>{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div className="p-4 space-y-4">
+          {/* Stats */}
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { label: 'Exactos', value: stats.exact, color: isDark ? 'text-emerald-400' : 'text-emerald-700', bg: isDark ? 'bg-emerald-950/40 border-emerald-500/30' : 'bg-emerald-50 border-emerald-200', pts: POINTS_EXACT_SCORE },
+              { label: 'Diferencia', value: stats.goalDiff, color: isDark ? 'text-sky-400' : 'text-sky-700', bg: isDark ? 'bg-sky-950/40 border-sky-500/30' : 'bg-sky-50 border-sky-200', pts: POINTS_GOAL_DIFFERENCE },
+              { label: 'Resultado', value: stats.result, color: isDark ? 'text-amber-400' : 'text-amber-700', bg: isDark ? 'bg-amber-950/40 border-amber-500/30' : 'bg-amber-50 border-amber-200', pts: POINTS_CORRECT_RESULT },
+              { label: 'Fallidos', value: stats.miss, color: isDark ? 'text-stone-400' : 'text-stone-600', bg: isDark ? 'bg-stone-900/60 border-white/10' : 'bg-stone-100 border-stone-200', pts: 0 },
+            ].map((s) => (
+              <div key={s.label} className={`rounded-xl border px-2 py-2.5 text-center ${s.bg}`}>
+                <p className={`font-bold text-lg tabular-nums ${s.color}`}>{s.value}</p>
+                <p className={`text-[9px] font-semibold ${s.color}`}>{s.label}</p>
+                <p className={`text-[9px] ${theme.mutedSm}`}>+{s.pts} pts</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Total puntos */}
+          <div className={`rounded-xl border px-4 py-2.5 flex items-center justify-between ${isDark ? 'border-berry-500/30 bg-berry-950/20' : 'border-berry-200 bg-berry-50'}`}>
+            <p className={`text-sm font-semibold ${isDark ? 'text-berry-200' : 'text-berry-800'}`}>Total puntos fase de grupos</p>
+            <p className={`font-bold text-xl tabular-nums ${isDark ? 'text-berry-300' : 'text-berry-700'}`}>{stats.points}</p>
+          </div>
+
+          {/* Filtros */}
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              [
+                { id: 'all', label: 'Todos' },
+                { id: 'exact', label: '✓ Exactos' },
+                { id: 'goal_diff', label: '~ Diferencia' },
+                { id: 'result', label: '○ Resultado' },
+                { id: 'miss', label: '✗ Fallidos' },
+              ] as const
+            ).map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setFilter(f.id)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold ${
+                  filter === f.id
+                    ? 'bg-berry-600 text-white'
+                    : isDark
+                      ? 'bg-white/5 text-stone-400'
+                      : 'bg-stone-100 text-stone-600'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Lista de picks */}
+          <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+            {filtered.length === 0 && (
+              <p className={`text-xs text-center py-4 ${theme.mutedSm}`}>Sin picks en esta categoría</p>
+            )}
+            {filtered.map((p) => {
+              const settled = p.settledAt != null
+              const tier = settled ? pointsToTier(p.pointsEarned) : null
+              const tierColor = !tier ? '' :
+                tier === 'exact' ? (isDark ? 'text-emerald-400' : 'text-emerald-700') :
+                tier === 'goal_diff' ? (isDark ? 'text-sky-400' : 'text-sky-700') :
+                tier === 'result' ? (isDark ? 'text-amber-400' : 'text-amber-700') :
+                (isDark ? 'text-stone-500' : 'text-stone-500')
+              const tierLabel = !tier ? '' : tier === 'exact' ? 'Exacto' : tier === 'goal_diff' ? 'Diferencia' : tier === 'result' ? 'Resultado' : 'Fallo'
+              return (
+                <div key={p.id} className={`rounded-xl border px-3 py-2.5 text-xs ${theme.cardSoft}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`font-medium truncate ${theme.body}`}>
+                      {p.homeTeamName} <span className={`font-bold tabular-nums ${isDark ? 'text-berry-300' : 'text-berry-600'}`}>{p.homeScore}-{p.awayScore}</span> {p.awayTeamName}
+                    </p>
+                    {settled && (
+                      <span className={`shrink-0 font-bold text-[10px] ${tierColor}`}>
+                        {p.pointsEarned != null && p.pointsEarned > 0 ? `+${p.pointsEarned}` : '0'} · {tierLabel}
+                      </span>
+                    )}
+                  </div>
+                  {settled && p.actualHomeScore != null && (
+                    <p className={`mt-0.5 ${theme.mutedSm}`}>
+                      Real: <span className="font-semibold tabular-nums">{p.actualHomeScore}-{p.actualAwayScore}</span>
+                      {p.matchGroup && <span className="ml-2 opacity-60">{p.matchGroup.replace('GROUP_', 'Grupo ')}</span>}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </section>
+  )
 }
 
 export default function PerfilInicio({
@@ -122,6 +281,25 @@ export default function PerfilInicio({
       {podiumEntries.length > 0 && (
         <GroupStagePodium entries={podiumEntries} isDark={isDark} complete={groupComplete} />
       )}
+
+      {/* Aviso nueva polla */}
+      <div className={`rounded-2xl border px-4 py-3.5 flex gap-3 items-start ${isDark ? 'border-berry-500/30 bg-berry-950/20' : 'border-berry-200 bg-berry-50'}`}>
+        <span className="text-xl shrink-0 mt-0.5">🏆</span>
+        <div className="space-y-1">
+          <p className={`font-semibold text-sm ${isDark ? 'text-berry-200' : 'text-berry-800'}`}>
+            ¡Nueva polla · Eliminatorias en marcha!
+          </p>
+          <p className={`text-xs leading-relaxed ${theme.muted}`}>
+            La fase de grupos terminó — el marcador arranca desde cero. Tu campaña pasada queda guardada abajo.
+          </p>
+          <p className={`text-[11px] leading-relaxed ${theme.mutedSm}`}>
+            {KNOCKOUT_TRAINING_NOTE}
+          </p>
+        </div>
+      </div>
+
+      {/* Campaña pasada */}
+      <CampanaFaseGrupos predictions={predictions} isDark={isDark} />
 
       <div className="lg:grid lg:grid-cols-12 lg:gap-8 lg:items-start">
         {/* Columna principal */}
@@ -387,28 +565,23 @@ export default function PerfilInicio({
                 Pronosticar →
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid gap-2 sm:grid-cols-2">
               {upcoming.map((m) => (
                 <button
                   key={m.id}
                   type="button"
                   onClick={() => (onPlayMatch ? onPlayMatch(m.id) : onGoJugar())}
-                  className={`flex flex-col items-center gap-1.5 rounded-xl border px-2 py-2.5 text-center transition-all hover:scale-[1.01] hover:border-berry-500/40 hover:shadow-md sm:flex-row sm:gap-3 sm:px-3 sm:text-left ${theme.cardSoft}`}
+                  className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all hover:scale-[1.01] hover:border-berry-500/40 hover:shadow-md ${theme.cardSoft}`}
                 >
-                  <div className="flex items-center justify-center gap-1.5 sm:hidden">
-                    <TeamCrest src={m.homeTeam.crest} alt="" size={24} />
-                    <span className={`text-[10px] font-bold ${theme.mutedSm}`}>vs</span>
-                    <TeamCrest src={m.awayTeam.crest} alt="" size={24} />
-                  </div>
-                  <TeamCrest src={m.homeTeam.crest} alt="" size={28} className="hidden sm:block shrink-0" />
-                  <div className="flex-1 min-w-0 w-full sm:w-auto">
-                    <p className="text-[10px] sm:text-xs font-medium leading-snug line-clamp-2 sm:truncate">
+                  <TeamCrest src={m.homeTeam.crest} alt="" size={28} />
+                  <div className="flex-1 min-w-0 text-center">
+                    <p className="text-xs font-medium truncate">
                       {teamLabel(m.homeTeam)} <span className={theme.mutedSm}>vs</span> {teamLabel(m.awayTeam)}
                     </p>
-                    <p className={`text-[9px] sm:text-[10px] mt-0.5 ${theme.mutedSm}`}>{m.formattedDate}</p>
+                    <p className={`text-[10px] ${theme.mutedSm}`}>{m.formattedDate}</p>
                   </div>
-                  <TeamCrest src={m.awayTeam.crest} alt="" size={28} className="hidden sm:block shrink-0" />
-                  <span className={`hidden sm:inline text-[10px] font-bold w-14 text-right shrink-0 ${theme.accent}`}>
+                  <TeamCrest src={m.awayTeam.crest} alt="" size={28} />
+                  <span className={`text-[10px] font-bold w-14 text-right shrink-0 ${theme.accent}`}>
                     Jugar →
                   </span>
                 </button>
@@ -428,6 +601,7 @@ export default function PerfilInicio({
             title="Polla final"
             subtitle="Desde cuartos · octavos solo entrenamiento"
           />
+          <TopScorersPanel isDark={isDark} />
           <PollaReglamento compact isDark={isDark} />
         </div>
       </div>
@@ -453,7 +627,7 @@ export default function PerfilInicio({
       {/* Formato */}
       <div className={`rounded-2xl border p-4 lg:p-5 ${theme.cardSoft}`}>
         <h3 className="font-semibold text-sm lg:text-base mb-3">Formato del torneo</h3>
-        <div className="grid grid-cols-2 gap-2 lg:gap-3">
+        <div className="grid gap-2 lg:grid-cols-2">
           {MUNDIAL_2026.format.map((line, i) => (
             <div key={line} className="flex gap-3 items-start">
               <span
@@ -478,7 +652,7 @@ export default function PerfilInicio({
               Ver todos →
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {predictions.slice(-3).reverse().map((p) => (
               <div
                 key={p.id}

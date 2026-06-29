@@ -1,15 +1,13 @@
 'use client'
 
 import TeamCrest from '@/components/sports/TeamCrest'
-import { useLiveSportsStream } from '@/hooks/useLiveSportsStream'
 import type { EnrichedMatch, MatchDetail } from '@/lib/football-data'
 import { getKickoffCountdown } from '@/lib/home-broadcast'
-import type { HomeBroadcastStreamPayload } from '@/lib/live-broadcast-types'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
 import { PERFIL_JUGAR_PATH } from '@/lib/perfil-routes'
 import type { MatchPredictionStats, PublicMatchPick } from '@/lib/sports-polla-shared'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 interface HomeBroadcastPayload {
   mode: 'live' | 'upcoming'
@@ -59,17 +57,32 @@ interface HomeBroadcastPromoProps {
 
 export default function HomeBroadcastPromo({ isDark, onPredict }: HomeBroadcastPromoProps) {
   const theme = mundialTheme(isDark)
+  const [data, setData] = useState<HomeBroadcastPayload | null>(null)
+  const [loading, setLoading] = useState(true)
   const [tick, setTick] = useState(0)
-  const { data: stream, loading } = useLiveSportsStream<HomeBroadcastStreamPayload>({
-    channel: 'home',
-  })
 
-  const data = stream?.featured ?? null
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch('/api/sports/home-broadcast')
+      const json = await res.json()
+      if (res.ok && json.featured) setData(json.featured)
+      else setData(null)
+    } catch {
+      setData(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
+    void load()
+    const refresh = setInterval(load, 60_000)
     const countdown = setInterval(() => setTick((t) => t + 1), 30_000)
-    return () => clearInterval(countdown)
-  }, [])
+    return () => {
+      clearInterval(refresh)
+      clearInterval(countdown)
+    }
+  }, [load])
 
   if (loading) {
     return (

@@ -466,31 +466,6 @@ function initializeDatabase() {
     )
   `)
 
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS push_subscriptions (
-      id TEXT PRIMARY KEY,
-      userId TEXT NOT NULL,
-      endpoint TEXT NOT NULL UNIQUE,
-      p256dh TEXT NOT NULL,
-      auth TEXT NOT NULL,
-      userAgent TEXT,
-      createdAt TEXT NOT NULL,
-      updatedAt TEXT NOT NULL,
-      FOREIGN KEY (userId) REFERENCES sports_users(id)
-    )
-  `)
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS push_notification_sent (
-      id TEXT PRIMARY KEY,
-      userId TEXT NOT NULL,
-      notificationId TEXT NOT NULL,
-      sentAt TEXT NOT NULL,
-      UNIQUE(userId, notificationId),
-      FOREIGN KEY (userId) REFERENCES sports_users(id)
-    )
-  `)
-
   const sportsMigrations = [
     'ALTER TABLE sports_users ADD COLUMN displayAlias TEXT',
     'ALTER TABLE sports_users ADD COLUMN totalPoints INTEGER NOT NULL DEFAULT 0',
@@ -535,8 +510,6 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_match_predictions_settledAt ON match_predictions(settledAt);
     CREATE INDEX IF NOT EXISTS idx_sports_users_totalPoints ON sports_users(totalPoints);
     CREATE INDEX IF NOT EXISTS idx_sports_users_displayAlias ON sports_users(displayAlias);
-    CREATE INDEX IF NOT EXISTS idx_push_subscriptions_userId ON push_subscriptions(userId);
-    CREATE INDEX IF NOT EXISTS idx_push_notification_sent_userId ON push_notification_sent(userId);
     CREATE INDEX IF NOT EXISTS idx_sports_matches_utcDate ON sports_matches(utcDate);
     CREATE INDEX IF NOT EXISTS idx_sports_matches_status ON sports_matches(status);
     CREATE INDEX IF NOT EXISTS idx_sports_matches_stage ON sports_matches(stage);

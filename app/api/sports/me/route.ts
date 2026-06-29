@@ -1,7 +1,4 @@
 import { getAuthUser } from '@/lib/auth-server'
-<<<<<<< HEAD
-import { buildSportsProfilePayload } from '@/lib/sports-profile'
-=======
 import { isPollAdmin } from '@/lib/polla-admin'
 import { countKnockoutPassportHolders } from '@/lib/passport-requests'
 import { getWorldCupFullData } from '@/lib/football-data'
@@ -23,7 +20,6 @@ import {
   updateDisplayAlias,
   updateUserWhatsApp,
 } from '@/lib/sports-polla'
->>>>>>> 91e8f9d (update fin polla 1)
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -35,10 +31,6 @@ export async function GET() {
   }
 
   try {
-<<<<<<< HEAD
-    const payload = await buildSportsProfilePayload(authUser)
-    return NextResponse.json(payload)
-=======
     const [user, worldCup] = await Promise.all([
       getOrCreateSportsUser(authUser),
       getWorldCupFullData({ quick: true }),
@@ -109,7 +101,6 @@ export async function GET() {
       scoringRules,
       predictionCost: scoringRules.predictionCost,
     })
->>>>>>> 91e8f9d (update fin polla 1)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Error desconocido'
     return NextResponse.json({ error: message }, { status: 500 })
@@ -133,11 +124,6 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ user })
     }
 
-<<<<<<< HEAD
-    const { updateDisplayAlias } = await import('@/lib/sports-polla')
-    const user = await updateDisplayAlias(authUser.id, displayAlias)
-    return NextResponse.json({ user })
-=======
     if (typeof whatsapp === 'string' && whatsapp.trim()) {
       const user = await updateUserWhatsApp(authUser.id, whatsapp)
       return NextResponse.json({ user })
@@ -149,7 +135,6 @@ export async function PATCH(request: Request) {
     }
 
     return NextResponse.json({ error: 'Solicitud inválida' }, { status: 400 })
->>>>>>> 91e8f9d (update fin polla 1)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Error desconocido'
     const status =

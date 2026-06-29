@@ -33,8 +33,13 @@ interface PollaWelcomeModalsProps {
   onBlockingChange?: (blocking: boolean) => void
 }
 
+function winnerSeenKey(userId: string) {
+  return `polla-winner-seen-${userId}`
+}
+
 export default function PollaWelcomeModals({
   isDark = true,
+  userId,
   userName,
   groupComplete,
   podiumEntries,
@@ -44,7 +49,10 @@ export default function PollaWelcomeModals({
   onBlockingChange,
 }: PollaWelcomeModalsProps) {
   const theme = mundialTheme(isDark)
-  const [dismissedWinner, setDismissedWinner] = useState(false)
+  const [dismissedWinner, setDismissedWinner] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem(winnerSeenKey(userId)) === '1'
+  })
   const [dismissedProInvite, setDismissedProInvite] = useState(false)
 
   const showWinner = Boolean(winnerEntry) && !dismissedWinner
@@ -64,7 +72,10 @@ export default function PollaWelcomeModals({
     return (
       <PollaModal
         open
-        onClose={() => setDismissedWinner(true)}
+        onClose={() => {
+          localStorage.setItem(winnerSeenKey(userId), '1')
+          setDismissedWinner(true)
+        }}
         isDark={isDark}
         accent="gold"
         size="sm"
@@ -77,7 +88,10 @@ export default function PollaWelcomeModals({
         footer={
           <button
             type="button"
-            onClick={() => setDismissedWinner(true)}
+            onClick={() => {
+              localStorage.setItem(winnerSeenKey(userId), '1')
+              setDismissedWinner(true)
+            }}
             className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-sm font-semibold shadow-lg shadow-emerald-900/30 transition-all"
           >
             ¡Voy a reclamar mi premio!
@@ -123,7 +137,7 @@ export default function PollaWelcomeModals({
       zIndex={105}
       icon={<span className="text-3xl">🏆</span>}
       title={firstName ? `¡Hola ${firstName}!` : '¡Únete a la polla fase pro!'}
-      subtitle={`${KNOCKOUT_PASSPORT_LABEL} · ${KNOCKOUT_PASSPORT_PRICE_LABEL}`}
+      subtitle="Adquiere tu pasaporte para la polla final."
       footer={
         <button
           type="button"

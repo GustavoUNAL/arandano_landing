@@ -1,6 +1,5 @@
 'use client'
 
-import CafePromoBanner from '@/components/sports/CafePromoBanner'
 import LiveMatchBroadcast from '@/components/sports/LiveMatchBroadcast'
 import MatchLivePanel from '@/components/sports/MatchLivePanel'
 import MundialExplorer from '@/components/sports/MundialExplorer'
@@ -9,8 +8,6 @@ import AriPredictorPanel from '@/components/ari/AriPredictorPanel'
 import PerfilInicio from '@/components/sports/PerfilInicio'
 import PollaWelcomeModals from '@/components/sports/PollaWelcomeModals'
 import PollaAdminPanel from '@/components/sports/PollaAdminPanel'
-import PollaNotificationCenter from '@/components/sports/PollaNotificationCenter'
-import PollaToast from '@/components/sports/PollaToast'
 import PredictionCard from '@/components/sports/PredictionCard'
 import LiveSyncBadge from '@/components/sports/LiveSyncBadge'
 import WhatsAppBroadcastModal from '@/components/sports/WhatsAppBroadcastModal'
@@ -25,15 +22,9 @@ import {
 import TeamCrest from '@/components/sports/TeamCrest'
 import UserAvatar from '@/components/sports/UserAvatar'
 import { useMundialTheme } from '@/hooks/useMundialTheme'
-<<<<<<< HEAD
-import { useLiveSportsStream } from '@/hooks/useLiveSportsStream'
-import type { ProfileStreamPayload } from '@/lib/live-broadcast-types'
-import type { ScoringRules } from '@/lib/polla-rules'
-=======
 import { usePollaLiveSync } from '@/hooks/usePollaLiveSync'
 import type { ScoringRules, KnockoutPrizeShare } from '@/lib/polla-rules'
 import { getGroupStagePodiumEntries, isGroupStageComplete } from '@/lib/polla-phase'
->>>>>>> 91e8f9d (update fin polla 1)
 import type { LeaderboardEntry, MatchPrediction, SportsUser } from '@/lib/sports-polla-shared'
 import type { WorldCupFullData } from '@/lib/football-data'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
@@ -41,7 +32,7 @@ import { isPerfilTab, perfilPathForPlayMatch, perfilPathForTab, type PerfilTab }
 import { signOut, useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 interface MatchWithPrediction {
   id: number
@@ -124,15 +115,6 @@ export default function PerfilDashboard() {
   const [matchFilter, setMatchFilter] = useState('all')
   const [matchPhase, setMatchPhase] = useState<'all' | 'live' | 'upcoming' | 'played'>('all')
   const [liveMatchId, setLiveMatchId] = useState<number | null>(null)
-<<<<<<< HEAD
-  const [saveToast, setSaveToast] = useState<string | null>(null)
-
-  const loadProfile = useCallback(async (opts?: { silent?: boolean }) => {
-    if (!opts?.silent) {
-      setLoading(true)
-    }
-    setError('')
-=======
   const [welcomeModalsBlocking, setWelcomeModalsBlocking] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null)
@@ -145,7 +127,6 @@ export default function PerfilDashboard() {
     } else {
       setSyncing(true)
     }
->>>>>>> 91e8f9d (update fin polla 1)
     try {
       const res = await fetch('/api/sports/me', { cache: 'no-store' })
       const json = await res.json()
@@ -187,16 +168,6 @@ export default function PerfilDashboard() {
     loadProfile()
   }, [loadProfile])
 
-  const { data: profileStream } = useLiveSportsStream<ProfileStreamPayload>({
-    channel: 'profile',
-    enabled: Boolean(data),
-  })
-
-  useEffect(() => {
-    if (!profileStream?.profile) return
-    setData(profileStream.profile as ProfileData)
-  }, [profileStream])
-
   const openPredict = useCallback((match: MatchWithPrediction) => {
     setActiveMatch(match)
     setHomeScore(match.prediction?.homeScore ?? '')
@@ -212,8 +183,6 @@ export default function PerfilDashboard() {
     [router]
   )
 
-<<<<<<< HEAD
-=======
   const silentRefresh = useCallback(() => {
     void loadProfile({ silent: true })
   }, [loadProfile])
@@ -223,7 +192,6 @@ export default function PerfilDashboard() {
     fallbackMs: data?.hasLiveMatches ? 20_000 : 40_000,
   })
 
->>>>>>> 91e8f9d (update fin polla 1)
   useEffect(() => {
     const raw = searchParams.get('match')
     if (!raw || !data) return
@@ -293,16 +261,8 @@ export default function PerfilDashboard() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Error al guardar')
-      const savedHome = homeScore
-      const savedAway = awayScore
-      const matchLabel = `${activeMatch.homeTeam.shortName || activeMatch.homeTeam.tla} ${savedHome}-${savedAway} ${activeMatch.awayTeam.shortName || activeMatch.awayTeam.tla}`
       setActiveMatch(null)
-<<<<<<< HEAD
-      setSaveToast(`Pronóstico guardado: ${matchLabel}`)
-      void loadProfile({ silent: true })
-=======
       await loadProfile({ silent: true })
->>>>>>> 91e8f9d (update fin polla 1)
       changeTab('picks')
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'Error al guardar')
@@ -313,37 +273,10 @@ export default function PerfilDashboard() {
 
   const user = session?.user
 
-  const notificationMatches = useMemo(() => {
-    if (!data) return []
-    const watch = data.watchMatches ?? []
-    return [...new Map([...data.matches, ...watch].map((m) => [m.id, m] as const)).values()]
-  }, [data])
-
-  if (loading && !data) {
+  if (loading) {
     return (
-      <div className={`min-h-screen lg:flex ${theme.page}`}>
-        <aside
-          className={`hidden lg:flex lg:flex-col lg:w-72 xl:w-80 lg:shrink-0 lg:border-r lg:sticky lg:top-0 lg:h-screen ${
-            isDark ? 'bg-stone-950/95' : 'bg-white'
-          } ${theme.border}`}
-        >
-          <div className="p-6 space-y-4 animate-pulse">
-            <div className={`h-20 rounded-2xl ${isDark ? 'bg-white/5' : 'bg-stone-100'}`} />
-            <div className={`h-10 rounded-xl ${isDark ? 'bg-white/5' : 'bg-stone-100'}`} />
-            <div className={`h-10 rounded-xl ${isDark ? 'bg-white/5' : 'bg-stone-100'}`} />
-          </div>
-        </aside>
-        <div className="flex-1 flex flex-col min-w-0">
-          <header className={`hidden lg:flex border-b px-8 py-5 ${theme.header} ${theme.border}`}>
-            <div className={`h-8 w-48 rounded-lg animate-pulse ${isDark ? 'bg-white/5' : 'bg-stone-100'}`} />
-          </header>
-          <main className="flex-1 flex items-center justify-center px-4">
-            <div className="text-center">
-              <div className="w-10 h-10 border-4 border-berry-400/30 border-t-berry-400 rounded-full animate-spin mx-auto" />
-              <p className={`mt-4 text-sm ${theme.mutedSm}`}>Cargando tu perfil…</p>
-            </div>
-          </main>
-        </div>
+      <div className={`min-h-screen flex items-center justify-center ${theme.page}`}>
+        <div className="w-10 h-10 border-4 border-berry-400/30 border-t-berry-400 rounded-full animate-spin" />
       </div>
     )
   }
@@ -353,11 +286,7 @@ export default function PerfilDashboard() {
       <div className={`min-h-screen flex items-center justify-center px-4 ${theme.page}`}>
         <div className="text-center">
           <p className="text-red-400 mb-4">{error || 'No se pudo cargar el perfil'}</p>
-<<<<<<< HEAD
-          <button type="button" onClick={() => loadProfile()} className="text-berry-400 font-semibold">
-=======
           <button type="button" onClick={() => void loadProfile()} className="text-berry-400 font-semibold">
->>>>>>> 91e8f9d (update fin polla 1)
             Reintentar
           </button>
         </div>
@@ -424,8 +353,11 @@ export default function PerfilDashboard() {
         } ${theme.border}`}
       >
         <div className={`p-6 border-b ${theme.border}`}>
+          <Link href="/mundial" className={`text-sm font-semibold ${theme.accentLink}`}>
+            ← Polla Mundialista
+          </Link>
           <div
-            className={`rounded-2xl border p-4 ${
+            className={`mt-5 rounded-2xl border p-4 ${
               isDark ? 'bg-white/[0.04] border-white/10' : 'bg-berry-50/80 border-berry-100'
             }`}
           >
@@ -484,18 +416,6 @@ export default function PerfilDashboard() {
             </button>
           ))}
         </nav>
-        <div className={`px-4 pt-4 pb-4 border-t ${theme.border}`}>
-          <Link
-            href="/mundial/reglamento"
-            className={`mt-3 flex items-center justify-center w-full py-2.5 rounded-xl text-xs font-semibold border transition-colors ${
-              isDark
-                ? 'border-white/15 text-stone-300 hover:bg-white/5'
-                : 'border-stone-300 text-stone-600 hover:bg-stone-50'
-            }`}
-          >
-            Ver reglamento →
-          </Link>
-        </div>
         <div className={`p-4 border-t flex items-center justify-between gap-2 ${theme.border}`}>
           <MundialThemeToggle isDark={isDark} onToggle={toggleTheme} />
           <button
@@ -511,39 +431,39 @@ export default function PerfilDashboard() {
       <div className={`flex-1 flex flex-col min-w-0 min-h-0 ${tab === 'ari' ? 'overflow-hidden' : ''}`}>
         {/* Header móvil */}
         <header
-          className={`lg:hidden sticky top-0 z-40 border-b backdrop-blur-xl safe-area-top transition-colors overflow-visible ${theme.header}`}
+          className={`lg:hidden sticky top-0 z-40 border-b backdrop-blur-xl safe-area-top transition-colors ${theme.header}`}
         >
-          <div className="max-w-lg mx-auto px-3 py-2.5 flex items-center gap-2 overflow-visible">
-            <div className="flex-1 min-w-0">
-              <p className={`font-display font-bold text-sm truncate ${isDark ? 'text-white' : 'text-stone-900'}`}>
-                {data.hasLiveMatches ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                    En vivo
-                  </span>
-                ) : (
-                  tabLabel
-                )}
-              </p>
+          <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 shrink-0">
+              <Link href="/mundial" className={`text-xs font-medium ${theme.accentLink}`}>
+                ← Polla
+              </Link>
+              <Link
+                href="/mundial/reglamento"
+                className={`text-[10px] hover:text-berry-500 ${theme.mutedSm}`}
+              >
+                Reglamento
+              </Link>
             </div>
-            <div className="flex items-center gap-1 shrink-0 overflow-visible">
+            <span className={`font-display font-bold text-sm truncate ${isDark ? 'text-white' : 'text-stone-900'}`}>
+              {data.hasLiveMatches ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  En vivo
+                </span>
+              ) : (
+                tabLabel
+              )}
+            </span>
+            <div className="flex items-center gap-2 shrink-0">
               <MundialThemeToggle isDark={isDark} onToggle={toggleTheme} />
               <button
                 type="button"
                 onClick={() => signOut({ callbackUrl: '/mundial' })}
-                className={`text-[11px] px-2 py-1 ${theme.mutedSm}`}
+                className={`text-xs ${theme.mutedSm}`}
               >
                 Salir
               </button>
-              <PollaNotificationCenter
-                matches={notificationMatches}
-                predictions={data.predictions}
-                isDark={isDark}
-                onPlayMatch={goPlayMatch}
-                panelAlign="right"
-                panelPlacement="below"
-                size="comfortable"
-              />
             </div>
           </div>
           <div className="flex justify-center pb-2 px-4">
@@ -558,9 +478,9 @@ export default function PerfilDashboard() {
 
         {/* Header desktop */}
         <header
-          className={`hidden lg:flex sticky top-0 z-30 border-b backdrop-blur-xl transition-colors overflow-visible ${theme.header}`}
+          className={`hidden lg:flex sticky top-0 z-30 border-b backdrop-blur-xl transition-colors ${theme.header}`}
         >
-          <div className="w-full max-w-7xl mx-auto px-8 xl:px-10 py-5 flex items-center justify-between gap-6 overflow-visible">
+          <div className="w-full max-w-7xl mx-auto px-8 xl:px-10 py-5 flex items-center justify-between gap-6">
             <div>
               <h1 className={`font-display text-2xl font-bold ${isDark ? 'text-white' : 'text-stone-900'}`}>
                 {tabLabel}
@@ -577,9 +497,6 @@ export default function PerfilDashboard() {
                       : 'Polla Mundialista FIFA 2026'}
               </p>
             </div>
-<<<<<<< HEAD
-            <div className="flex items-center gap-2 shrink-0 overflow-visible">
-=======
             <div className="flex items-center gap-3 shrink-0">
               <LiveSyncBadge
                 isDark={isDark}
@@ -587,7 +504,6 @@ export default function PerfilDashboard() {
                 lastSyncedAt={lastSyncedAt}
                 isLive={data.hasLiveMatches}
               />
->>>>>>> 91e8f9d (update fin polla 1)
               {tab !== 'jugar' && (
                 <button
                   type="button"
@@ -598,20 +514,17 @@ export default function PerfilDashboard() {
                 </button>
               )}
               <Link
+                href="/mundial/reglamento"
+                className={`text-sm font-medium hover:text-berry-500 px-3 py-2 rounded-lg ${theme.muted}`}
+              >
+                Reglamento
+              </Link>
+              <Link
                 href="/mundial"
                 className={`text-sm font-medium px-3 py-2 rounded-lg ${theme.accentLink}`}
               >
                 Ver landing
               </Link>
-              <PollaNotificationCenter
-                matches={notificationMatches}
-                predictions={data.predictions}
-                isDark={isDark}
-                onPlayMatch={goPlayMatch}
-                panelAlign="right"
-                panelPlacement="below"
-                size="comfortable"
-              />
             </div>
           </div>
         </header>
@@ -621,10 +534,6 @@ export default function PerfilDashboard() {
             syncing ? 'opacity-[0.92]' : 'opacity-100'
           } ${tab === 'ari' ? 'px-3 py-2 overflow-hidden' : 'px-4 py-4'}`}
         >
-        {tab !== 'ari' && (
-          <CafePromoBanner isDark={isDark} compact className="mb-4 lg:mb-6" />
-        )}
-
         {data.hasLiveMatches && liveMatchIds.length > 0 && tab !== 'inicio' && (
           <LiveMatchBroadcast
             matchIds={liveMatchIds}
@@ -769,11 +678,11 @@ export default function PerfilDashboard() {
                 </button>
               ))}
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 2xl:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
             {filteredMatches.map((match) => (
               <div
                 key={match.id}
-                className={`rounded-xl sm:rounded-2xl border p-3 sm:p-4 lg:p-5 transition-shadow hover:shadow-md ${theme.cardSoft}`}
+                className={`rounded-2xl border p-4 lg:p-5 transition-shadow hover:shadow-md ${theme.cardSoft}`}
               >
                 <div className="flex items-center gap-2 mb-2">
                   {match.groupLabel && (
@@ -826,7 +735,7 @@ export default function PerfilDashboard() {
                     <button
                       type="button"
                       onClick={() => setLiveMatchId(match.id)}
-                      className={`flex-1 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold border ${
+                      className={`flex-1 py-2 rounded-lg text-sm font-semibold border ${
                         match.isLive
                           ? 'border-emerald-500/50 bg-emerald-600/20 text-emerald-300'
                           : isDark
@@ -841,7 +750,7 @@ export default function PerfilDashboard() {
                     <button
                       type="button"
                       onClick={() => openPredict(match)}
-                      className="flex-1 py-1.5 sm:py-2 rounded-lg bg-berry-600 hover:bg-berry-500 text-white text-xs sm:text-sm font-semibold"
+                      className="flex-1 py-2 rounded-lg bg-berry-600 hover:bg-berry-500 text-white text-sm font-semibold"
                     >
                       {match.prediction ? 'Editar' : 'Pronosticar'}
                     </button>
@@ -881,18 +790,6 @@ export default function PerfilDashboard() {
             )}
           </div>
         )}
-        <div className={`mt-6 lg:mt-8 pt-5 pb-2 lg:pb-0 border-t text-center ${theme.border} ${tab === 'ari' ? 'hidden lg:block' : ''}`}>
-          <Link
-            href="/mundial/reglamento"
-            className={`inline-flex items-center justify-center min-h-[44px] px-5 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${
-              isDark
-                ? 'border-white/15 text-stone-200 hover:bg-white/5'
-                : 'border-stone-300 text-stone-700 hover:bg-stone-50'
-            }`}
-          >
-            Ver reglamento completo →
-          </Link>
-        </div>
         </main>
 
         {/* Bottom nav móvil */}
@@ -1007,14 +904,6 @@ export default function PerfilDashboard() {
             </div>
           </div>
         </div>
-      )}
-
-      {saveToast && (
-        <PollaToast
-          message={saveToast}
-          isDark={isDark}
-          onClose={() => setSaveToast(null)}
-        />
       )}
     </div>
   )

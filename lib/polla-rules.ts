@@ -15,8 +15,8 @@ export const GROUP_STAGE_PICKS_INCLUDED = Math.floor(INITIAL_CREDITS / PREDICTIO
 export const POINTS_EXACT_SCORE = 3
 export const POINTS_GOAL_DIFFERENCE = 2
 export const POINTS_CORRECT_RESULT = 1
-export const TOP_WINNERS_COUNT = 5
-export const GROUP_STAGE_WINNERS_COUNT = 4
+export const TOP_WINNERS_COUNT = 3
+export const GROUP_STAGE_WINNERS_COUNT = 3
 export const MIN_SETTLED_PICKS_TO_WIN = 5
 export const MAX_SCORE_PER_TEAM = 20
 
@@ -29,7 +29,6 @@ export const GROUP_STAGE_PRIZES: PollaPrize[] = [
   { place: '1er Lugar', prize: '1 Botella de Aguardiente' },
   { place: '2do Lugar', prize: '1 Cubetazo de Cerveza' },
   { place: '3er Lugar', prize: '1 Shot + Cerveza' },
-  { place: '4to Lugar', prize: '1 Cerveza' },
 ]
 
 /** Dieciseisavos y octavos: práctica — no suman en la polla final. */
@@ -78,13 +77,11 @@ export const KNOCKOUT_PASSPORT_RULES = [
   'Los puntos de grupos no se arrastran: en la polla final solo cuentan cuartos, semis y final.',
 ] as const
 
-/** Reparto proporcional del pozo entre los 5 ganadores de la polla final. */
+/** Reparto proporcional del pozo entre los 3 ganadores de la polla final. */
 export const KNOCKOUT_PRIZE_SPLITS = [
-  { place: '1°', percent: 35 },
-  { place: '2°', percent: 25 },
+  { place: '1°', percent: 50 },
+  { place: '2°', percent: 30 },
   { place: '3°', percent: 20 },
-  { place: '4°', percent: 12 },
-  { place: '5°', percent: 8 },
 ] as const
 
 export function computeKnockoutPrizePoolCOP(passportHolders: number): number {
@@ -111,7 +108,7 @@ export function formatCop(amount: number): string {
 }
 
 export const KNOCKOUT_PRIZES_NOTE =
-  'Polla final con 5 ganadores. El pozo crece con cada pasaporte vendido; el reparto es proporcional según el lugar.'
+  'Polla final con 3 ganadores. El pozo crece con cada pasaporte vendido; el reparto es proporcional según el lugar.'
 
 /** Correos que ven el modal de ganador en modo prueba (fase de grupos). */
 export const POLL_DEMO_GROUP_WINNER_EMAILS = ['gustavoarteaga0508@gmail.com']
@@ -250,7 +247,7 @@ export const REGLAMENTO_SECTIONS: ReglamentoSection[] = [
       '--- Polla final · Desde cuartos ---',
       `${KNOCKOUT_TRAINING_NOTE}`,
       `${KNOCKOUT_PHASE_LABEL}: ${KNOCKOUT_PRIZES_NOTE}`,
-      `5 ganadores con reparto proporcional del pozo (35% · 25% · 20% · 12% · 8%).`,
+      `3 ganadores con reparto proporcional del pozo (50% · 30% · 20%).`,
       `Pozo = pasaportes vendidos × ${KNOCKOUT_PASSPORT_PRICE_LABEL}.`,
       `Requisito: ${KNOCKOUT_PASSPORT_ACQUIRE_NOTE}`,
       'El ranking de la polla final solo cuenta cuartos, semifinales y final.',

@@ -72,11 +72,6 @@ const PG_COLUMN_MAP: Record<string, string> = {
   startdate: 'startDate',
   enddate: 'endDate',
   currentmatchday: 'currentMatchday',
-<<<<<<< HEAD
-  useragent: 'userAgent',
-  notificationid: 'notificationId',
-  sentat: 'sentAt',
-=======
   usagedate: 'usageDate',
   pricecop: 'priceCop',
   usernote: 'userNote',
@@ -84,7 +79,6 @@ const PG_COLUMN_MAP: Record<string, string> = {
   reviewedby: 'reviewedBy',
   reviewedat: 'reviewedAt',
   receiptpath: 'receiptPath',
->>>>>>> 91e8f9d (update fin polla 1)
 }
 
 let sql: NeonQueryFunction<false, false> | null = null

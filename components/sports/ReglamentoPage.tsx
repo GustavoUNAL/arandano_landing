@@ -105,7 +105,7 @@ export default function ReglamentoPage() {
 
       {/* Resumen visual */}
       <section className="max-w-4xl mx-auto px-4 -mt-8 relative z-10">
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1">
+        <div className="grid sm:grid-cols-3 gap-3">
           {[
             {
               icon: '💰',
