@@ -10,13 +10,17 @@ import {
   IconTrophy,
 } from '@/components/sports/SportsIcons'
 import HomeBroadcastPromo from '@/components/sports/HomeBroadcastPromo'
+import KnockoutBracketsPreview from '@/components/sports/KnockoutBracketsPreview'
 import PollaLeaderboard from '@/components/sports/PollaLeaderboard'
+import GroupStagePodium from '@/components/sports/GroupStagePodium'
 import PollaReglamento from '@/components/sports/PollaReglamento'
+import PassportRequestPanel from '@/components/sports/PassportRequestPanel'
 import TeamCrest from '@/components/sports/TeamCrest'
 import UserAvatar from '@/components/sports/UserAvatar'
 import type { ScoringRules } from '@/lib/polla-rules'
 import type { LeaderboardEntry, MatchPrediction } from '@/lib/sports-polla-shared'
 import type { WorldCupFullData } from '@/lib/football-data'
+import { getGroupStagePodiumEntries, isGroupStageComplete } from '@/lib/polla-phase'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
 import { MUNDIAL_2026 } from '@/lib/world-cup-info'
 
@@ -40,6 +44,8 @@ interface PerfilInicioProps {
   onGoPicks: () => void
   onPlayMatch?: (matchId: number) => void
   onUpdateUsername?: (displayAlias: string) => Promise<void>
+  onPassportChange?: () => void
+  passportHolders?: number
 }
 
 function daysUntil(dateStr: string) {
@@ -77,6 +83,8 @@ export default function PerfilInicio({
   onGoPicks,
   onPlayMatch,
   onUpdateUsername,
+  onPassportChange,
+  passportHolders = 0,
 }: PerfilInicioProps) {
   const theme = mundialTheme(isDark)
   const [editingUsername, setEditingUsername] = useState(false)
@@ -105,11 +113,16 @@ export default function PerfilInicio({
   const daysToStart = daysUntil(worldCup.competition.startDate)
   const tournamentStarted = daysToStart === 0
   const { total: groupTotal, remaining: groupRemaining } = groupStageCounts(worldCup)
-  const upcoming = worldCup.upcomingMatches.slice(0, 4)
-  const colombiaTeam = worldCup.teams.find((t) => t.name === 'Colombia')
+  const groupComplete = isGroupStageComplete(worldCup.allMatches)
+  const podiumEntries = getGroupStagePodiumEntries(leaderboard, groupComplete)
+  const upcoming = worldCup.upcomingMatches.slice(0, 8)
 
   return (
     <div className="space-y-4 lg:space-y-6">
+      {podiumEntries.length > 0 && (
+        <GroupStagePodium entries={podiumEntries} isDark={isDark} complete={groupComplete} />
+      )}
+
       <div className="lg:grid lg:grid-cols-12 lg:gap-8 lg:items-start">
         {/* Columna principal */}
         <div className="lg:col-span-7 xl:col-span-8 space-y-4 lg:space-y-6">
@@ -138,10 +151,10 @@ export default function PerfilInicio({
                           ? 'bg-berry-500/25 text-berry-200 border border-berry-400/40'
                           : 'bg-berry-100 text-berry-800 border border-berry-300'
                       }`}
-                      title="Pasaporte eliminatorias"
+                      title="Pasaporte polla final"
                     >
                       <IconPremium className="w-3 h-3" />
-                      Eliminatorias
+                      Polla final
                     </span>
                   )}
                 </div>
@@ -227,6 +240,13 @@ export default function PerfilInicio({
           <HomeBroadcastPromo
             isDark={isDark}
             onPredict={(matchId) => (onPlayMatch ? onPlayMatch(matchId) : onGoJugar())}
+          />
+
+          <PassportRequestPanel
+            isDark={isDark}
+            hasKnockoutPassport={hasKnockoutPassport}
+            passportHolders={passportHolders}
+            onPassportActivated={onPassportChange}
           />
 
           {/* Countdown Mundial */}
@@ -353,46 +373,11 @@ export default function PerfilInicio({
             </div>
           </div>
 
-          {/* Colombia */}
-          {worldCup.colombiaQualified && colombiaTeam && (
-            <div
-              className={`rounded-2xl border p-4 ${
-                isDark
-                  ? 'border-yellow-500/30 bg-gradient-to-r from-yellow-950/40 via-berry-950/40 to-stone-950'
-                  : 'border-amber-200 bg-gradient-to-r from-amber-50 via-berry-50 to-white shadow-sm'
-              }`}
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <TeamCrest src={colombiaTeam.crest} alt="Colombia" size={44} />
-                <div>
-                  <p className={`text-xs font-semibold uppercase tracking-wide ${isDark ? 'text-yellow-400' : 'text-amber-700'}`}>
-                    🇨🇴 La Tricolor
-                  </p>
-                  <p className="font-semibold">Colombia en el Mundial</p>
-                  {colombiaTeam.coach && <p className={`text-[10px] ${theme.mutedSm}`}>DT: {colombiaTeam.coach}</p>}
-                </div>
-              </div>
-              {worldCup.colombiaNextMatch && (
-                <div
-                  className={`rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 ${
-                    isDark ? 'bg-black/30' : 'bg-white/80 border border-stone-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <TeamCrest src={worldCup.colombiaNextMatch.homeTeam.crest} alt="" size={24} />
-                    <span className="text-xs font-medium truncate">
-                      {teamLabel(worldCup.colombiaNextMatch.homeTeam)} vs{' '}
-                      {teamLabel(worldCup.colombiaNextMatch.awayTeam)}
-                    </span>
-                    <TeamCrest src={worldCup.colombiaNextMatch.awayTeam.crest} alt="" size={24} />
-                  </div>
-                  <span className={`text-[10px] shrink-0 ${theme.accentLink}`}>
-                    {worldCup.colombiaNextMatch.startsIn}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
+          <KnockoutBracketsPreview
+            rounds={worldCup.knockoutRounds}
+            isDark={isDark}
+            onPlayMatch={onPlayMatch}
+          />
 
           {/* Próximos partidos */}
           <section>
@@ -432,10 +417,17 @@ export default function PerfilInicio({
           </section>
         </div>
 
-        {/* Columna lateral: tabla + reglamento */}
+        {/* Columna lateral: tablas */}
         <div className="lg:col-span-5 xl:col-span-4 space-y-4 lg:space-y-6">
           <PollaLeaderboard entries={leaderboard} isDark={isDark} phase="group" />
-          <PollaLeaderboard entries={leaderboardKnockout} isDark={isDark} phase="knockout" compact />
+          <PollaLeaderboard
+            entries={leaderboardKnockout}
+            isDark={isDark}
+            phase="knockout"
+            compact
+            title="Polla final"
+            subtitle="Desde cuartos · octavos solo entrenamiento"
+          />
           <PollaReglamento compact isDark={isDark} />
         </div>
       </div>

@@ -7,10 +7,13 @@ import MundialExplorer from '@/components/sports/MundialExplorer'
 import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
 import AriPredictorPanel from '@/components/ari/AriPredictorPanel'
 import PerfilInicio from '@/components/sports/PerfilInicio'
+import PollaWelcomeModals from '@/components/sports/PollaWelcomeModals'
 import PollaAdminPanel from '@/components/sports/PollaAdminPanel'
 import PollaNotificationCenter from '@/components/sports/PollaNotificationCenter'
 import PollaToast from '@/components/sports/PollaToast'
 import PredictionCard from '@/components/sports/PredictionCard'
+import LiveSyncBadge from '@/components/sports/LiveSyncBadge'
+import WhatsAppBroadcastModal from '@/components/sports/WhatsAppBroadcastModal'
 import {
   IconClipboard,
   IconGlobe,
@@ -22,9 +25,15 @@ import {
 import TeamCrest from '@/components/sports/TeamCrest'
 import UserAvatar from '@/components/sports/UserAvatar'
 import { useMundialTheme } from '@/hooks/useMundialTheme'
+<<<<<<< HEAD
 import { useLiveSportsStream } from '@/hooks/useLiveSportsStream'
 import type { ProfileStreamPayload } from '@/lib/live-broadcast-types'
 import type { ScoringRules } from '@/lib/polla-rules'
+=======
+import { usePollaLiveSync } from '@/hooks/usePollaLiveSync'
+import type { ScoringRules, KnockoutPrizeShare } from '@/lib/polla-rules'
+import { getGroupStagePodiumEntries, isGroupStageComplete } from '@/lib/polla-phase'
+>>>>>>> 91e8f9d (update fin polla 1)
 import type { LeaderboardEntry, MatchPrediction, SportsUser } from '@/lib/sports-polla-shared'
 import type { WorldCupFullData } from '@/lib/football-data'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
@@ -68,6 +77,10 @@ interface ProfileData {
   leaderboardKnockout: LeaderboardEntry[]
   predictionCost: number
   scoringRules: ScoringRules
+  groupComplete?: boolean
+  groupWinnerEntry?: LeaderboardEntry | null
+  passportHolders?: number
+  knockoutPrizeBreakdown?: KnockoutPrizeShare[]
 }
 
 type MainTab = PerfilTab
@@ -111,6 +124,7 @@ export default function PerfilDashboard() {
   const [matchFilter, setMatchFilter] = useState('all')
   const [matchPhase, setMatchPhase] = useState<'all' | 'live' | 'upcoming' | 'played'>('all')
   const [liveMatchId, setLiveMatchId] = useState<number | null>(null)
+<<<<<<< HEAD
   const [saveToast, setSaveToast] = useState<string | null>(null)
 
   const loadProfile = useCallback(async (opts?: { silent?: boolean }) => {
@@ -118,15 +132,33 @@ export default function PerfilDashboard() {
       setLoading(true)
     }
     setError('')
+=======
+  const [welcomeModalsBlocking, setWelcomeModalsBlocking] = useState(true)
+  const [syncing, setSyncing] = useState(false)
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null)
+
+  const loadProfile = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false
+    if (!silent) {
+      setLoading(true)
+      setError('')
+    } else {
+      setSyncing(true)
+    }
+>>>>>>> 91e8f9d (update fin polla 1)
     try {
-      const res = await fetch('/api/sports/me')
+      const res = await fetch('/api/sports/me', { cache: 'no-store' })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Error al cargar perfil')
       setData(json)
+      setLastSyncedAt(Date.now())
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al cargar')
+      if (!silent) {
+        setError(e instanceof Error ? e.message : 'Error al cargar')
+      }
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
+      else setSyncing(false)
     }
   }, [])
 
@@ -180,6 +212,18 @@ export default function PerfilDashboard() {
     [router]
   )
 
+<<<<<<< HEAD
+=======
+  const silentRefresh = useCallback(() => {
+    void loadProfile({ silent: true })
+  }, [loadProfile])
+
+  usePollaLiveSync(silentRefresh, {
+    enabled: Boolean(data) && !loading,
+    fallbackMs: data?.hasLiveMatches ? 20_000 : 40_000,
+  })
+
+>>>>>>> 91e8f9d (update fin polla 1)
   useEffect(() => {
     const raw = searchParams.get('match')
     if (!raw || !data) return
@@ -210,6 +254,25 @@ export default function PerfilDashboard() {
     setData((prev) => (prev ? { ...prev, user: json.user } : prev))
   }
 
+  const patchProfileUser = async (body: Record<string, unknown>) => {
+    const res = await fetch('/api/sports/me', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || 'Error al guardar')
+    setData((prev) => (prev ? { ...prev, user: json.user } : prev))
+  }
+
+  const submitWhatsApp = async (whatsapp: string) => {
+    await patchProfileUser({ whatsapp })
+  }
+
+  const skipWhatsApp = async () => {
+    await patchProfileUser({ skipWhatsAppPrompt: true })
+  }
+
   const submitPrediction = async () => {
     if (!activeMatch || !data) return
     if (homeScore === '' || awayScore === '') {
@@ -234,8 +297,12 @@ export default function PerfilDashboard() {
       const savedAway = awayScore
       const matchLabel = `${activeMatch.homeTeam.shortName || activeMatch.homeTeam.tla} ${savedHome}-${savedAway} ${activeMatch.awayTeam.shortName || activeMatch.awayTeam.tla}`
       setActiveMatch(null)
+<<<<<<< HEAD
       setSaveToast(`Pronóstico guardado: ${matchLabel}`)
       void loadProfile({ silent: true })
+=======
+      await loadProfile({ silent: true })
+>>>>>>> 91e8f9d (update fin polla 1)
       changeTab('picks')
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'Error al guardar')
@@ -286,7 +353,11 @@ export default function PerfilDashboard() {
       <div className={`min-h-screen flex items-center justify-center px-4 ${theme.page}`}>
         <div className="text-center">
           <p className="text-red-400 mb-4">{error || 'No se pudo cargar el perfil'}</p>
+<<<<<<< HEAD
           <button type="button" onClick={() => loadProfile()} className="text-berry-400 font-semibold">
+=======
+          <button type="button" onClick={() => void loadProfile()} className="text-berry-400 font-semibold">
+>>>>>>> 91e8f9d (update fin polla 1)
             Reintentar
           </button>
         </div>
@@ -320,9 +391,32 @@ export default function PerfilDashboard() {
   const mainTabs = data.isPollAdmin ? [...BASE_TABS, ADMIN_TAB] : BASE_TABS
   const tabLabel = mainTabs.find((t) => t.id === tab)?.label ?? 'Mi perfil'
   const liveMatchIds = data.broadcastMatchIds ?? []
+  const hasWhatsApp = Boolean(data.user.whatsapp?.trim())
+  const showWhatsAppPrompt =
+    !welcomeModalsBlocking && !hasWhatsApp && !data.user.whatsappPromptSkipped
+  const groupComplete = data.groupComplete ?? isGroupStageComplete(worldCup.allMatches)
+  const podiumEntries = getGroupStagePodiumEntries(data.leaderboard, groupComplete)
 
   return (
     <div className={`min-h-screen pb-[4.5rem] lg:pb-0 transition-colors duration-300 lg:flex ${theme.page}`}>
+      <PollaWelcomeModals
+        isDark={isDark}
+        userId={data.user.id}
+        userName={data.user.name ?? user?.name}
+        groupComplete={groupComplete}
+        podiumEntries={podiumEntries}
+        winnerEntry={data.groupWinnerEntry ?? null}
+        passportHolders={data.passportHolders ?? 0}
+        knockoutPrizeBreakdown={data.knockoutPrizeBreakdown ?? []}
+        onBlockingChange={setWelcomeModalsBlocking}
+      />
+      <WhatsAppBroadcastModal
+        open={showWhatsAppPrompt}
+        userName={data.user.name ?? user?.name}
+        isDark={isDark}
+        onSubmit={submitWhatsApp}
+        onSkip={skipWhatsApp}
+      />
       {/* Sidebar desktop */}
       <aside
         className={`hidden lg:flex lg:flex-col lg:w-72 xl:w-80 lg:shrink-0 lg:border-r lg:sticky lg:top-0 lg:h-screen ${
@@ -452,6 +546,14 @@ export default function PerfilDashboard() {
               />
             </div>
           </div>
+          <div className="flex justify-center pb-2 px-4">
+            <LiveSyncBadge
+              isDark={isDark}
+              syncing={syncing}
+              lastSyncedAt={lastSyncedAt}
+              isLive={data.hasLiveMatches}
+            />
+          </div>
         </header>
 
         {/* Header desktop */}
@@ -475,7 +577,17 @@ export default function PerfilDashboard() {
                       : 'Polla Mundialista FIFA 2026'}
               </p>
             </div>
+<<<<<<< HEAD
             <div className="flex items-center gap-2 shrink-0 overflow-visible">
+=======
+            <div className="flex items-center gap-3 shrink-0">
+              <LiveSyncBadge
+                isDark={isDark}
+                syncing={syncing}
+                lastSyncedAt={lastSyncedAt}
+                isLive={data.hasLiveMatches}
+              />
+>>>>>>> 91e8f9d (update fin polla 1)
               {tab !== 'jugar' && (
                 <button
                   type="button"
@@ -505,9 +617,9 @@ export default function PerfilDashboard() {
         </header>
 
         <main
-          className={`flex-1 w-full max-w-lg lg:max-w-7xl mx-auto lg:px-8 xl:px-10 lg:py-8 flex flex-col min-h-0 ${
-            tab === 'ari' ? 'px-3 py-2 overflow-hidden' : 'px-4 py-4'
-          }`}
+          className={`flex-1 w-full max-w-lg lg:max-w-7xl mx-auto lg:px-8 xl:px-10 lg:py-8 flex flex-col min-h-0 transition-opacity duration-500 ${
+            syncing ? 'opacity-[0.92]' : 'opacity-100'
+          } ${tab === 'ari' ? 'px-3 py-2 overflow-hidden' : 'px-4 py-4'}`}
         >
         {tab !== 'ari' && (
           <CafePromoBanner isDark={isDark} compact className="mb-4 lg:mb-6" />
@@ -545,6 +657,8 @@ export default function PerfilDashboard() {
             onGoPicks={() => changeTab('picks')}
             onPlayMatch={goPlayMatch}
             onUpdateUsername={updateUsername}
+            onPassportChange={() => void loadProfile({ silent: true })}
+            passportHolders={data.passportHolders ?? 0}
           />
         )}
 

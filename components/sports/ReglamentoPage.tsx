@@ -96,7 +96,7 @@ export default function ReglamentoPage() {
               </h1>
               <p className={`text-base sm:text-lg leading-relaxed max-w-xl ${t.muted}`}>
                 Todo lo que necesitas saber para jugar, sumar puntos y competir por los premios de la
-                fase de grupos y de las eliminatorias.
+                fase de grupos (top {GROUP_STAGE_WINNERS_COUNT}) y la polla final desde cuartos de final.
               </p>
             </div>
           </div>

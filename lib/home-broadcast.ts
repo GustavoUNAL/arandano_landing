@@ -1,4 +1,5 @@
 import type { EnrichedMatch } from '@/lib/football-data'
+import { sortUpcomingMatches } from '@/lib/polla-phase'
 import { isMatchLive } from '@/lib/sports-polla-shared'
 
 export type HomeBroadcastMode = 'live' | 'upcoming'
@@ -40,13 +41,9 @@ export function getFeaturedMatchForHome(
     return { match: live[0], mode: 'live' }
   }
 
-  const upcoming = allMatches
-    .filter(
-      (m) =>
-        (m.status === 'SCHEDULED' || m.status === 'TIMED') &&
-        new Date(m.utcDate).getTime() > Date.now()
-    )
-    .sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime())
+  const upcoming = sortUpcomingMatches(allMatches).filter(
+    (m) => new Date(m.utcDate).getTime() > Date.now()
+  )
 
   if (upcoming.length > 0) {
     return { match: upcoming[0], mode: 'upcoming' }

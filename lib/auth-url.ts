@@ -2,6 +2,11 @@ import type { NextRequest } from 'next/server'
 
 const LOCALHOST_RE = /localhost|127\.0\.0\.1/i
 
+const DEFAULT_PRODUCTION_ORIGINS = [
+  'https://arandanocafe.com',
+  'https://www.arandanocafe.com',
+]
+
 function normalizeOrigin(url: string): string {
   return url.replace(/\/$/, '')
 }
@@ -10,7 +15,55 @@ function isProduction(): boolean {
   return process.env.NODE_ENV === 'production'
 }
 
-/** En producción fuerza https y quita barra final (evita redirect_uri http). */
+function isDevelopment(): boolean {
+  return process.env.NODE_ENV === 'development'
+}
+
+function devDefaultOrigin(): string {
+  const port = process.env.PORT?.trim() || '3000'
+  return `http://localhost:${port}`
+}
+
+function parseExtraOrigins(): string[] {
+  const raw = process.env.AUTH_ALLOWED_ORIGINS?.trim()
+  if (!raw) return []
+  return raw
+    .split(',')
+    .map((o) => canonicalizeOrigin(o.trim()))
+    .filter(Boolean)
+}
+
+export function getAllowedOAuthOrigins(): string[] {
+  const origins = new Set<string>([...DEFAULT_PRODUCTION_ORIGINS, ...parseExtraOrigins()])
+  if (isDevelopment()) {
+    origins.add(devDefaultOrigin())
+    origins.add('http://localhost:3000')
+    origins.add('http://localhost:3001')
+    origins.add('http://127.0.0.1:3000')
+    origins.add('http://127.0.0.1:3001')
+  }
+  return [...origins]
+}
+
+function isLocalhostOrigin(origin: string): boolean {
+  return LOCALHOST_RE.test(canonicalizeOrigin(origin))
+}
+
+function isAllowedOAuthOrigin(origin: string): boolean {
+  const normalized = canonicalizeOrigin(origin)
+  if (isDevelopment() && isLocalhostOrigin(normalized)) return true
+  return getAllowedOAuthOrigins().includes(normalized)
+}
+
+function getDevelopmentSiteUrl(): string {
+  const raw =
+    process.env.SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.NEXTAUTH_URL?.trim()
+  if (raw) return canonicalizeOrigin(raw)
+  return devDefaultOrigin()
+}
+
 function canonicalizeOrigin(url: string): string {
   let origin = normalizeOrigin(url.trim())
   if (isProduction() && !LOCALHOST_RE.test(origin) && origin.startsWith('http://')) {
@@ -19,8 +72,11 @@ function canonicalizeOrigin(url: string): string {
   return origin
 }
 
-/** Origen canónico para OAuth (SITE_URL tiene prioridad sobre NEXTAUTH_URL localhost). */
 export function getConfiguredSiteUrl(): string | undefined {
+  if (isDevelopment()) {
+    return getDevelopmentSiteUrl()
+  }
+
   const candidates = [
     process.env.SITE_URL?.trim(),
     process.env.NEXT_PUBLIC_SITE_URL?.trim(),
@@ -34,43 +90,44 @@ export function getConfiguredSiteUrl(): string | undefined {
   }
 
   if (isProduction()) {
-    return 'https://arandanocafe.com'
+    return DEFAULT_PRODUCTION_ORIGINS[0]
   }
 
   return undefined
 }
 
-/** Fija NEXTAUTH_URL al arrancar en producción (evita redirect_uri_mismatch). */
+/** En producción fija NEXTAUTH_URL al arrancar; en dev se actualiza por request. */
 export function bootstrapNextAuthUrl(): string | undefined {
+  if (isDevelopment()) {
+    return process.env.NEXTAUTH_URL
+  }
+
   const configured = getConfiguredSiteUrl()
   if (configured) {
     process.env.NEXTAUTH_URL = configured
     return configured
   }
 
-  if (isProduction()) {
-    const current = process.env.NEXTAUTH_URL ?? ''
-    if (!current || LOCALHOST_RE.test(current)) {
-      console.error(
-        '[auth] Producción sin SITE_URL/NEXTAUTH_URL público. ' +
-          'Define SITE_URL=https://arandanocafe.com en .env.local y reinicia PM2.'
-      )
-    }
+  const current = process.env.NEXTAUTH_URL ?? ''
+  if (!current || LOCALHOST_RE.test(current)) {
+    console.error(
+      '[auth] Producción sin SITE_URL/NEXTAUTH_URL público. ' +
+        'Define SITE_URL=https://arandanocafe.com en .env.local y reinicia PM2.'
+    )
   }
 
   return process.env.NEXTAUTH_URL
 }
 
 export function getGoogleOAuthRedirectUri(): string {
-  bootstrapNextAuthUrl()
-  const base = getConfiguredSiteUrl() ?? process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
+  const base = process.env.NEXTAUTH_URL ?? getConfiguredSiteUrl() ?? devDefaultOrigin()
   return `${normalizeOrigin(base)}/api/auth/callback/google`
 }
 
 export function shouldTrustRequestHost(): boolean {
   if (process.env.AUTH_TRUST_HOST === 'true') return true
   if (process.env.AUTH_TRUST_HOST === 'false') return false
-  return process.env.NODE_ENV === 'production'
+  return isProduction() || isDevelopment()
 }
 
 export function originFromHeaders(headers: Headers): string | undefined {
@@ -82,7 +139,6 @@ export function originFromHeaders(headers: Headers): string | undefined {
   const forwardedProto = headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
   let proto = forwardedProto || (LOCALHOST_RE.test(host) ? 'http' : 'https')
 
-  // Nginx en :80 suele enviar x-forwarded-proto=http aunque el sitio público sea HTTPS.
   if (isProduction() && !LOCALHOST_RE.test(host) && proto === 'http') {
     proto = 'https'
   }
@@ -91,33 +147,39 @@ export function originFromHeaders(headers: Headers): string | undefined {
 }
 
 export function resolvePublicOrigin(headers?: Headers): string {
-  const configured = getConfiguredSiteUrl()
-  if (configured) return configured
-
-  if (headers && shouldTrustRequestHost()) {
+  if (headers) {
     const fromRequest = originFromHeaders(headers)
-    if (fromRequest && !(isProduction() && LOCALHOST_RE.test(fromRequest))) {
-      return fromRequest
+    if (fromRequest) {
+      if (isDevelopment() && isLocalhostOrigin(fromRequest)) {
+        return fromRequest
+      }
+      if (shouldTrustRequestHost() && isAllowedOAuthOrigin(fromRequest)) {
+        return fromRequest
+      }
     }
   }
 
-  return 'http://localhost:3000'
+  const configured = getConfiguredSiteUrl()
+  if (configured) return configured
+
+  return devDefaultOrigin()
 }
 
 export function ensureNextAuthUrlForOAuth(reqHeaders?: Headers): string {
-  bootstrapNextAuthUrl()
-  if (reqHeaders) {
-    applyNextAuthUrl(resolvePublicOrigin(reqHeaders))
-  }
-  const url = canonicalizeOrigin(process.env.NEXTAUTH_URL ?? getConfiguredSiteUrl() ?? '')
-  if (url) {
-    process.env.NEXTAUTH_URL = url
-    return url
-  }
-  return 'http://localhost:3000'
+  const origin = reqHeaders ? resolvePublicOrigin(reqHeaders) : getConfiguredSiteUrl() ?? devDefaultOrigin()
+  const url = canonicalizeOrigin(origin)
+  process.env.NEXTAUTH_URL = url
+  return url
 }
 
 export function applyNextAuthUrl(origin: string): string {
+  const normalized = canonicalizeOrigin(origin)
+
+  if (isAllowedOAuthOrigin(normalized)) {
+    process.env.NEXTAUTH_URL = normalized
+    return normalized
+  }
+
   const configured = getConfiguredSiteUrl()
   if (configured) {
     const canonical = canonicalizeOrigin(configured)
@@ -125,14 +187,8 @@ export function applyNextAuthUrl(origin: string): string {
     return canonical
   }
 
-  const normalized = canonicalizeOrigin(origin)
-  const current = process.env.NEXTAUTH_URL ?? ''
-
-  if (shouldTrustRequestHost() || LOCALHOST_RE.test(current) || !current) {
-    process.env.NEXTAUTH_URL = normalized
-  }
-
-  return process.env.NEXTAUTH_URL ?? normalized
+  process.env.NEXTAUTH_URL = normalized
+  return normalized
 }
 
 export function applyNextAuthUrlFromRequest(req: NextRequest): string {
@@ -144,11 +200,25 @@ export function applyNextAuthUrlFromHeaders(headers: Headers): string {
 }
 
 export function usesSecureCookies(): boolean {
-  if (process.env.NODE_ENV !== 'production') {
-    return (getConfiguredSiteUrl() ?? '').startsWith('https://')
+  if (isDevelopment()) {
+    return (process.env.NEXTAUTH_URL ?? '').startsWith('https://')
   }
   const configured = getConfiguredSiteUrl() ?? ''
   if (configured.startsWith('https://')) return true
   if (shouldTrustRequestHost()) return true
   return !LOCALHOST_RE.test(configured)
+}
+
+export function getGoogleConsoleRedirectUris(): string[] {
+  const uris = new Set<string>([
+    'https://arandanocafe.com/api/auth/callback/google',
+    'https://www.arandanocafe.com/api/auth/callback/google',
+    'http://localhost:3000/api/auth/callback/google',
+    'http://localhost:3001/api/auth/callback/google',
+  ])
+  uris.add(`${getGoogleOAuthRedirectUri()}`)
+  if (process.env.NEXTAUTH_URL) {
+    uris.add(`${normalizeOrigin(process.env.NEXTAUTH_URL)}/api/auth/callback/google`)
+  }
+  return [...uris]
 }

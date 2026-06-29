@@ -7,12 +7,14 @@ import {
   GROUP_STAGE_PRIZES,
   GROUP_STAGE_WINNERS_COUNT,
   KNOCKOUT_PASSPORT_ACQUIRE_NOTE,
+  KNOCKOUT_PASSPORT_PRICE_LABEL,
   KNOCKOUT_PASSPORT_RULES,
   KNOCKOUT_PHASE_LABEL,
   KNOCKOUT_PRIZES_NOTE,
+  PRIZE_CLAIM_RULES,
 } from '@/lib/polla-rules'
 
-const MEDALS = ['🥇', '🥈']
+const MEDALS = ['🥇', '🥈', '🥉', '4°']
 
 interface PollaPremiosPanelProps {
   isDark?: boolean
@@ -44,8 +46,8 @@ export default function PollaPremiosPanel({
       </div>
 
       <p className={`text-[11px] sm:text-xs mb-4 ${theme.muted}`}>
-        Dos premiaciones independientes. La de grupos es abierta; la de eliminatorias requiere el
-        Pasaporte de Eliminatorias en el café.
+        Dos premiaciones independientes. Grupos: top {GROUP_STAGE_WINNERS_COUNT} sin pasaporte. Polla final
+        desde cuartos ({KNOCKOUT_PASSPORT_PRICE_LABEL}) — octavos solo entrenamiento.
       </p>
 
       <div className="space-y-4">
@@ -97,7 +99,7 @@ export default function PollaPremiosPanel({
             />
             <div>
               <p className={`text-xs font-semibold ${isDark ? 'text-stone-100' : 'text-stone-900'}`}>
-                Segunda polla · {KNOCKOUT_PHASE_LABEL}
+                Polla final · {KNOCKOUT_PHASE_LABEL}
               </p>
               <p
                 className={`text-[11px] sm:text-xs mt-1.5 leading-relaxed font-semibold ${
@@ -119,6 +121,24 @@ export default function PollaPremiosPanel({
               </p>
             </div>
           </div>
+        </div>
+
+        <div
+          className={`rounded-xl border px-3 py-3.5 ${
+            isDark ? 'border-stone-600/30 bg-stone-900/30' : 'border-stone-200 bg-stone-50/80'
+          }`}
+        >
+          <p className={`text-xs font-semibold mb-2 ${isDark ? 'text-stone-100' : 'text-stone-900'}`}>
+            Cobro de premios
+          </p>
+          <ul className={`space-y-2 text-[11px] sm:text-xs leading-relaxed ${theme.muted}`}>
+            {PRIZE_CLAIM_RULES.map((rule) => (
+              <li key={rule} className="flex gap-2">
+                <span className="text-berry-400 shrink-0">·</span>
+                <span>{rule}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>

@@ -40,4 +40,9 @@ else
   echo "  ⚠ .env.local no encontrado en la raíz del proyecto"
 fi
 
+if [ -f "$ROOT/.env.production" ]; then
+  cp "$ROOT/.env.production" "$STANDALONE/.env.production"
+  echo "  ✓ .env.production"
+fi
+
 echo "post-build-standalone: listo"

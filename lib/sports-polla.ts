@@ -14,6 +14,7 @@ import {
   type PublicMatchPick,
   normalizeHasKnockoutPassport,
   normalizeHasPassport,
+  normalizeWhatsappPromptSkipped,
   PREDICTION_COST,
   POINTS_CORRECT_RESULT,
   POINTS_EXACT_SCORE,
@@ -23,9 +24,11 @@ import {
 import {
   computeCreditsBalance,
   GROUP_STAGE_WINNERS_COUNT,
+  KNOCKOUT_SCORING_STAGES,
   TOP_WINNERS_COUNT,
   type PollaPhase,
 } from '@/lib/polla-rules'
+import { normalizeColombianWhatsApp } from '@/lib/whatsapp-utils'
 import { randomUUID } from 'crypto'
 
 export {
@@ -85,10 +88,12 @@ function hashUserId(id: string): number {
 }
 
 function mapSportsUser(
-  row: SportsUser & { hasPassport?: unknown; hasKnockoutPassport?: unknown }
+  row: SportsUser & { hasPassport?: unknown; hasKnockoutPassport?: unknown; whatsappPromptSkipped?: unknown }
 ): SportsUser {
   return {
     ...row,
+    whatsapp: row.whatsapp ?? null,
+    whatsappPromptSkipped: normalizeWhatsappPromptSkipped(row.whatsappPromptSkipped),
     lastCreditsRechargeDate: row.lastCreditsRechargeDate ?? null,
     hasPassport: normalizeHasPassport(row.hasPassport),
     hasKnockoutPassport: normalizeHasKnockoutPassport(row.hasKnockoutPassport),
@@ -167,6 +172,25 @@ export async function updateDisplayAlias(userId: string, displayAlias: string): 
   return mapSportsUser((await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [userId]))!)
 }
 
+export async function updateUserWhatsApp(userId: string, rawWhatsApp: string): Promise<SportsUser> {
+  const whatsapp = normalizeColombianWhatsApp(rawWhatsApp)
+  const now = new Date().toISOString()
+  await dbRun(
+    'UPDATE sports_users SET whatsapp = ?, whatsappPromptSkipped = 0, updatedAt = ? WHERE id = ?',
+    [whatsapp, now, userId]
+  )
+  return mapSportsUser((await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [userId]))!)
+}
+
+export async function skipWhatsAppPrompt(userId: string): Promise<SportsUser> {
+  const now = new Date().toISOString()
+  await dbRun('UPDATE sports_users SET whatsappPromptSkipped = 1, updatedAt = ? WHERE id = ?', [
+    now,
+    userId,
+  ])
+  return mapSportsUser((await dbGet<SportsUser>('SELECT * FROM sports_users WHERE id = ?', [userId]))!)
+}
+
 async function ensureDisplayAlias(userId: string): Promise<string> {
   const user = await dbGet<{ displayAlias: string | null }>(
     'SELECT displayAlias FROM sports_users WHERE id = ?',
@@ -192,32 +216,37 @@ export async function settleFinishedMatches(
     score: { fullTime: { home: number | null; away: number | null } }
   }>
 ): Promise<number> {
+  const scoresByMatchId = new Map<number, { home: number; away: number }>()
+  for (const match of finishedMatches) {
+    if (match.status !== 'FINISHED') continue
+    const home = match.score.fullTime.home
+    const away = match.score.fullTime.away
+    if (home == null || away == null) continue
+    scoresByMatchId.set(match.id, { home, away })
+  }
+  if (scoresByMatchId.size === 0) return 0
+
+  const pending = await dbAll<MatchPrediction>(
+    'SELECT * FROM match_predictions WHERE settledAt IS NULL'
+  )
+  const toSettle = pending.filter((p) => scoresByMatchId.has(p.matchId))
+  if (toSettle.length === 0) return 0
+
   let settled = 0
   const now = new Date().toISOString()
 
   await dbTransaction(async (tx) => {
-    for (const match of finishedMatches) {
-      if (match.status !== 'FINISHED') continue
-      const home = match.score.fullTime.home
-      const away = match.score.fullTime.away
-      if (home == null || away == null) continue
-
-      const preds = await tx.all<MatchPrediction>(
-        'SELECT * FROM match_predictions WHERE matchId = ?',
-        [match.id]
+    for (const p of toSettle) {
+      const score = scoresByMatchId.get(p.matchId)!
+      const points = calculatePredictionPoints(p.homeScore, p.awayScore, score.home, score.away)
+      await tx.run(
+        `UPDATE match_predictions
+         SET actualHomeScore = ?, actualAwayScore = ?, pointsEarned = ?,
+             settledAt = ?, updatedAt = ?
+         WHERE id = ?`,
+        [score.home, score.away, points, now, now, p.id]
       )
-      for (const p of preds) {
-        const points = calculatePredictionPoints(p.homeScore, p.awayScore, home, away)
-        const wasUnsettled = !p.settledAt
-        await tx.run(
-          `UPDATE match_predictions
-           SET actualHomeScore = ?, actualAwayScore = ?, pointsEarned = ?,
-               settledAt = COALESCE(settledAt, ?), updatedAt = ?
-           WHERE id = ?`,
-          [home, away, points, now, now, p.id]
-        )
-        if (wasUnsettled) settled++
-      }
+      settled++
     }
     await tx.run(
       `UPDATE sports_users
@@ -240,18 +269,42 @@ export async function settleFinishedMatches(
   return settled
 }
 
+let lastSettleAt = 0
+const SETTLE_COOLDOWN_MS = 45_000
+
+/** Evita liquidar dos veces seguidas cuando /me y /leaderboard corren en paralelo. */
+export async function settleFinishedMatchesIfNeeded(
+  finishedMatches: Parameters<typeof settleFinishedMatches>[0]
+): Promise<number> {
+  const now = Date.now()
+  if (now - lastSettleAt < SETTLE_COOLDOWN_MS) return 0
+  const settled = await settleFinishedMatches(finishedMatches)
+  lastSettleAt = now
+  return settled
+}
+
 export async function getLeaderboard(
   currentUserId?: string,
   phase: PollaPhase = 'group'
 ): Promise<LeaderboardEntry[]> {
   const isGroup = phase === 'group'
   const passportFilter = isGroup ? '' : 'AND su.hasKnockoutPassport = 1'
-  const matchJoinFilter = isGroup
-    ? 'AND mp.matchGroup IS NOT NULL'
-    : 'AND mp.matchGroup IS NULL'
+  const scoringStages = KNOCKOUT_SCORING_STAGES.map((s) => `'${s}'`).join(', ')
+  const countsWhen = isGroup
+    ? 'mp.id IS NOT NULL AND mp.matchGroup IS NOT NULL'
+    : `mp.id IS NOT NULL AND mp.matchGroup IS NULL AND sm.stage IN (${scoringStages})`
+  const settledWhen = isGroup
+    ? 'mp.settledAt IS NOT NULL AND mp.matchGroup IS NOT NULL'
+    : `mp.settledAt IS NOT NULL AND mp.matchGroup IS NULL AND sm.stage IN (${scoringStages})`
+  const pointsCase = `CASE WHEN ${settledWhen} THEN mp.pointsEarned ELSE 0 END`
+  const matchJoin = isGroup
+    ? 'LEFT JOIN match_predictions mp ON mp.userId = su.id'
+    : `LEFT JOIN match_predictions mp ON mp.userId = su.id
+    LEFT JOIN sports_matches sm ON sm.id = mp.matchId`
 
   const rows = await dbAll<{
     id: string
+    name: string | null
     displayAlias: string | null
     hasPassport: number | boolean
     hasKnockoutPassport: number | boolean
@@ -264,19 +317,20 @@ export async function getLeaderboard(
   }>(
     `SELECT
       su.id,
+      su.name,
       su.displayAlias,
       su.hasPassport,
       su.hasKnockoutPassport,
-      COALESCE(SUM(CASE WHEN mp.settledAt IS NOT NULL THEN mp.pointsEarned ELSE 0 END), 0) AS totalPoints,
-      COUNT(mp.id) AS picksCount,
-      SUM(CASE WHEN mp.settledAt IS NOT NULL THEN 1 ELSE 0 END) AS settledCount,
-      SUM(CASE WHEN mp.pointsEarned = ? THEN 1 ELSE 0 END) AS exactHits,
-      SUM(CASE WHEN mp.pointsEarned = ? THEN 1 ELSE 0 END) AS goalDiffHits,
-      SUM(CASE WHEN mp.pointsEarned = ? THEN 1 ELSE 0 END) AS resultHits
+      COALESCE(SUM(${pointsCase}), 0) AS totalPoints,
+      SUM(CASE WHEN ${countsWhen} THEN 1 ELSE 0 END) AS picksCount,
+      SUM(CASE WHEN ${settledWhen} THEN 1 ELSE 0 END) AS settledCount,
+      SUM(CASE WHEN ${settledWhen} AND mp.pointsEarned = ? THEN 1 ELSE 0 END) AS exactHits,
+      SUM(CASE WHEN ${settledWhen} AND mp.pointsEarned = ? THEN 1 ELSE 0 END) AS goalDiffHits,
+      SUM(CASE WHEN ${settledWhen} AND mp.pointsEarned = ? THEN 1 ELSE 0 END) AS resultHits
     FROM sports_users su
-    LEFT JOIN match_predictions mp ON mp.userId = su.id ${matchJoinFilter}
+    ${matchJoin}
     WHERE 1=1 ${passportFilter}
-    GROUP BY su.id, su.displayAlias, su.hasPassport, su.hasKnockoutPassport
+    GROUP BY su.id, su.name, su.displayAlias, su.hasPassport, su.hasKnockoutPassport
     ORDER BY
       totalPoints DESC,
       exactHits DESC,
@@ -299,6 +353,7 @@ export async function getLeaderboard(
       : hasKnockoutPassport && settledCount >= MIN_SETTLED_PICKS_TO_WIN
     return {
       rank: index + 1,
+      name: row.name ?? null,
       displayAlias: row.displayAlias ?? generateDisplayAlias(row.id),
       totalPoints: row.totalPoints ?? 0,
       picksCount: Number(row.picksCount),
@@ -399,7 +454,7 @@ export async function listAllSportsUsersForAdmin(): Promise<AdminSportsUserRow[]
   )
 
   return rows.map((row) => ({
-    ...mapSportsUser(row as SportsUser & { hasPassport?: unknown }),
+    ...mapSportsUser(row as unknown as SportsUser & { hasPassport?: unknown; hasKnockoutPassport?: unknown }),
     picksCount: Number(row.picksCount),
     settledCount: Number(row.settledCount ?? 0),
   }))

@@ -5,6 +5,7 @@ import { mundialTheme } from '@/lib/mundial-theme-classes'
 import {
   GROUP_STAGE_WINNERS_COUNT,
   KNOCKOUT_PASSPORT_LABEL,
+  KNOCKOUT_PASSPORT_PRICE_LABEL,
   TOP_WINNERS_COUNT,
   type PollaPhase,
 } from '@/lib/polla-rules'
@@ -55,7 +56,7 @@ interface PollaLeaderboardProps {
 
 function defaultSubtitle(phase: PollaPhase) {
   if (phase === 'knockout') {
-    return `Solo ${KNOCKOUT_PASSPORT_LABEL} · compra en el café`
+    return `Solo ${KNOCKOUT_PASSPORT_LABEL} · desde cuartos (${KNOCKOUT_PASSPORT_PRICE_LABEL})`
   }
   return `${GROUP_STAGE_WINNERS_COUNT} ganadores · sin pasaporte requerido`
 }
@@ -70,7 +71,7 @@ export default function PollaLeaderboard({
 }: PollaLeaderboardProps) {
   const theme = mundialTheme(isDark)
   const resolvedTitle =
-    title ?? (phase === 'knockout' ? 'Tabla eliminatorias' : 'Tabla fase de grupos')
+    title ?? (phase === 'knockout' ? 'Polla final' : 'Tabla fase de grupos')
   const resolvedSubtitle = subtitle ?? defaultSubtitle(phase)
   const maxWinners = phase === 'group' ? GROUP_STAGE_WINNERS_COUNT : TOP_WINNERS_COUNT
   const winners = entries.filter((e) => e.isWinner)
@@ -86,7 +87,7 @@ export default function PollaLeaderboard({
         <p className={`text-sm ${theme.muted}`}>Aún no hay jugadores en la tabla</p>
         <p className={`text-xs mt-1 ${theme.mutedSm}`}>
           {phase === 'knockout'
-            ? 'Aún no hay jugadores con pasaporte eliminatorias'
+            ? 'Aún no hay jugadores con pasaporte polla final'
             : 'Sé el primero en pronosticar'}
         </p>
       </div>
@@ -185,7 +186,7 @@ export default function PollaLeaderboard({
                           className={`inline-flex items-center shrink-0 ${
                             isDark ? 'text-amber-400' : 'text-amber-600'
                           }`}
-                          title="Pasaporte eliminatorias activo"
+                          title="Pasaporte polla final activo"
                         >
                           <IconPremium className="w-3.5 h-3.5" />
                         </span>
@@ -193,7 +194,7 @@ export default function PollaLeaderboard({
                         !compact && (
                           <span
                             className={`text-[9px] shrink-0 ${theme.mutedSm}`}
-                            title="Sin Pasaporte Eliminatorias"
+                            title="Sin Pasaporte Polla Final"
                           >
                             sin pasaporte
                           </span>

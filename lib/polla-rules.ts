@@ -16,7 +16,7 @@ export const POINTS_EXACT_SCORE = 3
 export const POINTS_GOAL_DIFFERENCE = 2
 export const POINTS_CORRECT_RESULT = 1
 export const TOP_WINNERS_COUNT = 5
-export const GROUP_STAGE_WINNERS_COUNT = 2
+export const GROUP_STAGE_WINNERS_COUNT = 4
 export const MIN_SETTLED_PICKS_TO_WIN = 5
 export const MAX_SCORE_PER_TEAM = 20
 
@@ -28,37 +28,121 @@ export interface PollaPrize {
 export const GROUP_STAGE_PRIZES: PollaPrize[] = [
   { place: '1er Lugar', prize: '1 Botella de Aguardiente' },
   { place: '2do Lugar', prize: '1 Cubetazo de Cerveza' },
+  { place: '3er Lugar', prize: '1 Shot + Cerveza' },
+  { place: '4to Lugar', prize: '1 Cerveza' },
 ]
 
-export const KNOCKOUT_PHASE_LABEL =
-  'Fase Eliminatoria (Octavos, Cuartos, Semis, Final)'
+/** Dieciseisavos y octavos: práctica — no suman en la polla final. */
+export const KNOCKOUT_TRAINING_STAGES = ['LAST_32', 'LAST_16'] as const
+
+/** Desde cuartos cuenta la polla final (con pasaporte). */
+export const KNOCKOUT_SCORING_STAGES = [
+  'QUARTER_FINALS',
+  'SEMI_FINALS',
+  'THIRD_PLACE',
+  'FINAL',
+] as const
+
+export const KNOCKOUT_PHASE_LABEL = 'Polla final (Cuartos, Semis y Final)'
 
 export const CAFE_NAME = 'Arándano Café Bar'
 export const CAFE_LOCATION = 'Pasto, Colombia'
 
-/** Uso interno / admin — no mostrar en la UI pública por ahora. */
-export const KNOCKOUT_PASSPORT_PRICE_COP = 30_000
+export const KNOCKOUT_PASSPORT_PRICE_COP = 20_000
+
+export const KNOCKOUT_PASSPORT_PRICE_LABEL = `$${KNOCKOUT_PASSPORT_PRICE_COP.toLocaleString('es-CO')} COP`
 
 /** @deprecated La fase de grupos ya no exige pasaporte; solo aplica eliminatorias. */
 export const GROUP_PASSPORT_LABEL = 'Pasaporte Fase de Grupos'
 
-export const KNOCKOUT_PASSPORT_LABEL = 'Pasaporte Eliminatorias'
+export const KNOCKOUT_PASSPORT_LABEL = 'Pasaporte Polla Final'
 
 export const GROUP_STAGE_NO_PASSPORT_NOTE = 'No necesitas pasaporte ni compra en el café.'
 
 export const KNOCKOUT_PASSPORT_ACQUIRE_NOTE =
-  'Adquiere el Pasaporte de Eliminatorias en Arándano Café Bar.'
+  `Adquiere el Pasaporte Polla Final (${KNOCKOUT_PASSPORT_PRICE_LABEL}) en Arándano Café Bar.`
+
+export const KNOCKOUT_OCTAVOS_START_DATE = '2026-07-04'
+export const KNOCKOUT_OCTAVOS_START_LABEL = '4 de julio de 2026'
+
+export const KNOCKOUT_TRAINING_NOTE =
+  `Desde el ${KNOCKOUT_OCTAVOS_START_LABEL} arrancan octavos y dieciseisavos como entrenamiento (no suman en la polla final).`
 
 export const KNOCKOUT_PASSPORT_RULES = [
-  'La segunda polla (eliminatorias y final) es independiente de la de grupos: ranking nuevo desde octavos de final.',
-  KNOCKOUT_PASSPORT_ACQUIRE_NOTE,
-  'Tras adquirirlo en el café, el equipo activa tu pasaporte en la plataforma con la misma cuenta de Google con la que juegas.',
-  'Sin pasaporte activo puedes seguir pronosticando partidos de eliminatorias, pero no aparecerás en el ranking premiado ni podrás ganar esos premios.',
-  'Los puntos de la fase de grupos no se arrastran: en eliminatorias solo cuentan los pronósticos de octavos, cuartos, semifinales y final.',
+  'La polla final es independiente de la de grupos: ranking nuevo desde cuartos de final.',
+  KNOCKOUT_TRAINING_NOTE,
+  `Desde cuartos de final arranca la polla final premiada (${KNOCKOUT_PASSPORT_PRICE_LABEL}).`,
+  'El pozo de premios crece con cada pasaporte vendido; se reparte entre los 5 ganadores de forma proporcional.',
+  'Paga con el QR, adjunta el comprobante en tu solicitud y un administrador activa tu pasaporte.',
+  'Sin pasaporte activo puedes seguir pronosticando eliminatorias, pero no compites por premios de la polla final.',
+  'Los puntos de grupos no se arrastran: en la polla final solo cuentan cuartos, semis y final.',
 ] as const
 
+/** Reparto proporcional del pozo entre los 5 ganadores de la polla final. */
+export const KNOCKOUT_PRIZE_SPLITS = [
+  { place: '1°', percent: 35 },
+  { place: '2°', percent: 25 },
+  { place: '3°', percent: 20 },
+  { place: '4°', percent: 12 },
+  { place: '5°', percent: 8 },
+] as const
+
+export function computeKnockoutPrizePoolCOP(passportHolders: number): number {
+  return Math.max(0, passportHolders) * KNOCKOUT_PASSPORT_PRICE_COP
+}
+
+export interface KnockoutPrizeShare {
+  place: string
+  percent: number
+  amountCop: number
+}
+
+export function getKnockoutPrizeBreakdown(passportHolders: number): KnockoutPrizeShare[] {
+  const pool = computeKnockoutPrizePoolCOP(passportHolders)
+  return KNOCKOUT_PRIZE_SPLITS.map((row) => ({
+    place: row.place,
+    percent: row.percent,
+    amountCop: Math.round((pool * row.percent) / 100),
+  }))
+}
+
+export function formatCop(amount: number): string {
+  return `$${amount.toLocaleString('es-CO')} COP`
+}
+
 export const KNOCKOUT_PRIZES_NOTE =
-  'Los premios de la fase eliminatoria se anunciarán próximamente. Solo compiten quienes tengan el Pasaporte Eliminatorias activo.'
+  'Polla final con 5 ganadores. El pozo crece con cada pasaporte vendido; el reparto es proporcional según el lugar.'
+
+/** Correos que ven el modal de ganador en modo prueba (fase de grupos). */
+export const POLL_DEMO_GROUP_WINNER_EMAILS = ['gustavoarteaga0508@gmail.com']
+
+/** Fecha límite absoluta para reclamar cualquier premio (fin del Mundial 2026). */
+export const PRIZE_CLAIM_DEADLINE = '2026-07-19'
+
+export const PRIZE_CLAIM_DEADLINE_LABEL = '19 de julio de 2026'
+
+/** Días hábiles tras cerrar cada fase para reclamar en el café. */
+export const PRIZE_CLAIM_DAYS_AFTER_PHASE = 7
+
+export const PRIZE_CLAIM_RULES = [
+  `Todos los premios se reclaman en persona en ${CAFE_NAME} (${CAFE_LOCATION}). No hay envíos ni transferencias.`,
+  `Plazo máximo absoluto: antes del fin del Mundial (${PRIZE_CLAIM_DEADLINE_LABEL}). Pasada esa fecha no hay reclamos.`,
+  `Fase de grupos: tienes ${PRIZE_CLAIM_DAYS_AFTER_PHASE} días calendario desde que cierra la fase de grupos para reclamar tu premio.`,
+  `Polla final: tienes ${PRIZE_CLAIM_DAYS_AFTER_PHASE} días calendario desde la final del torneo para reclamar (siempre antes del ${PRIZE_CLAIM_DEADLINE_LABEL}).`,
+  'Debes presentar tu documento de identidad y la misma cuenta de Google con la que jugaste.',
+  'Solo puede reclamar el titular de la cuenta ganadora; no se admiten terceros ni cesión del premio.',
+  'Premio no reclamado dentro del plazo queda sin efecto — no hay canje por dinero ni créditos.',
+  'Arándano se reserva verificar el pago del pasaporte (polla final) y el cumplimiento del reglamento antes de entregar.',
+] as const
+
+export const PASSPORT_PURCHASE_STEPS = [
+  'Lee el reglamento completo y conoce las reglas de la polla final.',
+  `Paga ${KNOCKOUT_PASSPORT_PRICE_LABEL} escaneando el QR de pago (Nequi / transferencia).`,
+  'Adjunta el comprobante de pago en la solicitud desde tu perfil.',
+  'El equipo revisa tu solicitud y activa el pasaporte para que sumes puntos desde cuartos.',
+] as const
+
+export type PassportRequestStatus = 'pending' | 'approved' | 'rejected'
 
 export type PollaPhase = 'group' | 'knockout'
 
@@ -109,15 +193,15 @@ export const REGLAMENTO_SECTIONS: ReglamentoSection[] = [
     items: [
       `La polla es un juego de pronósticos del Mundial FIFA 2026 entre amigos y clientes de ${CAFE_NAME}.`,
       'Cualquier persona registrada puede pronosticar partidos y acumular puntos en la plataforma.',
-      'Habrá dos premiaciones independientes: una al cerrar la fase de grupos y otra al finalizar la fase eliminatoria (octavos, cuartos, semifinales y final).',
+      'Habrá dos premiaciones independientes: fase de grupos (top 4) y polla final desde cuartos.',
       'La primera polla (fase de grupos) es abierta para cualquier jugador registrado.',
       GROUP_STAGE_NO_PASSPORT_NOTE,
-      `Segunda polla (eliminatorias): ${KNOCKOUT_PASSPORT_ACQUIRE_NOTE} (ver sección 2).`,
+      `Polla final: octavos/dieciseisavos solo entrenamiento; desde cuartos con pasaporte (${KNOCKOUT_PASSPORT_PRICE_LABEL}).`,
     ],
   },
   {
     id: 'pasaportes',
-    title: '2. Pasaporte Eliminatorias (segunda polla)',
+    title: '2. Pasaporte Polla Final (desde cuartos)',
     items: [...KNOCKOUT_PASSPORT_RULES],
   },
   {
@@ -161,29 +245,38 @@ export const REGLAMENTO_SECTIONS: ReglamentoSection[] = [
     items: [
       '--- Primera polla · Fase de grupos ---',
       GROUP_STAGE_NO_PASSPORT_NOTE,
-      `Al cerrar la fase de grupos se premia a los ${GROUP_STAGE_WINNERS_COUNT} primeros del ranking de grupos (mínimo de picks calificados en esa fase):`,
-      `${GROUP_STAGE_PRIZES[0].place}: ${GROUP_STAGE_PRIZES[0].prize}`,
-      `${GROUP_STAGE_PRIZES[1].place}: ${GROUP_STAGE_PRIZES[1].prize}`,
-      '--- Segunda polla · Fase eliminatoria ---',
+      `Al cerrar la fase de grupos se premia al top ${GROUP_STAGE_WINNERS_COUNT} del ranking (mín. ${MIN_SETTLED_PICKS_TO_WIN} picks calificados):`,
+      ...GROUP_STAGE_PRIZES.map((p) => `${p.place}: ${p.prize}`),
+      '--- Polla final · Desde cuartos ---',
+      `${KNOCKOUT_TRAINING_NOTE}`,
       `${KNOCKOUT_PHASE_LABEL}: ${KNOCKOUT_PRIZES_NOTE}`,
-      `Requisito obligatorio: ${KNOCKOUT_PASSPORT_ACQUIRE_NOTE}`,
-      'El ranking eliminatorio es independiente: empieza en cero al comenzar octavos y solo cuenta partidos de eliminatorias.',
+      `5 ganadores con reparto proporcional del pozo (35% · 25% · 20% · 12% · 8%).`,
+      `Pozo = pasaportes vendidos × ${KNOCKOUT_PASSPORT_PRICE_LABEL}.`,
+      `Requisito: ${KNOCKOUT_PASSPORT_ACQUIRE_NOTE}`,
+      'El ranking de la polla final solo cuenta cuartos, semifinales y final.',
+      '--- Cobro de premios ---',
+      ...PRIZE_CLAIM_RULES,
     ],
   },
   {
+    id: 'cobro-premios',
+    title: '7. Cobro de premios',
+    items: [...PRIZE_CLAIM_RULES],
+  },
+  {
     id: 'ranking',
-    title: '7. Tablas y ganadores',
+    title: '8. Tablas y ganadores',
     items: [
       'Hay dos tablas en vivo: ranking de fase de grupos y ranking de fase eliminatoria.',
       'Ranking de grupos: todos los jugadores registrados con pronósticos en partidos de grupos; no exige pasaporte.',
-      `Ranking eliminatorio: solo jugadores con ${KNOCKOUT_PASSPORT_LABEL} activo; suma puntos de octavos, cuartos, semifinales y final.`,
+      `Ranking polla final: solo jugadores con pasaporte activo; suma cuartos, semis y final (no octavos).`,
       `Para figurar como ganador necesitas al menos ${MIN_SETTLED_PICKS_TO_WIN} pronósticos calificados en esa fase. En eliminatorias, además, el pasaporte activo.`,
       'Desempate: 1) más puntos totales en la fase, 2) más marcadores exactos, 3) más diferencias acertadas, 4) más resultados acertados, 5) más picks calificados en la fase.',
     ],
   },
   {
     id: 'fairplay',
-    title: '8. Juego limpio y condiciones',
+    title: '9. Juego limpio y condiciones',
     items: [
       'Una cuenta por persona. Cuentas duplicadas pueden ser descalificadas.',
       'Los resultados se toman de fuentes oficiales del torneo al finalizar cada partido.',
@@ -300,5 +393,6 @@ export const SCORING_EXAMPLES: ScoringExample[] = [
 export const REGLAMENTO_SHORT =
   `${INITIAL_CREDITS.toLocaleString('es-CO')} créditos fase de grupos · ` +
   `${PREDICTION_COST} por partido · ` +
-  `Grupos: ${GROUP_STAGE_WINNERS_COUNT} ganadores · ${GROUP_STAGE_NO_PASSPORT_NOTE} · ` +
-  `Eliminatorias: ${KNOCKOUT_PASSPORT_ACQUIRE_NOTE}`
+  `Grupos: top ${GROUP_STAGE_WINNERS_COUNT} ganadores · ${GROUP_STAGE_NO_PASSPORT_NOTE} · ` +
+  `Polla final desde cuartos: ${KNOCKOUT_PASSPORT_PRICE_LABEL} · ` +
+  `Premios en el café antes del ${PRIZE_CLAIM_DEADLINE_LABEL}`

@@ -3,6 +3,7 @@
  * Ejecutar una vez al desplegar o cuando cambie el calendario: npm run sync:sports-football
  */
 
+import { canUseFootballApi } from '@/lib/football-api-budget'
 import type { FootballMatch, FootballTeamDetail } from '@/lib/football-data'
 import {
   fetchAllMatchesFromApi,
@@ -10,11 +11,14 @@ import {
   fetchTeamsFromApi,
 } from '@/lib/football-api'
 import {
+  getStoredCompetition,
   getStoredMatchCount,
   getStoredTeamCount,
   hasFootballDataInDb,
   upsertFootballCatalog,
 } from '@/lib/sports-football-db'
+
+const DEFAULT_CATALOG_REFRESH_MS = 15 * 60_000
 
 export interface SyncFootballResult {
   teams: number
@@ -89,6 +93,43 @@ export async function ensureFootballCatalogSynced(): Promise<void> {
   })
 
   await catalogSyncInflight
+}
+
+function catalogRefreshIntervalMs(): number {
+  const raw = Number(process.env.FOOTBALL_CATALOG_REFRESH_MS ?? DEFAULT_CATALOG_REFRESH_MS)
+  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_CATALOG_REFRESH_MS
+}
+
+let catalogAutoRefreshInflight: Promise<boolean> | null = null
+
+/** Refresca catálogo desde la API si está desactualizado (respeta cuota diaria). */
+export async function maybeRefreshFootballCatalog(): Promise<boolean> {
+  if (catalogAutoRefreshInflight) return catalogAutoRefreshInflight
+
+  catalogAutoRefreshInflight = (async () => {
+    try {
+      const competition = await getStoredCompetition()
+      if (!competition) {
+        await ensureFootballCatalogSynced()
+        return true
+      }
+
+      const age = Date.now() - new Date(competition.syncedAt).getTime()
+      if (age < catalogRefreshIntervalMs()) return false
+
+      if (!(await canUseFootballApi(3))) return false
+
+      await syncFootballCatalogFromApi()
+      return true
+    } catch (error) {
+      console.warn('[football] Auto-refresh de catálogo falló:', error)
+      return false
+    } finally {
+      catalogAutoRefreshInflight = null
+    }
+  })()
+
+  return catalogAutoRefreshInflight
 }
 
 export type { FootballMatch, FootballTeamDetail }

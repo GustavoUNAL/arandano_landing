@@ -228,6 +228,7 @@ const SCHEMA_STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS idx_sports_matches_status ON sports_matches(status)`,
   `CREATE INDEX IF NOT EXISTS idx_sports_matches_stage ON sports_matches(stage)`,
 
+<<<<<<< HEAD
   `CREATE TABLE IF NOT EXISTS push_subscriptions (
     id TEXT PRIMARY KEY,
     userid TEXT NOT NULL REFERENCES sports_users(id) ON DELETE CASCADE,
@@ -248,6 +249,12 @@ const SCHEMA_STATEMENTS = [
     UNIQUE(userid, notificationid)
   )`,
   `CREATE INDEX IF NOT EXISTS idx_push_notification_sent_userid ON push_notification_sent(userid)`,
+=======
+  `CREATE TABLE IF NOT EXISTS sports_api_usage (
+    usagedate TEXT PRIMARY KEY,
+    count INTEGER NOT NULL DEFAULT 0
+  )`,
+>>>>>>> 91e8f9d (update fin polla 1)
 ]
 
 let schemaReady = false
@@ -256,6 +263,9 @@ const POSTGRES_MIGRATIONS = [
   `ALTER TABLE sports_users ADD COLUMN IF NOT EXISTS haspassport INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE sports_users ADD COLUMN IF NOT EXISTS hasknockoutpassport INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE sports_users ADD COLUMN IF NOT EXISTS lastcreditsrechargedate TEXT`,
+  `ALTER TABLE sports_users ADD COLUMN IF NOT EXISTS whatsapp TEXT`,
+  `ALTER TABLE sports_users ADD COLUMN IF NOT EXISTS whatsapppromptskipped INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE knockout_passport_requests ADD COLUMN IF NOT EXISTS receiptpath TEXT`,
 
   `CREATE TABLE IF NOT EXISTS ari_threads (
     id TEXT PRIMARY KEY,
@@ -314,6 +324,7 @@ const POSTGRES_MIGRATIONS = [
     active BOOLEAN NOT NULL DEFAULT true
   )`,
 
+<<<<<<< HEAD
   `CREATE TABLE IF NOT EXISTS push_subscriptions (
     id TEXT PRIMARY KEY,
     userid TEXT NOT NULL REFERENCES sports_users(id) ON DELETE CASCADE,
@@ -334,6 +345,27 @@ const POSTGRES_MIGRATIONS = [
     UNIQUE(userid, notificationid)
   )`,
   `CREATE INDEX IF NOT EXISTS idx_push_notification_sent_userid ON push_notification_sent(userid)`,
+=======
+  `CREATE TABLE IF NOT EXISTS sports_api_usage (
+    usagedate TEXT PRIMARY KEY,
+    count INTEGER NOT NULL DEFAULT 0
+  )`,
+
+  `CREATE TABLE IF NOT EXISTS knockout_passport_requests (
+    id TEXT PRIMARY KEY,
+    userid TEXT NOT NULL REFERENCES sports_users(id),
+    status TEXT NOT NULL DEFAULT 'pending',
+    pricecop INTEGER NOT NULL,
+    usernote TEXT,
+    adminnote TEXT,
+    reviewedby TEXT,
+    createdat TEXT NOT NULL,
+    updatedat TEXT NOT NULL,
+    reviewedat TEXT
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_kpr_userid ON knockout_passport_requests(userid)`,
+  `CREATE INDEX IF NOT EXISTS idx_kpr_status ON knockout_passport_requests(status)`,
+>>>>>>> 91e8f9d (update fin polla 1)
 ]
 
 export async function ensurePostgresSchema(sql: NeonQueryFunction<false, false>): Promise<void> {

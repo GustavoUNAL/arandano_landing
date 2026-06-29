@@ -497,6 +497,9 @@ function initializeDatabase() {
     'ALTER TABLE sports_users ADD COLUMN hasPassport INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE sports_users ADD COLUMN hasKnockoutPassport INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE sports_users ADD COLUMN lastCreditsRechargeDate TEXT',
+    'ALTER TABLE sports_users ADD COLUMN whatsapp TEXT',
+    'ALTER TABLE sports_users ADD COLUMN whatsappPromptSkipped INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE knockout_passport_requests ADD COLUMN receiptPath TEXT',
     'ALTER TABLE match_predictions ADD COLUMN actualHomeScore INTEGER',
     'ALTER TABLE match_predictions ADD COLUMN actualAwayScore INTEGER',
     'ALTER TABLE match_predictions ADD COLUMN pointsEarned INTEGER',
@@ -537,6 +540,25 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_sports_matches_utcDate ON sports_matches(utcDate);
     CREATE INDEX IF NOT EXISTS idx_sports_matches_status ON sports_matches(status);
     CREATE INDEX IF NOT EXISTS idx_sports_matches_stage ON sports_matches(stage);
+    CREATE TABLE IF NOT EXISTS sports_api_usage (
+      usageDate TEXT PRIMARY KEY,
+      count INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS knockout_passport_requests (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      priceCop INTEGER NOT NULL,
+      userNote TEXT,
+      adminNote TEXT,
+      reviewedBy TEXT,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      reviewedAt TEXT,
+      FOREIGN KEY (userId) REFERENCES sports_users(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_kpr_userId ON knockout_passport_requests(userId);
+    CREATE INDEX IF NOT EXISTS idx_kpr_status ON knockout_passport_requests(status);
   `)
 }
 

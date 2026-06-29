@@ -99,6 +99,10 @@ export function normalizeHasKnockoutPassport(value: unknown): boolean {
   return value === true || value === 1 || value === '1'
 }
 
+export function normalizeWhatsappPromptSkipped(value: unknown): boolean {
+  return value === true || value === 1 || value === '1'
+}
+
 export interface SportsUser {
   id: string
   email: string
@@ -106,6 +110,8 @@ export interface SportsUser {
   image: string | null
   credits: number
   displayAlias: string | null
+  whatsapp: string | null
+  whatsappPromptSkipped: boolean
   totalPoints: number
   hasPassport: boolean
   hasKnockoutPassport: boolean
@@ -177,6 +183,7 @@ export interface PublicMatchPick {
 
 export interface LeaderboardEntry {
   rank: number
+  name: string | null
   displayAlias: string
   totalPoints: number
   picksCount: number

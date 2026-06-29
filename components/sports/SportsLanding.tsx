@@ -5,6 +5,11 @@ import CafePromoBanner from '@/components/sports/CafePromoBanner'
 import HomeBroadcastPromo from '@/components/sports/HomeBroadcastPromo'
 import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
 import { useMundialTheme } from '@/hooks/useMundialTheme'
+import { usePollaLiveSync } from '@/hooks/usePollaLiveSync'
+import GroupStagePodium from '@/components/sports/GroupStagePodium'
+import KnockoutBracketsPreview from '@/components/sports/KnockoutBracketsPreview'
+import MundialHighlights from '@/components/sports/MundialHighlights'
+import LiveSyncBadge from '@/components/sports/LiveSyncBadge'
 import PollaLeaderboard from '@/components/sports/PollaLeaderboard'
 import TeamCrest from '@/components/sports/TeamCrest'
 import PollaPremiosPanel from '@/components/sports/PollaPremiosPanel'
@@ -15,18 +20,35 @@ import {
   GROUP_STAGE_PICKS_INCLUDED,
   INITIAL_CREDITS,
   KNOCKOUT_PASSPORT_ACQUIRE_NOTE,
+  KNOCKOUT_PASSPORT_PRICE_LABEL,
   PREDICTION_COST,
   REGLAMENTO_SHORT,
 } from '@/lib/polla-rules'
-import type { WorldCupData } from '@/lib/football-data'
+import type { KnockoutRound, WorldCupData } from '@/lib/football-data'
+import type { MundialHighlight } from '@/lib/mundial-highlights'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
 import { PERFIL_JUGAR_PATH, PERFIL_PATH, perfilPathForPlayMatch } from '@/lib/perfil-routes'
+import { getGroupStagePodiumEntries } from '@/lib/polla-phase'
 import type { LeaderboardEntry } from '@/lib/sports-polla-shared'
 import { signIn, useSession } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+
+type LandingWorldCup = WorldCupData & {
+  knockoutRounds?: KnockoutRound[]
+  highlights?: MundialHighlight[]
+  pollaPlayers?: number
+}
+
+const NAV_LINKS = [
+  { href: '#indicadores', label: 'Stats' },
+  { href: '#premios', label: 'Premios' },
+  { href: '#como-jugar', label: 'Cómo jugar' },
+  { href: '#partidos', label: 'Partidos' },
+  { href: '#llaves', label: 'Llaves' },
+]
 
 const STEPS = [
   {
@@ -47,7 +69,7 @@ const STEPS = [
   {
     step: '4',
     title: 'Dos premiaciones',
-    desc: `Grupos: ${GROUP_STAGE_WINNERS_COUNT} ganadores (aguardiente y cubetazo de cerveza). ${GROUP_STAGE_NO_PASSPORT_NOTE} Eliminatorias: ${KNOCKOUT_PASSPORT_ACQUIRE_NOTE}`,
+    desc: `Grupos: top ${GROUP_STAGE_WINNERS_COUNT} (aguardiente, cubetazo, shot + cerveza, cerveza). ${GROUP_STAGE_NO_PASSPORT_NOTE} Polla final desde cuartos: ${KNOCKOUT_PASSPORT_ACQUIRE_NOTE} Octavos solo entrenamiento.`,
   },
 ]
 
@@ -77,7 +99,11 @@ function MatchCard({
 }) {
   return (
     <div
+<<<<<<< HEAD
       className={`rounded-xl sm:rounded-2xl border p-3 sm:p-5 transition-colors ${
+=======
+      className={`rounded-2xl border p-4 sm:p-5 h-full transition-colors ${
+>>>>>>> 91e8f9d (update fin polla 1)
         isDark
           ? 'border-white/10 bg-white/5 hover:border-berry-500/30'
           : 'border-stone-200 bg-white shadow-sm hover:border-berry-400/40 hover:shadow-md'
@@ -137,46 +163,69 @@ export default function SportsLanding() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const authLoading = status === 'loading'
-  const [wcData, setWcData] = useState<WorldCupData | null>(null)
+  const [wcData, setWcData] = useState<LandingWorldCup | null>(null)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null)
   const { isDark, toggleTheme } = useMundialTheme()
 
-  const loadLeaderboard = () => {
-    fetch('/api/sports/leaderboard')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.leaderboard) setLeaderboard(data.leaderboard)
-      })
-      .catch(() => {})
-  }
+  const loadLeaderboard = useCallback(async (silent = false) => {
+    if (silent) setSyncing(true)
+    try {
+      const res = await fetch('/api/sports/leaderboard', { cache: 'no-store' })
+      const data = await res.json()
+      if (data.leaderboard) {
+        setLeaderboard(data.leaderboard)
+        setLastSyncedAt(Date.now())
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      if (silent) setSyncing(false)
+    }
+  }, [])
+
+  const refreshWorldCup = useCallback(async (silent = false) => {
+    if (silent) setSyncing(true)
+    try {
+      const res = await fetch('/api/football/world-cup', { cache: 'no-store' })
+      const data = await res.json()
+      if (!data.error) {
+        setWcData(data)
+        setLastSyncedAt(Date.now())
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      if (silent) setSyncing(false)
+    }
+  }, [])
+
+  const silentRefresh = useCallback(() => {
+    void Promise.all([refreshWorldCup(true), loadLeaderboard(true)])
+  }, [refreshWorldCup, loadLeaderboard])
+
+  usePollaLiveSync(silentRefresh, {
+    enabled: !loading,
+    fallbackMs: wcData?.liveMatches?.length ? 20_000 : 40_000,
+  })
 
   useEffect(() => {
-    fetch('/api/football/world-cup')
-      .then((res) => res.json())
-      .then((data) => {
-        if (!data.error) setWcData(data)
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-
-    const refreshWc = () => {
+    void Promise.all([
       fetch('/api/football/world-cup')
         .then((res) => res.json())
         .then((data) => {
           if (!data.error) setWcData(data)
-        })
-        .catch(() => {})
-    }
-
-    loadLeaderboard()
-    const wcInterval = setInterval(refreshWc, 60_000)
-    const lbInterval = setInterval(loadLeaderboard, 60_000)
-    return () => {
-      clearInterval(wcInterval)
-      clearInterval(lbInterval)
-    }
-  }, [])
+        }),
+      loadLeaderboard(),
+    ])
+      .catch(() => {})
+      .finally(() => {
+        setLoading(false)
+        setLastSyncedAt(Date.now())
+      })
+  }, [loadLeaderboard])
 
   const goToProfile = () => {
     if (authLoading) return
@@ -202,11 +251,16 @@ export default function SportsLanding() {
     ...(wcData?.upcomingMatches ?? []),
   ].slice(0, 12)
 
+  const recentResults = (wcData?.recentMatches ?? []).slice(0, 6)
+  const highlights = wcData?.highlights ?? []
+  const knockoutRounds = wcData?.knockoutRounds ?? []
+
   const seasonDates = wcData
     ? formatSeasonDates(wcData.competition.startDate, wcData.competition.endDate)
     : '11 jun — 19 jul 2026'
 
   const theme = mundialTheme(isDark)
+  const podiumEntries = getGroupStagePodiumEntries(leaderboard, false)
 
   return (
     <div
@@ -228,6 +282,7 @@ export default function SportsLanding() {
             <span className="font-display font-bold text-sm sm:text-base leading-none truncate">
               Polla <span className="text-berry-400">Mundial</span>
             </span>
+<<<<<<< HEAD
           </Link>
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 overflow-visible">
             <div className="hidden md:flex items-center gap-1">
@@ -249,6 +304,20 @@ export default function SportsLanding() {
               >
                 Partidos
               </a>
+=======
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1 overflow-x-auto max-w-[42vw] sm:max-w-none scrollbar-thin">
+              {NAV_LINKS.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className={`text-[10px] sm:text-xs font-medium px-2 sm:px-2.5 py-2 rounded-full whitespace-nowrap transition-colors ${theme.muted} hover:text-berry-500`}
+                >
+                  {link.label}
+                </a>
+              ))}
+>>>>>>> 91e8f9d (update fin polla 1)
             </div>
             <div className="hidden sm:flex items-center gap-2">
               {session ? (
@@ -279,7 +348,17 @@ export default function SportsLanding() {
               )}
             </div>
             <MundialThemeToggle isDark={isDark} onToggle={toggleTheme} />
+<<<<<<< HEAD
             <PollaNotificationBell isDark={isDark} />
+=======
+            <LiveSyncBadge
+              isDark={isDark}
+              syncing={syncing}
+              lastSyncedAt={lastSyncedAt}
+              isLive={(wcData?.liveMatches?.length ?? 0) > 0}
+              className="hidden sm:inline-flex"
+            />
+>>>>>>> 91e8f9d (update fin polla 1)
           </div>
         </div>
       </header>
@@ -309,10 +388,34 @@ export default function SportsLanding() {
                   ? `${wcData.stats.totalTeams} selecciones, ${wcData.stats.totalMatches} partidos del ${seasonDates}. Desde Pasto, celebra cada gol con nosotros.`
                   : 'El torneo más grande del planeta llega en 2026. Desde Pasto, celebra cada gol con nosotros.'}
               </p>
-              <p className={`text-base leading-relaxed mb-8 max-w-xl font-medium ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>
+              <p className={`text-base leading-relaxed mb-6 max-w-xl font-medium ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>
                 Pronostica el Mundial 2026, compite con tus parceros y gana premios en{' '}
-                <span className={theme.accent}>dos fases</span>: grupos y eliminatorias.
+                <span className={theme.accent}>dos fases</span>: grupos (top {GROUP_STAGE_WINNERS_COUNT}) y polla final desde cuartos ({KNOCKOUT_PASSPORT_PRICE_LABEL}).
               </p>
+
+              {wcData && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6 max-w-xl">
+                  {[
+                    { label: 'Jugadores', value: wcData.pollaPlayers ?? leaderboard.length },
+                    { label: 'Selecciones', value: wcData.stats.totalTeams },
+                    { label: 'Partidos', value: wcData.stats.totalMatches },
+                    { label: 'Jugados', value: wcData.stats.playedMatches },
+                  ].map((s) => (
+                    <div
+                      key={s.label}
+                      className={`rounded-xl border px-2.5 py-2 text-center ${
+                        isDark ? 'border-white/10 bg-white/5' : 'border-stone-200 bg-white'
+                      }`}
+                    >
+                      <p className={`text-[9px] uppercase tracking-wide ${theme.mutedSm}`}>{s.label}</p>
+                      <p className={`font-display text-lg font-bold tabular-nums ${theme.accent}`}>
+                        {s.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row gap-3 max-w-md sm:max-w-none">
                 {session ? (
                   <button
@@ -352,6 +455,30 @@ export default function SportsLanding() {
         </div>
       </section>
 
+      {/* Indicadores torneo + polla */}
+      {(highlights.length > 0 || (wcData?.pollaPlayers ?? 0) > 0) && (
+        <section
+          id="indicadores"
+          className={`py-10 sm:py-14 border-t scroll-mt-20 ${theme.borderSubtle} ${
+            isDark ? 'bg-stone-950' : 'bg-stone-50'
+          }`}
+        >
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <MundialHighlights
+              highlights={highlights}
+              isDark={isDark}
+              playerCount={wcData?.pollaPlayers ?? leaderboard.length}
+              playedMatches={wcData?.stats.playedMatches ?? 0}
+            />
+            {podiumEntries.length > 0 && (
+              <div className="mt-8 max-w-lg mx-auto">
+                <GroupStagePodium entries={podiumEntries} isDark={isDark} complete={false} />
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* 1. Premios — motivación antes de jugar */}
       <section
         id="premios"
@@ -368,7 +495,7 @@ export default function SportsLanding() {
               ¿Qué puedes ganar?
             </h2>
             <p className={`text-sm sm:text-base max-w-2xl mx-auto ${theme.muted}`}>
-              Primera polla: {GROUP_STAGE_NO_PASSPORT_NOTE} Segunda polla: {KNOCKOUT_PASSPORT_ACQUIRE_NOTE}
+              Grupos: top {GROUP_STAGE_WINNERS_COUNT} sin pasaporte. Polla final desde cuartos: {KNOCKOUT_PASSPORT_ACQUIRE_NOTE} Octavos solo entrenamiento.
             </p>
           </div>
           <div className="max-w-lg mx-auto">
@@ -396,7 +523,7 @@ export default function SportsLanding() {
               Regístrate gratis, pronostica antes del pitazo y sube en la tabla de tu fase.
             </p>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             {STEPS.map((item) => (
               <div
                 key={item.step}
@@ -488,16 +615,56 @@ export default function SportsLanding() {
           {loading ? (
             <div className={`text-center py-12 text-sm ${theme.muted}`}>Cargando partidos del Mundial…</div>
           ) : liveMatches.length > 0 ? (
+<<<<<<< HEAD
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
               {liveMatches.map((match) => (
                 <MatchCard key={match.id} match={match} onPredict={() => goToPredict(match.id)} isDark={isDark} />
               ))}
+=======
+            <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible sm:gap-5">
+                {liveMatches.map((match) => (
+                  <div key={match.id} className="min-w-[16.5rem] sm:min-w-0 snap-start shrink-0 sm:shrink">
+                    <MatchCard match={match} onPredict={() => goToPredict(match.id)} isDark={isDark} />
+                  </div>
+                ))}
+              </div>
+>>>>>>> 91e8f9d (update fin polla 1)
             </div>
           ) : (
             <div className={`text-center py-12 text-sm ${theme.muted}`}>
               No hay partidos disponibles por ahora.
             </div>
           )}
+
+          {recentResults.length > 0 && (
+            <div className="mt-10">
+              <h3 className="font-semibold text-sm sm:text-base mb-3">Últimos resultados</h3>
+              <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
+                <div className="flex gap-2 overflow-x-auto pb-1 snap-x sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible sm:gap-3">
+                  {recentResults.map((m) => (
+                    <div
+                      key={m.id}
+                      className={`min-w-[14rem] sm:min-w-0 snap-start shrink-0 sm:shrink rounded-xl border px-3 py-2.5 flex items-center gap-2 ${
+                        isDark ? 'border-white/10 bg-white/5' : 'border-stone-200 bg-white'
+                      }`}
+                    >
+                      <TeamCrest src={m.homeTeam.crest} alt="" size={22} />
+                      <div className="flex-1 min-w-0 text-center">
+                        <p className="text-[10px] font-medium truncate">
+                          {m.homeTeam.shortName} {m.displayScore.home ?? '–'} - {m.displayScore.away ?? '–'}{' '}
+                          {m.awayTeam.shortName}
+                        </p>
+                        <p className={`text-[9px] ${theme.mutedSm}`}>{m.stageLabel}</p>
+                      </div>
+                      <TeamCrest src={m.awayTeam.crest} alt="" size={22} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="max-w-xl mx-auto mt-10 sm:mt-12">
             <PollaLeaderboard entries={leaderboard} compact phase="group" isDark={isDark} />
           </div>
@@ -512,6 +679,30 @@ export default function SportsLanding() {
           </div>
         </div>
       </section>
+
+      {/* Llaves eliminatorias */}
+      {knockoutRounds.length > 0 && (
+        <section
+          id="llaves"
+          className={`py-12 sm:py-16 border-t scroll-mt-20 ${theme.borderSubtle} ${
+            isDark ? 'bg-gradient-to-b from-stone-950 to-berry-950/10' : 'bg-gradient-to-b from-white to-berry-50/40'
+          }`}
+        >
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="text-center mb-6 sm:mb-8">
+              <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${theme.accent}`}>
+                Llaves
+              </p>
+              <h2 className="font-display text-2xl sm:text-3xl font-bold">Camino al título</h2>
+            </div>
+            <KnockoutBracketsPreview
+              rounds={knockoutRounds}
+              isDark={isDark}
+              onPlayMatch={(id) => goToPredict(id)}
+            />
+          </div>
+        </section>
+      )}
 
       {/* 5. Mundial 2026 — contexto del torneo */}
       <section
@@ -578,8 +769,8 @@ export default function SportsLanding() {
             </p>
             <p className={`text-xs sm:text-base leading-relaxed ${theme.muted}`}>
               {wcData?.colombiaQualified
-                ? 'La Tricolor estará en el Mundial 2026. Arma tu polla, invita a los parceros y pronostica cada partido de Colombia.'
-                : 'La Tricolor busca su cupo. Mientras tanto, arma tu polla y pronostica cada partido del Mundial 2026.'}
+                ? 'Colombia estará en el Mundial 2026. Arma tu polla, invita a los parceros y pronostica cada partido.'
+                : 'Arma tu polla y pronostica cada partido del Mundial 2026 mientras sigues el torneo.'}
             </p>
           </div>
         </div>

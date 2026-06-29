@@ -1,15 +1,15 @@
 import { getAuthUser } from '@/lib/auth-server'
 import { getWorldCupFullData } from '@/lib/football-data'
 import { getScoringRules } from '@/lib/polla-rules'
-import { getLeaderboard, settleFinishedMatches } from '@/lib/sports-polla'
+import { getLeaderboard, settleFinishedMatchesIfNeeded } from '@/lib/sports-polla'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   try {
-    const worldCup = await getWorldCupFullData()
-    await settleFinishedMatches(worldCup.allMatches)
+    const worldCup = await getWorldCupFullData({ quick: true })
+    await settleFinishedMatchesIfNeeded(worldCup.allMatches)
 
     const authUser = await getAuthUser()
     const { searchParams } = new URL(request.url)

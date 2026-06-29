@@ -1,4 +1,5 @@
 import { FootballApiQuotaError } from '@/lib/ari/errors'
+import { reserveFootballApiCalls } from '@/lib/football-api-budget'
 import type { FootballMatch, FootballTeamDetail } from '@/lib/football-data'
 
 const API_BASE = 'https://api.football-data.org/v4'
@@ -8,11 +9,18 @@ export const WC_SEASON = 2026
 
 export async function footballFetch<T>(
   path: string,
-  options?: { live?: boolean; unfoldGoals?: boolean; optional?: boolean }
+  options?: { live?: boolean; unfoldGoals?: boolean; optional?: boolean; skipBudget?: boolean }
 ): Promise<T> {
   const token = process.env.FOOTBALL_DATA_API_TOKEN
   if (!token) {
     throw new Error('FOOTBALL_DATA_API_TOKEN no configurado')
+  }
+
+  if (!options?.skipBudget) {
+    const reserved = await reserveFootballApiCalls(1)
+    if (!reserved) {
+      throw new FootballApiQuotaError(429, 'Cuota diaria football-data.org agotada')
+    }
   }
 
   const headers: Record<string, string> = { 'X-Auth-Token': token }
@@ -91,7 +99,7 @@ export async function fetchTeamsFromApi(): Promise<FootballTeamDetail[]> {
 export async function fetchAllMatchesFromApi(): Promise<FootballMatch[]> {
   const matchesRes = await footballFetch<{
     matches: FootballMatch[]
-  }>(`/competitions/${WC_CODE}/matches?season=${WC_SEASON}&limit=120`)
+  }>(`/competitions/${WC_CODE}/matches?season=${WC_SEASON}&limit=200`)
 
   return matchesRes.matches.sort(
     (a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime()
@@ -120,7 +128,7 @@ export async function fetchMatchLiveDetailFromApi(matchId: number): Promise<Foot
 }
 
 let finishedRefreshCache: { matches: FootballMatch[]; at: number } | null = null
-const FINISHED_REFRESH_MS = 30 * 60_000
+const FINISHED_REFRESH_MS = 10 * 60_000
 
 /** Actualiza resultados recientes para liquidar pronósticos — máx. 1 call / 30 min */
 export async function fetchRecentlyFinishedFromApi(force = false): Promise<FootballMatch[]> {

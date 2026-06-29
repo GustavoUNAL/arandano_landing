@@ -1,6 +1,7 @@
 import {
   ensureNextAuthUrlForOAuth,
   getConfiguredSiteUrl,
+  getGoogleConsoleRedirectUris,
   getGoogleOAuthRedirectUri,
   originFromHeaders,
 } from '@/lib/auth-url'
@@ -48,16 +49,15 @@ export async function GET(request: Request) {
     authTrustHost: process.env.AUTH_TRUST_HOST ?? null,
     googleClientConfigured: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
     googleConsoleChecklist: {
-      authorizedRedirectUris: [
-        'https://arandanocafe.com/api/auth/callback/google',
-        'https://www.arandanocafe.com/api/auth/callback/google',
-        'http://localhost:3000/api/auth/callback/google',
-      ],
+      authorizedRedirectUris: getGoogleConsoleRedirectUris(),
       authorizedJavaScriptOrigins: [
         'https://arandanocafe.com',
         'https://www.arandanocafe.com',
         'http://localhost:3000',
+        'http://localhost:3001',
       ],
+      note:
+        'Copia effectiveRedirectUri en Google Cloud Console → Credentials → tu cliente OAuth → Authorized redirect URIs',
     },
   })
 }

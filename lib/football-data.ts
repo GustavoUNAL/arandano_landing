@@ -4,7 +4,7 @@ import {
   fetchRecentlyFinishedFromApi,
   needsFinishedRefresh,
 } from '@/lib/football-api'
-import { ensureFootballCatalogSynced } from '@/lib/sports-football-sync'
+import { ensureFootballCatalogSynced, maybeRefreshFootballCatalog } from '@/lib/sports-football-sync'
 import {
   buildCatalogStats,
   buildFootballMatchFromStored,
@@ -16,6 +16,7 @@ import {
   updateStoredMatchesBatch,
 } from '@/lib/sports-football-db'
 import { isMatchFinished, isMatchHappeningNow, isMatchLive } from '@/lib/sports-polla-shared'
+import { sortUpcomingMatches } from '@/lib/polla-phase'
 import { groupLabel, stageLabel } from '@/lib/world-cup-info'
 
 export const WC_CODE = 'WC'
@@ -158,12 +159,16 @@ export interface WorldCupFullData extends WorldCupData {
 let wcFullCache: { data: WorldCupFullData; at: number } | null = null
 const matchDetailCache = new Map<number, { data: MatchDetail; at: number }>()
 
-const WC_FULL_CACHE_MS = 60_000
+const WC_FULL_CACHE_MS = 90_000
 const MATCH_DETAIL_CACHE_MS = 30_000
 const MATCH_DETAIL_STALE_MS = 5 * 60_000
 
 let wcFullInflight: Promise<WorldCupFullData> | null = null
 const matchDetailInflight = new Map<number, Promise<MatchDetail>>()
+
+export function invalidateWorldCupCache(): void {
+  wcFullCache = null
+}
 
 export function matchStatusLabel(status: string, minute?: number | null, injuryTime?: number | null): string {
   switch (status) {
@@ -337,8 +342,11 @@ async function overlayFinishedResults(baseMatches: FootballMatch[]): Promise<Foo
   return merged
 }
 
-async function buildWorldCupFullDataFromDb(): Promise<WorldCupFullData> {
+async function buildWorldCupFullDataFromDb(options?: { skipApiOverlays?: boolean }): Promise<WorldCupFullData> {
   await ensureFootballCatalogSynced()
+  void maybeRefreshFootballCatalog().then((refreshed) => {
+    if (refreshed) invalidateWorldCupCache()
+  })
 
   const inDb = await hasFootballDataInDb()
   if (!inDb) {
@@ -361,17 +369,17 @@ async function buildWorldCupFullDataFromDb(): Promise<WorldCupFullData> {
 
   const teamsById = new Map(teams.map((t) => [t.id, t]))
   let rawMatches = matchRows.map((row) => buildFootballMatchFromStored(row, teamsById))
-  rawMatches = await overlayLiveData(rawMatches)
-  rawMatches = await overlayFinishedResults(rawMatches)
+  if (!options?.skipApiOverlays) {
+    rawMatches = await overlayLiveData(rawMatches)
+    rawMatches = await overlayFinishedResults(rawMatches)
+  }
 
   const allMatches = rawMatches.map(enrichMatch)
 
   const groupMatches = allMatches.filter((m) => m.stage === 'GROUP_STAGE')
   const knockoutMatches = allMatches.filter((m) => m.stage !== 'GROUP_STAGE')
   const liveMatches = allMatches.filter((m) => m.isLive || isMatchLive(m.status))
-  const upcomingMatches = allMatches
-    .filter((m) => m.status === 'SCHEDULED' || m.status === 'TIMED')
-    .slice(0, 8)
+  const upcomingMatches = sortUpcomingMatches(allMatches).slice(0, 16)
   const recentMatches = allMatches
     .filter((m) => m.isFinished)
     .slice(-12)
@@ -413,10 +421,14 @@ async function buildWorldCupFullDataFromDb(): Promise<WorldCupFullData> {
   }
 }
 
-export async function getWorldCupFullData(_options?: { fresh?: boolean }): Promise<WorldCupFullData> {
+export async function getWorldCupFullData(options?: {
+  fresh?: boolean
+  /** Carga rápida: solo BD, sin llamadas a football-data.org */
+  quick?: boolean
+}): Promise<WorldCupFullData> {
   const now = Date.now()
 
-  if (wcFullCache && now - wcFullCache.at < WC_FULL_CACHE_MS) {
+  if (!options?.fresh && wcFullCache && now - wcFullCache.at < WC_FULL_CACHE_MS) {
     return wcFullCache.data
   }
 
@@ -424,7 +436,9 @@ export async function getWorldCupFullData(_options?: { fresh?: boolean }): Promi
 
   wcFullInflight = (async () => {
     try {
-      const data = await buildWorldCupFullDataFromDb()
+      const data = await buildWorldCupFullDataFromDb({
+        skipApiOverlays: options?.quick === true,
+      })
       wcFullCache = { data, at: Date.now() }
       return data
     } catch (error) {
