@@ -8,7 +8,9 @@ import { KNOCKOUT_TRAINING_STAGES } from '@/lib/polla-rules'
 interface KnockoutBracketsPreviewProps {
   rounds: KnockoutRound[]
   isDark?: boolean
+  hasPassport?: boolean
   onPlayMatch?: (matchId: number) => void
+  onBuyPassport?: () => void
   className?: string
 }
 
@@ -19,7 +21,9 @@ function teamShort(name: string, short?: string, tla?: string) {
 export default function KnockoutBracketsPreview({
   rounds,
   isDark = true,
+  hasPassport,
   onPlayMatch,
+  onBuyPassport,
   className = '',
 }: KnockoutBracketsPreviewProps) {
   const theme = mundialTheme(isDark)
@@ -31,11 +35,26 @@ export default function KnockoutBracketsPreview({
 
   return (
     <section className={`rounded-2xl border overflow-hidden ${theme.cardSoft} ${className}`}>
-      <div className={`px-4 py-3 border-b ${theme.border}`}>
-        <h3 className="font-semibold text-sm">Llaves eliminatorias</h3>
-        <p className={`text-[10px] mt-0.5 ${theme.mutedSm}`}>
-          Octavos y dieciseisavos: entrenamiento · desde cuartos suma en la polla final
-        </p>
+      <div className={`px-4 py-3 border-b flex items-center justify-between gap-3 ${theme.border}`}>
+        <div>
+          <h3 className="font-semibold text-sm">🏆 Llaves eliminatorias</h3>
+          <p className={`text-[10px] mt-0.5 ${theme.mutedSm}`}>
+            16vos: entrenamiento · desde Cuartos: polla oficial con pasaporte
+          </p>
+        </div>
+        {hasPassport === false && onBuyPassport && (
+          <button
+            type="button"
+            onClick={onBuyPassport}
+            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-colors ${
+              isDark
+                ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30'
+                : 'bg-amber-100 border border-amber-300 text-amber-800 hover:bg-amber-200'
+            }`}
+          >
+            🎟️ Comprar pasaporte
+          </button>
+        )}
       </div>
 
       <div className="p-4 overflow-x-auto">
@@ -55,7 +74,7 @@ export default function KnockoutBracketsPreview({
                   <p className="text-[11px] font-bold uppercase tracking-wide truncate">{round.label}</p>
                 </div>
                 <div className="space-y-2">
-                  {round.matches.slice(0, 4).map((match, matchIdx) => {
+                  {round.matches.map((match, matchIdx) => {
                     const finished = match.isFinished
                     const winnerHome =
                       finished &&
@@ -67,13 +86,23 @@ export default function KnockoutBracketsPreview({
                       match.displayScore.home != null &&
                       match.displayScore.away != null &&
                       match.displayScore.away > match.displayScore.home
+                    const matchDate = match.utcDate
+                      ? new Date(match.utcDate).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
+                      : null
+                    const matchTime = match.utcDate
+                      ? new Date(match.utcDate).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+                      : null
                     return (
                       <button
                         key={match.id}
                         type="button"
                         onClick={() => onPlayMatch?.(match.id)}
                         className={`w-full rounded-xl border p-2 text-left transition-all hover:scale-[1.02] ${
-                          finished
+                          match.isLive
+                            ? isDark
+                              ? 'border-red-500/50 bg-red-950/30'
+                              : 'border-red-300 bg-red-50'
+                            : finished
                             ? isDark
                               ? 'border-emerald-500/40 bg-emerald-950/30'
                               : 'border-emerald-300 bg-emerald-50'
@@ -84,39 +113,50 @@ export default function KnockoutBracketsPreview({
                         style={{ animationDelay: `${roundIdx * 80 + matchIdx * 40}ms` }}
                       >
                         <div className="flex items-center gap-1.5">
-                          <TeamCrest src={match.homeTeam.crest} alt="" size={18} />
+                          <TeamCrest src={match.homeTeam.crest} alt="" size={16} />
                           <span
                             className={`text-[10px] flex-1 truncate ${
-                              winnerHome ? 'font-bold text-emerald-400' : ''
+                              winnerHome
+                                ? 'font-bold text-emerald-400'
+                                : isDark
+                                  ? 'text-stone-200'
+                                  : 'text-stone-800'
                             }`}
                           >
                             {teamShort(match.homeTeam.name, match.homeTeam.shortName, match.homeTeam.tla)}
                           </span>
-                          <span className="text-[10px] font-bold tabular-nums">
+                          <span className={`text-[10px] font-bold tabular-nums w-4 text-right ${winnerHome ? 'text-emerald-400' : ''}`}>
                             {match.displayScore.home ?? '–'}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <TeamCrest src={match.awayTeam.crest} alt="" size={18} />
+                          <TeamCrest src={match.awayTeam.crest} alt="" size={16} />
                           <span
                             className={`text-[10px] flex-1 truncate ${
-                              winnerAway ? 'font-bold text-emerald-400' : ''
+                              winnerAway
+                                ? 'font-bold text-emerald-400'
+                                : isDark
+                                  ? 'text-stone-200'
+                                  : 'text-stone-800'
                             }`}
                           >
                             {teamShort(match.awayTeam.name, match.awayTeam.shortName, match.awayTeam.tla)}
                           </span>
-                          <span className="text-[10px] font-bold tabular-nums">
+                          <span className={`text-[10px] font-bold tabular-nums w-4 text-right ${winnerAway ? 'text-emerald-400' : ''}`}>
                             {match.displayScore.away ?? '–'}
                           </span>
                         </div>
-                        {finished && (
-                          <p className="text-[9px] text-emerald-400 mt-1 animate-pulse font-medium">
-                            ✓ Ganador definido
+                        {match.isLive ? (
+                          <p className="text-[9px] text-red-400 mt-1 font-bold animate-pulse">⬤ En vivo</p>
+                        ) : finished ? (
+                          <p className={`text-[9px] mt-1 font-medium ${isDark ? 'text-emerald-400/70' : 'text-emerald-600'}`}>
+                            ✓ Finalizado
                           </p>
-                        )}
-                        {!finished && match.isLive && (
-                          <p className="text-[9px] text-red-400 mt-1 font-medium">● En vivo</p>
-                        )}
+                        ) : matchDate ? (
+                          <p className={`text-[9px] mt-1 tabular-nums ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                            {matchDate} · {matchTime}
+                          </p>
+                        ) : null}
                       </button>
                     )
                   })}

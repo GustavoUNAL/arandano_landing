@@ -10,7 +10,7 @@ interface WhatsAppBroadcastModalProps {
   userName?: string | null
   isDark?: boolean
   onSubmit: (whatsapp: string) => Promise<void>
-  onSkip: () => Promise<void>
+  onSkip?: () => Promise<void>
 }
 
 export default function WhatsAppBroadcastModal({
@@ -18,7 +18,6 @@ export default function WhatsAppBroadcastModal({
   userName,
   isDark = true,
   onSubmit,
-  onSkip,
 }: WhatsAppBroadcastModalProps) {
   const [phone, setPhone] = useState('')
   const [error, setError] = useState('')
@@ -66,21 +65,22 @@ export default function WhatsAppBroadcastModal({
   return (
     <PollaModal
       open={open}
-      onClose={() => void onSkip()}
+      onClose={() => {}}
       isDark={isDark}
       accent="emerald"
       size="sm"
       zIndex={100}
+      hideClose
       icon={
         <div className="w-11 h-11 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-900/40">
           <WhatsAppIcon size={24} className="text-white" />
         </div>
       }
-      title="Canal de difusión"
+      title="¡Únete al canal de difusión!"
       subtitle={
         greeting
-          ? `Hola ${greeting}, déjanos tu WhatsApp para novedades del Mundial en Arándano.`
-          : 'Resultados, recordatorios y novedades de la polla por WhatsApp.'
+          ? `Hola ${greeting}, necesitamos tu WhatsApp para enviarte novedades del Mundial en Arándano.`
+          : 'Necesitamos tu WhatsApp para enviarte resultados, recordatorios y novedades de la polla.'
       }
       footer={
         <div className="space-y-2">
@@ -90,16 +90,11 @@ export default function WhatsAppBroadcastModal({
             disabled={saving || !phone.trim()}
             className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 disabled:opacity-50 text-white text-sm font-semibold shadow-lg shadow-emerald-900/25 transition-all"
           >
-            {saving ? 'Guardando…' : 'Unirme al canal'}
+            {saving ? 'Guardando…' : 'Confirmar y continuar →'}
           </button>
-          <button
-            type="button"
-            onClick={() => void onSkip()}
-            disabled={saving}
-            className="w-full py-2 text-xs text-stone-500 hover:text-stone-400 disabled:opacity-50"
-          >
-            Ahora no
-          </button>
+          <p className="text-center text-[10px] text-stone-500">
+            Obligatorio para participar en la polla · solo se usa para novedades de Arándano
+          </p>
         </div>
       }
     >

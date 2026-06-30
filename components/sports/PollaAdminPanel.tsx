@@ -38,7 +38,7 @@ export default function PollaAdminPanel({ isDark = true }: PollaAdminPanelProps)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [savingId, setSavingId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<'all' | 'knockout-passport' | 'no-passport'>('all')
+  const [filter, setFilter] = useState<'all' | 'knockout-passport' | 'no-passport' | 'no-whatsapp'>('all')
   const [rejectNote, setRejectNote] = useState<Record<string, string>>({})
 
   const loadAll = useCallback(async () => {
@@ -152,6 +152,7 @@ export default function PollaAdminPanel({ isDark = true }: PollaAdminPanelProps)
     data?.users.filter((u) => {
       if (filter === 'knockout-passport') return u.hasKnockoutPassport
       if (filter === 'no-passport') return !u.hasKnockoutPassport
+      if (filter === 'no-whatsapp') return !u.whatsapp?.trim()
       return true
     }) ?? []
 
@@ -363,6 +364,7 @@ export default function PollaAdminPanel({ isDark = true }: PollaAdminPanelProps)
                 { id: 'all', label: 'Todos' },
                 { id: 'knockout-passport', label: 'Con pasaporte' },
                 { id: 'no-passport', label: 'Sin pasaporte' },
+                { id: 'no-whatsapp', label: '⚠ Sin WhatsApp' },
               ] as const
             ).map((f) => (
               <button
@@ -429,6 +431,15 @@ export default function PollaAdminPanel({ isDark = true }: PollaAdminPanelProps)
                         )}
                       </div>
                       <p className={`text-xs truncate mt-0.5 ${theme.mutedSm}`}>{user.email}</p>
+                      {user.whatsapp ? (
+                        <p className={`text-[11px] mt-0.5 font-mono font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                          📱 +{user.whatsapp}
+                        </p>
+                      ) : (
+                        <p className={`text-[10px] mt-0.5 font-semibold ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+                          ⚠ Sin WhatsApp
+                        </p>
+                      )}
                       <p className={`text-[10px] mt-1 ${theme.mutedSm}`}>
                         {user.picksCount} picks · {user.settledCount} calificados ·{' '}
                         <span className={theme.accent}>{user.totalPoints} pts</span>

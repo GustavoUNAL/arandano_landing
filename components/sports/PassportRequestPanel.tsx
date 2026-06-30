@@ -1,6 +1,5 @@
 'use client'
 
-import PollaRulesModal from '@/components/sports/PollaRulesModal'
 import { IconPremium } from '@/components/sports/SportsIcons'
 import { mundialTheme } from '@/lib/mundial-theme-classes'
 import type { PassportRequestRow } from '@/lib/passport-requests'
@@ -8,13 +7,14 @@ import {
   CAFE_NAME,
   KNOCKOUT_PASSPORT_LABEL,
   KNOCKOUT_PASSPORT_PRICE_LABEL,
+  KNOCKOUT_PASSPORT_RULES,
   PRIZE_CLAIM_RULES,
 } from '@/lib/polla-rules'
 import Image from 'next/image'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-const RULES_ACCEPT_KEY = 'polla-passport-rules-accepted'
 const PAYMENT_QR_SRC = '/images/polla-pago-qr.png'
+const ACCOUNT_KEY = '0091616772'
 
 type ModalStep = 'rules' | 'payment' | 'upload' | 'success'
 
@@ -24,6 +24,30 @@ interface PassportRequestPanelProps {
   passportHolders?: number
   onPassportActivated?: () => void
   className?: string
+}
+
+function CopyButton({ text, isDark }: { text: string; isDark: boolean }) {
+  const [copied, setCopied] = useState(false)
+  const copy = async () => {
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => void copy()}
+      className={`ml-2 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors shrink-0 ${
+        copied
+          ? 'bg-emerald-600 text-white'
+          : isDark
+            ? 'bg-white/10 text-stone-300 hover:bg-white/20'
+            : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+      }`}
+    >
+      {copied ? '✓ Copiado' : 'Copiar'}
+    </button>
+  )
 }
 
 export default function PassportRequestPanel({
@@ -38,7 +62,6 @@ export default function PassportRequestPanel({
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [step, setStep] = useState<ModalStep>('rules')
-  const [rulesOpen, setRulesOpen] = useState(false)
   const [rulesAccepted, setRulesAccepted] = useState(false)
   const [userNote, setUserNote] = useState('')
   const [receipt, setReceipt] = useState<File | null>(null)
@@ -52,10 +75,18 @@ export default function PassportRequestPanel({
   modalOpenRef.current = modalOpen
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setRulesAccepted(window.sessionStorage.getItem(RULES_ACCEPT_KEY) === '1')
-    }
-  }, [])
+    if (!receipt) { setReceiptPreview(''); return }
+    const url = URL.createObjectURL(receipt)
+    setReceiptPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [receipt])
+
+  useEffect(() => {
+    if (!modalOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [modalOpen])
 
   const load = useCallback(async () => {
     if (modalOpenRef.current) return
@@ -77,37 +108,16 @@ export default function PassportRequestPanel({
     if (!hasKnockoutPassport) load()
   }, [hasKnockoutPassport, load])
 
-  useEffect(() => {
-    if (!receipt) { setReceiptPreview(''); return }
-    const url = URL.createObjectURL(receipt)
-    setReceiptPreview(url)
-    return () => URL.revokeObjectURL(url)
-  }, [receipt])
-
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    if (!modalOpen) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [modalOpen])
-
   const openModal = () => {
     setError('')
-    setStep(rulesAccepted ? 'payment' : 'rules')
+    setRulesAccepted(false)
+    setStep('rules')
     setModalOpen(true)
   }
 
   const closeModal = () => {
     if (submitting) return
     setModalOpen(false)
-  }
-
-  const acceptRules = () => {
-    window.sessionStorage.setItem(RULES_ACCEPT_KEY, '1')
-    setRulesAccepted(true)
-    setRulesOpen(false)
-    setStep('payment')
   }
 
   const submit = async () => {
@@ -132,7 +142,7 @@ export default function PassportRequestPanel({
     }
   }
 
-  // — Estado: pasaporte ya activo —
+  // — Pasaporte ya activo —
   if (hasKnockoutPassport) {
     return (
       <div className={`rounded-2xl border p-4 ${className} ${isDark ? 'border-berry-500/30 bg-berry-950/20' : 'border-berry-200 bg-berry-50/80'}`}>
@@ -161,17 +171,7 @@ export default function PassportRequestPanel({
 
   return (
     <>
-      {/* PollaRulesModal (step dentro del modal de compra) */}
-      <PollaRulesModal
-        open={rulesOpen}
-        isDark={isDark}
-        requireAccept
-        passportHolders={passportHolders}
-        onClose={() => setRulesOpen(false)}
-        onAccept={acceptRules}
-      />
-
-      {/* Tarjeta trigger compacta */}
+      {/* Tarjeta trigger */}
       <div className={`rounded-2xl border overflow-hidden ${theme.cardSoft} ${className}`}>
         <div className={`px-4 py-3 border-b ${theme.border} flex items-center gap-2`}>
           <IconPremium className={`w-4 h-4 shrink-0 ${theme.accentLink}`} />
@@ -193,25 +193,14 @@ export default function PassportRequestPanel({
         <div className="px-4 py-3">
           {pending ? (
             <div className={`rounded-xl border px-3 py-2.5 text-center ${isDark ? 'border-amber-500/30 bg-amber-950/25' : 'border-amber-200 bg-amber-50'}`}>
-              <p className={`text-sm font-semibold ${isDark ? 'text-amber-200' : 'text-amber-800'}`}>
-                Solicitud enviada — en revisión
-              </p>
-              <p className={`text-[11px] mt-1 ${theme.mutedSm}`}>
-                Activaremos tu pasaporte una vez verificado el comprobante.
-              </p>
-              {request?.userNote && (
-                <p className={`text-[10px] mt-1 italic ${theme.mutedSm}`}>Nota: {request.userNote}</p>
-              )}
+              <p className={`text-sm font-semibold ${isDark ? 'text-amber-200' : 'text-amber-800'}`}>Solicitud enviada — en revisión</p>
+              <p className={`text-[11px] mt-1 ${theme.mutedSm}`}>Activaremos tu pasaporte una vez verificado el comprobante.</p>
             </div>
           ) : (
             <button
               type="button"
               onClick={openModal}
-              className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                isDark
-                  ? 'bg-berry-600 hover:bg-berry-500 text-white'
-                  : 'bg-berry-600 hover:bg-berry-700 text-white'
-              }`}
+              className="w-full py-2.5 rounded-xl bg-berry-600 hover:bg-berry-500 text-white text-sm font-semibold transition-colors"
             >
               {rejected ? 'Volver a solicitar →' : 'Adquirir pasaporte →'}
             </button>
@@ -223,14 +212,14 @@ export default function PassportRequestPanel({
       {modalOpen && (
         <div
           className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) closeModal() }}
+          onClick={(e) => { if (e.target === e.currentTarget && !submitting) closeModal() }}
         >
           <div
             className={`w-full max-w-md rounded-t-2xl sm:rounded-2xl border shadow-2xl flex flex-col max-h-[92vh] overflow-hidden ${
               isDark ? 'bg-stone-950 border-white/10' : 'bg-white border-stone-200'
             }`}
           >
-            {/* Header modal */}
+            {/* Header */}
             <div className={`px-5 pt-5 pb-4 border-b shrink-0 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -238,17 +227,13 @@ export default function PassportRequestPanel({
                     <IconPremium className={`w-4 h-4 ${theme.accentLink}`} />
                     <p className="font-semibold text-sm">Adquiere tu pasaporte</p>
                   </div>
-                  <p className={`text-[11px] ${theme.mutedSm}`}>
-                    {KNOCKOUT_PASSPORT_PRICE_LABEL} · {CAFE_NAME}
-                  </p>
+                  <p className={`text-[11px] ${theme.mutedSm}`}>{KNOCKOUT_PASSPORT_PRICE_LABEL} · {CAFE_NAME}</p>
                 </div>
-                {!submitting && (
+                {!submitting && step !== 'success' && (
                   <button
                     type="button"
                     onClick={closeModal}
-                    className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm ${
-                      isDark ? 'hover:bg-white/10 text-stone-400' : 'hover:bg-stone-100 text-stone-500'
-                    }`}
+                    className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm ${isDark ? 'hover:bg-white/10 text-stone-400' : 'hover:bg-stone-100 text-stone-500'}`}
                   >
                     ✕
                   </button>
@@ -265,17 +250,11 @@ export default function PassportRequestPanel({
                     return (
                       <div key={s} className="flex items-center gap-1.5 flex-1">
                         <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                          done
-                            ? (isDark ? 'bg-emerald-500 text-white' : 'bg-emerald-500 text-white')
-                            : active
-                              ? 'bg-berry-600 text-white'
-                              : (isDark ? 'bg-white/10 text-stone-500' : 'bg-stone-200 text-stone-500')
+                          done ? 'bg-emerald-500 text-white' : active ? 'bg-berry-600 text-white' : isDark ? 'bg-white/10 text-stone-500' : 'bg-stone-200 text-stone-500'
                         }`}>
                           {done ? '✓' : i + 1}
                         </div>
-                        <p className={`text-[10px] font-medium truncate ${active ? (isDark ? 'text-white' : 'text-stone-900') : theme.mutedSm}`}>
-                          {labels[i]}
-                        </p>
+                        <p className={`text-[10px] font-medium truncate ${active ? (isDark ? 'text-white' : 'text-stone-900') : theme.mutedSm}`}>{labels[i]}</p>
                         {i < 2 && <div className={`h-px flex-1 ${isDark ? 'bg-white/10' : 'bg-stone-200'}`} />}
                       </div>
                     )
@@ -284,38 +263,55 @@ export default function PassportRequestPanel({
               )}
             </div>
 
-            {/* Contenido scrollable */}
+            {/* Contenido */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
 
-              {/* STEP: rules */}
+              {/* STEP 1: Reglamento inline */}
               {step === 'rules' && (
                 <>
-                  <p className={`text-sm ${theme.muted}`}>
-                    Antes de adquirir el pasaporte, lee el reglamento de la polla final para conocer cómo funcionan los puntos, premios y requisitos.
+                  <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-stone-900'}`}>
+                    Reglamento de la polla final
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => setRulesOpen(true)}
-                    className={`w-full py-3 rounded-xl border text-sm font-semibold transition-colors ${
-                      isDark
-                        ? 'border-berry-500/40 bg-berry-950/30 text-berry-200 hover:bg-berry-900/40'
-                        : 'border-berry-300 bg-berry-50 text-berry-800 hover:bg-berry-100'
-                    }`}
-                  >
-                    📋 Leer y aceptar el reglamento
-                  </button>
-                  <details className={`text-[10px] ${theme.mutedSm}`}>
-                    <summary className="cursor-pointer font-medium">Reglas de cobro de premios</summary>
-                    <ul className="mt-2 space-y-1 list-disc pl-4">
-                      {PRIZE_CLAIM_RULES.slice(0, 4).map((rule) => (
-                        <li key={rule}>{rule}</li>
-                      ))}
-                    </ul>
-                  </details>
+
+                  <div className={`rounded-xl border divide-y text-xs leading-relaxed ${isDark ? 'border-white/10 divide-white/5' : 'border-stone-200 divide-stone-100'}`}>
+                    {KNOCKOUT_PASSPORT_RULES.map((rule, i) => (
+                      <div key={i} className={`px-3 py-2.5 flex gap-2 ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
+                        <span className={`font-bold shrink-0 ${isDark ? 'text-berry-400' : 'text-berry-600'}`}>{i + 1}.</span>
+                        <span>{rule}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className={`text-[11px] font-semibold ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>Cobro de premios</p>
+                  <div className={`rounded-xl border divide-y text-xs leading-relaxed ${isDark ? 'border-white/10 divide-white/5' : 'border-stone-200 divide-stone-100'}`}>
+                    {PRIZE_CLAIM_RULES.slice(0, 5).map((rule, i) => (
+                      <div key={i} className={`px-3 py-2 flex gap-2 ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
+                        <span className={`shrink-0 ${isDark ? 'text-berry-500' : 'text-berry-500'}`}>·</span>
+                        <span>{rule}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Checkbox de aceptación */}
+                  <label className={`flex items-start gap-3 rounded-xl border px-3 py-3 cursor-pointer transition-colors ${
+                    rulesAccepted
+                      ? isDark ? 'border-emerald-500/50 bg-emerald-950/25' : 'border-emerald-300 bg-emerald-50'
+                      : isDark ? 'border-white/10 bg-white/5' : 'border-stone-200 bg-stone-50'
+                  }`}>
+                    <input
+                      type="checkbox"
+                      checked={rulesAccepted}
+                      onChange={(e) => setRulesAccepted(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 accent-berry-600 shrink-0"
+                    />
+                    <span className={`text-xs leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
+                      He leído y acepto el reglamento de la polla final y las reglas de cobro de premios.
+                    </span>
+                  </label>
                 </>
               )}
 
-              {/* STEP: payment */}
+              {/* STEP 2: Pago con QR + llave */}
               {step === 'payment' && (
                 <>
                   <div className={`rounded-xl border p-4 text-center ${isDark ? 'border-white/10 bg-black/20' : 'border-stone-200 bg-stone-50'}`}>
@@ -327,24 +323,32 @@ export default function PassportRequestPanel({
                     </div>
                     <p className={`text-[10px] mt-2 ${theme.mutedSm}`}>{CAFE_NAME} · Nequi / transferencia</p>
                   </div>
+
+                  {/* Llave de cuenta */}
+                  <div className={`rounded-xl border px-3 py-2.5 flex items-center gap-2 ${isDark ? 'border-white/10 bg-white/5' : 'border-stone-200 bg-stone-50'}`}>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[10px] uppercase tracking-wide font-medium mb-0.5 ${theme.mutedSm}`}>Llave de cuenta</p>
+                      <p className={`font-mono text-sm font-bold tracking-widest ${isDark ? 'text-white' : 'text-stone-900'}`}>{ACCOUNT_KEY}</p>
+                    </div>
+                    <CopyButton text={ACCOUNT_KEY} isDark={isDark} />
+                  </div>
+
                   <ol className={`space-y-2 text-[11px] leading-relaxed ${theme.muted}`}>
                     {[
-                      `Paga ${KNOCKOUT_PASSPORT_PRICE_LABEL} escaneando el QR (Nequi / transferencia).`,
-                      'Guarda el comprobante — lo vas a necesitar en el siguiente paso.',
+                      `Paga ${KNOCKOUT_PASSPORT_PRICE_LABEL} escaneando el QR o usando la llave de cuenta (Nequi / transferencia).`,
+                      'Guarda el comprobante — lo necesitas en el siguiente paso.',
                       'Un administrador revisará tu solicitud y activará el pasaporte.',
-                    ].map((step, i) => (
-                      <li key={step} className="flex gap-2">
-                        <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0 ${isDark ? 'bg-berry-600/30 text-berry-300' : 'bg-berry-100 text-berry-700'}`}>
-                          {i + 1}
-                        </span>
-                        <span>{step}</span>
+                    ].map((t, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0 ${isDark ? 'bg-berry-600/30 text-berry-300' : 'bg-berry-100 text-berry-700'}`}>{i + 1}</span>
+                        <span>{t}</span>
                       </li>
                     ))}
                   </ol>
                 </>
               )}
 
-              {/* STEP: upload */}
+              {/* STEP 3: Comprobante */}
               {step === 'upload' && (
                 <>
                   {rejected && (
@@ -354,7 +358,6 @@ export default function PassportRequestPanel({
                       <p className={`mt-1 ${theme.mutedSm}`}>Vuelve a pagar y adjunta un comprobante válido.</p>
                     </div>
                   )}
-
                   <div>
                     <label className={`text-[10px] uppercase tracking-wide font-medium block mb-1.5 ${theme.mutedSm}`}>
                       Comprobante de pago (obligatorio)
@@ -363,16 +366,13 @@ export default function PassportRequestPanel({
                       type="file"
                       accept="image/jpeg,image/png,image/webp,application/pdf"
                       onChange={(e) => setReceipt(e.target.files?.[0] ?? null)}
-                      className={`w-full text-xs file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold ${
-                        isDark ? 'file:bg-berry-600 file:text-white' : 'file:bg-berry-100 file:text-berry-800'
-                      }`}
+                      className={`w-full text-xs file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold ${isDark ? 'file:bg-berry-600 file:text-white' : 'file:bg-berry-100 file:text-berry-800'}`}
                       disabled={submitting}
                     />
                     {receiptPreview && receipt?.type.startsWith('image/') && (
                       <img src={receiptPreview} alt="Vista previa comprobante" className="mt-2 max-h-36 rounded-lg border mx-auto block" />
                     )}
                   </div>
-
                   <div>
                     <label className={`text-[10px] uppercase tracking-wide font-medium block mb-1.5 ${theme.mutedSm}`}>
                       Nota opcional (referencia, hora del pago…)
@@ -382,24 +382,21 @@ export default function PassportRequestPanel({
                       onChange={(e) => setUserNote(e.target.value)}
                       maxLength={280}
                       rows={2}
-                      placeholder="Ej: Transferencia Nequi hoy 3:45 pm"
+                      placeholder="Ej: Nequi hoy 3:45 pm"
                       className={`w-full rounded-lg border px-3 py-2 text-xs resize-none focus:outline-none ${theme.profileHeroInput}`}
                       disabled={submitting}
                     />
                   </div>
-
                   {error && <p className="text-red-400 text-xs text-center">{error}</p>}
                 </>
               )}
 
-              {/* STEP: success */}
+              {/* STEP 4: Éxito */}
               {step === 'success' && (
                 <div className="py-4 text-center space-y-4">
                   <div className="text-5xl">🎉</div>
                   <div>
-                    <p className={`font-bold text-lg ${isDark ? 'text-white' : 'text-stone-900'}`}>
-                      ¡Solicitud enviada!
-                    </p>
+                    <p className={`font-bold text-lg ${isDark ? 'text-white' : 'text-stone-900'}`}>¡Solicitud enviada!</p>
                     <p className={`text-sm mt-1 ${theme.muted}`}>
                       Revisaremos tu comprobante y activaremos el pasaporte para que sumes puntos desde cuartos.
                     </p>
@@ -413,12 +410,24 @@ export default function PassportRequestPanel({
               )}
             </div>
 
-            {/* Footer modal con botones de acción */}
+            {/* Footer */}
             <div className={`px-5 pb-6 pt-3 shrink-0 border-t space-y-2 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
               {step === 'rules' && (
-                <p className={`text-[10px] text-center ${theme.mutedSm}`}>
-                  Debes leer y aceptar el reglamento para continuar
-                </p>
+                <>
+                  {!rulesAccepted && (
+                    <p className={`text-[10px] text-center ${theme.mutedSm}`}>
+                      Marca la casilla de aceptación para continuar
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setStep('payment')}
+                    disabled={!rulesAccepted}
+                    className="w-full py-3 rounded-xl bg-berry-600 hover:bg-berry-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
+                  >
+                    Acepto el reglamento — continuar →
+                  </button>
+                </>
               )}
 
               {step === 'payment' && (
@@ -434,7 +443,7 @@ export default function PassportRequestPanel({
               {step === 'upload' && (
                 <button
                   type="button"
-                  onClick={submit}
+                  onClick={() => void submit()}
                   disabled={submitting || !receipt}
                   className="w-full py-3 rounded-xl bg-berry-600 hover:bg-berry-500 text-white text-sm font-semibold disabled:opacity-50 transition-colors"
                 >

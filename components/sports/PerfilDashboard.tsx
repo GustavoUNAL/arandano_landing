@@ -1,6 +1,7 @@
 'use client'
 
 import LiveMatchBroadcast from '@/components/sports/LiveMatchBroadcast'
+import PollaLeaderboard from '@/components/sports/PollaLeaderboard'
 import MatchLivePanel from '@/components/sports/MatchLivePanel'
 import MundialExplorer from '@/components/sports/MundialExplorer'
 import MundialThemeToggle from '@/components/sports/MundialThemeToggle'
@@ -18,6 +19,7 @@ import {
   IconShield,
   IconSparkle,
   IconTarget,
+  IconTrophy,
 } from '@/components/sports/SportsIcons'
 import TeamCrest from '@/components/sports/TeamCrest'
 import UserAvatar from '@/components/sports/UserAvatar'
@@ -90,6 +92,7 @@ const BASE_TABS: { id: MainTab; label: string; Icon: typeof IconHome }[] = [
   { id: 'mundial', label: 'Mundial', Icon: IconGlobe },
   { id: 'jugar', label: 'Jugar', Icon: IconTarget },
   { id: 'picks', label: 'Mis picks', Icon: IconClipboard },
+  { id: 'tabla', label: 'Tabla', Icon: IconTrophy },
   { id: 'ari', label: 'Predictor', Icon: IconSparkle },
 ]
 
@@ -329,7 +332,7 @@ export default function PerfilDashboard() {
   const liveMatchIds = data.broadcastMatchIds ?? []
   const hasWhatsApp = Boolean(data.user.whatsapp?.trim())
   const showWhatsAppPrompt =
-    !welcomeModalsBlocking && !hasWhatsApp && !data.user.whatsappPromptSkipped
+    !welcomeModalsBlocking && !hasWhatsApp
   const groupComplete = data.groupComplete ?? isGroupStageComplete(worldCup.allMatches)
   const podiumEntries = getGroupStagePodiumEntries(data.leaderboard, groupComplete)
 
@@ -569,6 +572,35 @@ export default function PerfilDashboard() {
         )}
 
         {tab === 'mundial' && <MundialExplorer data={worldCup} isDark={isDark} />}
+
+        {tab === 'tabla' && (
+          <div className="space-y-4 lg:space-y-6">
+            <div className={`rounded-2xl border px-4 py-3.5 flex gap-3 items-start ${isDark ? 'border-emerald-500/25 bg-emerald-950/20' : 'border-emerald-200 bg-emerald-50'}`}>
+              <span className="text-2xl shrink-0">🏋️</span>
+              <div>
+                <p className={`font-display font-bold text-sm ${isDark ? 'text-emerald-200' : 'text-emerald-800'}`}>Polla de entrenamiento · 16vos en marcha</p>
+                <p className={`text-xs mt-0.5 leading-relaxed ${theme.muted}`}>Los puntos en 16vos no cuentan en la polla final. Desde Cuartos arranca la polla oficial con pasaporte.</p>
+              </div>
+            </div>
+            <div className="lg:grid lg:grid-cols-2 lg:gap-6 space-y-4 lg:space-y-0">
+              <PollaLeaderboard
+                entries={data.leaderboardTraining}
+                isDark={isDark}
+                phase="training"
+                title="Tabla entrenamiento 16vos"
+                subtitle="Puntos de entrenamiento · no cuentan en polla final"
+                onUpdateUsername={updateUsername}
+              />
+              <PollaLeaderboard
+                entries={data.leaderboardKnockout}
+                isDark={isDark}
+                phase="knockout"
+                title="Tabla polla final"
+                subtitle="Desde cuartos · requiere pasaporte"
+              />
+            </div>
+          </div>
+        )}
 
         {tab === 'ari' && (
           <AriPredictorPanel

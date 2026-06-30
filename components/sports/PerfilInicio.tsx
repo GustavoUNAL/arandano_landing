@@ -287,7 +287,7 @@ export default function PerfilInicio({
       {/* Aviso nueva polla */}
       <div className={`rounded-2xl border px-4 py-3.5 flex gap-3 items-start ${isDark ? 'border-berry-500/30 bg-berry-950/20' : 'border-berry-200 bg-berry-50'}`}>
         <span className="text-xl shrink-0 mt-0.5">🏆</span>
-        <div className="space-y-1">
+        <div className="flex-1 min-w-0 space-y-1">
           <p className={`font-semibold text-sm ${isDark ? 'text-berry-200' : 'text-berry-800'}`}>
             ¡Nueva polla · Eliminatorias en marcha!
           </p>
@@ -299,6 +299,35 @@ export default function PerfilInicio({
           </p>
         </div>
       </div>
+
+      {/* CTA pasaporte */}
+      {!hasKnockoutPassport && (
+        <a
+          href="#pasaporte"
+          className={`flex items-center gap-3 rounded-2xl border px-4 py-4 transition-all hover:scale-[1.01] ${
+            isDark
+              ? 'border-amber-500/40 bg-gradient-to-r from-amber-950/40 to-stone-950 hover:border-amber-400/60'
+              : 'border-amber-300 bg-gradient-to-r from-amber-50 to-white hover:border-amber-400 shadow-sm'
+          }`}
+          onClick={(e) => {
+            e.preventDefault()
+            document.getElementById('pasaporte')?.scrollIntoView({ behavior: 'smooth' })
+          }}
+        >
+          <span className="text-2xl shrink-0">🎟️</span>
+          <div className="flex-1 min-w-0">
+            <p className={`font-display font-bold text-sm ${isDark ? 'text-amber-200' : 'text-amber-800'}`}>
+              Compra tu pasaporte · Polla final
+            </p>
+            <p className={`text-xs ${isDark ? 'text-amber-300/70' : 'text-amber-700'}`}>
+              Desde cuartos de final · activa tu entrada a la polla oficial
+            </p>
+          </div>
+          <span className={`text-sm font-bold shrink-0 ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+            Ver →
+          </span>
+        </a>
+      )}
 
       {/* Campaña pasada */}
       <CampanaFaseGrupos predictions={predictions} isDark={isDark} />
@@ -443,12 +472,14 @@ export default function PerfilInicio({
             </div>
           </div>
 
-          <PassportRequestPanel
-            isDark={isDark}
-            hasKnockoutPassport={hasKnockoutPassport}
-            passportHolders={passportHolders}
-            onPassportActivated={onPassportChange}
-          />
+          <div id="pasaporte">
+            <PassportRequestPanel
+              isDark={isDark}
+              hasKnockoutPassport={hasKnockoutPassport}
+              passportHolders={passportHolders}
+              onPassportActivated={onPassportChange}
+            />
+          </div>
 
           {/* Countdown Mundial */}
           <div
@@ -577,7 +608,11 @@ export default function PerfilInicio({
           <KnockoutBracketsPreview
             rounds={worldCup.knockoutRounds}
             isDark={isDark}
+            hasPassport={hasKnockoutPassport}
             onPlayMatch={onPlayMatch}
+            onBuyPassport={() =>
+              document.getElementById('pasaporte')?.scrollIntoView({ behavior: 'smooth' })
+            }
           />
 
           {/* Próximos partidos */}

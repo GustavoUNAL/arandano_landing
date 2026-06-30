@@ -35,6 +35,7 @@ interface PollaModalProps {
   children: ReactNode
   footer?: ReactNode
   allowBackdropClose?: boolean
+  hideClose?: boolean
   zIndex?: number
 }
 
@@ -50,6 +51,7 @@ export default function PollaModal({
   children,
   footer,
   allowBackdropClose = true,
+  hideClose = false,
   zIndex = 105,
 }: PollaModalProps) {
   const theme = mundialTheme(isDark)
@@ -95,20 +97,22 @@ export default function PollaModal({
         }`}
       >
         <div className={`relative shrink-0 px-5 pt-5 pb-4 bg-gradient-to-br ${accentStyle.header}`}>
-          <button
-            type="button"
-            onClick={onClose}
-            className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
-              isDark
-                ? 'bg-white/10 hover:bg-white/20 text-stone-300'
-                : 'bg-stone-100 hover:bg-stone-200 text-stone-600'
-            }`}
-            aria-label="Cerrar"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {!hideClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                isDark
+                  ? 'bg-white/10 hover:bg-white/20 text-stone-300'
+                  : 'bg-stone-100 hover:bg-stone-200 text-stone-600'
+              }`}
+              aria-label="Cerrar"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
           {(icon || title) && (
             <div className="pr-10">
               {icon && <div className="mb-2">{icon}</div>}
